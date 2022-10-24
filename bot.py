@@ -6,7 +6,7 @@ import discord
 import cogs
 
 from dotenv import load_dotenv
-from discord.ext import tasks, bridge
+from discord.ext import bridge
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -15,10 +15,14 @@ DEBUG_GUILDID = os.getenv('DEBUG_GUILDID')
 DEBUG = True
 
 DIR = os.path.dirname(os.path.realpath(__file__))
-LOG_FILE = os.path.join(DIR, "logs", f"bot_{cogs.get_timestamp(day_only=True)}.log")
-LOG_LEVEL = logging.DEBUG if DEBUG else logging.ERROR
+LOG_FILE = os.path.join(DIR, "logs", f"bot_{cogs.get_timestamp(day_only=True)}-1.log")
+LOG_LEVEL = logging.DEBUG if DEBUG else logging.INFO
 
 START_LOOPS = True
+
+if os.path.exists(LOG_FILE):
+    number = int(LOG_FILE[-5])
+    LOG_FILE[-5] = number + 1
 
 logger = logging.getLogger("discord")
 log_format = logging.Formatter("[%(asctime)s]:[%(levelname)s:%(name)s]: %(message)s")

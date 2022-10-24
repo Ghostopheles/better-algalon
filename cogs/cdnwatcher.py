@@ -1,3 +1,4 @@
+import discord.ui as ui
 import discord
 import logging
 import httpx
@@ -13,6 +14,55 @@ CDN_CHANNEL = os.getenv('LIVE_CDN_CHANNEL')
 FETCH_INTERVAL = 5
 
 logger = logging.getLogger("discord.cdnwatcher")
+
+class CDNUi(ui.View):
+    def __init__(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext=None, watcher=None, utility=False):
+        super().__init__()
+        self.watcher = watcher
+        self.ctx = ctx
+        self.utility = utility
+
+        if self.utility != True:
+            self.create_select_menu()
+
+    def create_select_menu(self):
+        placeholder = "Edit watchlist..."
+        min_values = 0
+        max_values = len(self.watcher.PRODUCTS)
+        options = []
+        disabled = False
+
+        for branch, name in self.watcher.PRODUCTS.items():
+            default = branch in self.watcher.watchlist
+
+            option = discord.SelectOption(label=name, value=branch, default=default)
+            options.append(option)
+
+        branch_select_menu = ui.Select(
+            placeholder=placeholder,
+            min_values=min_values,
+            max_values=max_values,
+            options=options,
+            disabled=disabled,
+        )
+        self.branch_menu = branch_select_menu
+
+        async def update_watchlist(interaction: discord.Interaction):
+            selected_branches = branch_select_menu.values
+
+            for value in self.watcher.PRODUCTS.keys():
+                if value in selected_branches and value not in self.watcher.watchlist:
+                    self.watcher.add_to_watchlist(value)
+                elif value in self.watcher.watchlist and value not in selected_branches:
+                    self.watcher.remove_from_watchlist(value)
+            
+            await interaction.response.defer()
+
+            return True
+
+        branch_select_menu.callback = update_watchlist
+        self.add_item(branch_select_menu)
+
 
 class CDNWatcher():
     SELF_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -233,7 +283,7 @@ class CDNCogWatcher(commands.Cog):
 
             return embed
 
-    @tasks.loop(minutes=FETCH_INTERVAL)
+    @tasks.loop(minutes=FETCH_INTERVAL, reconnect=True)
     async def cdn_auto_refresh(self):
         await self.bot.wait_until_ready()
 
@@ -305,6 +355,14 @@ class CDNCogWatcher(commands.Cog):
         message += "```"
 
         await ctx.interaction.response.send_message(message, ephemeral=True, delete_after=300)
+
+    @bridge.bridge_command(name="cdnedit")
+    @commands.has_permissions(administrator=True)
+    async def cdn_edit(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext):
+        view = CDNUi(ctx=ctx, watcher=self.cdn_watcher)
+        message = "Edit the branches you are currently watching using the menu below.\nTo save your changes, just click out of the menu."
+
+        await ctx.interaction.response.send_message(message, view=view, ephemeral=True, delete_after=300)
 
 
 def setup(bot):
