@@ -180,14 +180,18 @@ class CDNWatcher():
                 return False
 
     async def fetch_cdn(self):
+        logger.debug("Fetching CDN data...")
         async with httpx.AsyncClient() as client:
             new_data = []
             for branch in self.watchlist:
+                logger.debug(f"Grabbing data for branch: {branch}")
                 url = self.CDN_URL + branch + "/versions"
 
                 res = await client.get(url)
+                logger.debug(f"Parsing CDN response")
                 data = self.parse_response(res.text)
 
+                logger.debug(f"Comparing build data for {branch}")
                 is_new = self.compare_builds(branch, data)
 
                 if is_new:
@@ -201,6 +205,7 @@ class CDNWatcher():
                     output_data["branch"] = branch
                     new_data.append(output_data)
 
+                logger.debug(f"Saving build data for {branch}")
                 self.save_build_data(branch, data)
 
             return new_data
@@ -236,6 +241,7 @@ class CDNCogWatcher(commands.Cog):
             return f"<t:{current_time}:f>"
 
     async def create_cdn_embed(self):
+        logger.debug("Building CDN update embed")
         new_data = await self.cdn_watcher.fetch_cdn()
 
         if new_data:

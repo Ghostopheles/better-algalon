@@ -21,8 +21,8 @@ LOG_LEVEL = logging.DEBUG if DEBUG else logging.INFO
 START_LOOPS = True
 
 if os.path.exists(LOG_FILE):
-    number = int(LOG_FILE[-5])
-    LOG_FILE[-5] = number + 1
+    number = int(LOG_FILE[-5]) + 1
+    LOG_FILE = LOG_FILE.replace(f"-{number}.log", f"-{number + 1}.log")
 
 logger = logging.getLogger("discord")
 log_format = logging.Formatter("[%(asctime)s]:[%(levelname)s:%(name)s]: %(message)s")
@@ -40,8 +40,8 @@ logger.addHandler(handler)  # adds filehandler to our logger
 
 logger.propagate = False  # this makes the log entries not repeat themselves
 
-logger.debug(f"Using Python version {sys.version}")
-logger.debug(f"Using PyCord version {discord.__version__}")
+logger.info(f"Using Python version {sys.version}")
+logger.info(f"Using PyCord version {discord.__version__}")
 cogs.log_start()
 
 class CDNBot(bridge.Bot):
