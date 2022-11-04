@@ -5,6 +5,7 @@ import asyncio
 import discord
 import cogs
 
+from logging.handlers import TimedRotatingFileHandler
 from dotenv import load_dotenv
 from discord.ext import bridge
 
@@ -12,31 +13,28 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 OWNERID = os.getenv('OWNERID')
 DEBUG_GUILDID = os.getenv('DEBUG_GUILDID')
-DEBUG = True
+DEBUG = False
 
 DIR = os.path.dirname(os.path.realpath(__file__))
-LOG_FILE = os.path.join(DIR, "logs", f"bot_{cogs.get_timestamp(day_only=True)}-1.log")
-LOG_LEVEL = logging.DEBUG if DEBUG else logging.INFO
+LOG_FILE = os.path.join(DIR, "logs", f"bot_{cogs.get_timestamp()}.log")
 
 START_LOOPS = True
 
-if os.path.exists(LOG_FILE):
-    number = int(LOG_FILE[-5]) + 1
-    LOG_FILE = LOG_FILE.replace(f"-{number}.log", f"-{number + 1}.log")
-
 logger = logging.getLogger("discord")
+logger.setLevel(logging.DEBUG)
 log_format = logging.Formatter("[%(asctime)s]:[%(levelname)s:%(name)s]: %(message)s")
 
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(log_format)
+console_handler.setLevel(logging.INFO)
 
 logger.addHandler(console_handler)  # adds console handler to our logger
-logger.setLevel(LOG_LEVEL)
 
-handler = logging.FileHandler(filename=LOG_FILE, encoding="utf-8", mode="w")
-handler.setFormatter(log_format)
+file_handler = TimedRotatingFileHandler(filename=LOG_FILE, encoding="utf-8", when='midnight', backupCount=30)
+file_handler.setFormatter(log_format)
+file_handler.setLevel(logging.DEBUG)
 
-logger.addHandler(handler)  # adds filehandler to our logger
+logger.addHandler(file_handler)  # adds filehandler to our logger
 
 logger.propagate = False  # this makes the log entries not repeat themselves
 

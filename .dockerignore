@@ -1,0 +1,10 @@
+*/logs*
+.gitattributes
+.gitignore
+README.md
+run.bat
+.env
+invite.txt
+LICENSE
+scratch.py
+*/.git/*

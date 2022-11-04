@@ -184,29 +184,33 @@ class CDNWatcher():
         async with httpx.AsyncClient() as client:
             new_data = []
             for branch in self.watchlist:
-                logger.debug(f"Grabbing data for branch: {branch}")
-                url = self.CDN_URL + branch + "/versions"
+                try:
+                    logger.debug(f"Grabbing data for branch: {branch}")
+                    url = self.CDN_URL + branch + "/versions"
 
-                res = await client.get(url)
-                logger.debug(f"Parsing CDN response")
-                data = self.parse_response(res.text)
+                    res = await client.get(url)
+                    logger.debug(f"Parsing CDN response")
+                    data = self.parse_response(res.text)
 
-                logger.debug(f"Comparing build data for {branch}")
-                is_new = self.compare_builds(branch, data)
+                    logger.debug(f"Comparing build data for {branch}")
+                    is_new = self.compare_builds(branch, data)
 
-                if is_new:
-                    output_data = data.copy()
+                    if is_new:
+                        output_data = data.copy()
 
-                    old_data = self.load_build_data(branch)
+                        old_data = self.load_build_data(branch)
 
-                    if old_data:
-                        output_data["old"] = old_data
-                    
-                    output_data["branch"] = branch
-                    new_data.append(output_data)
+                        if old_data:
+                            output_data["old"] = old_data
+                        
+                        output_data["branch"] = branch
+                        new_data.append(output_data)
 
-                logger.debug(f"Saving build data for {branch}")
-                self.save_build_data(branch, data)
+                    logger.debug(f"Saving build data for {branch}")
+                    self.save_build_data(branch, data)
+                except httpx.ReadTimeout as exc:
+                    logger.error(f"Timeout error during CDN check for {branch}")
+                    return exc
 
             return new_data
 
@@ -229,9 +233,18 @@ class CDNCogWatcher(commands.Cog):
     def __init__(self, bot:bridge.Bot):
         self.bot = bot
         self.cdn_watcher = CDNWatcher()
+        self.last_updated = 0
 
         if START_LOOPS:
             self.cdn_auto_refresh.start()
+
+    async def notify_owner_of_exception(self, error):
+        owner = await self.bot.fetch_user(self.bot.owner_id)
+        chan = await owner.create_dm()
+
+        message = f"I've encountered an error! Help!\n{error}"
+
+        await chan.send(message)
 
     def get_date(self, relative=False):
         current_time = int(time.time())
@@ -245,6 +258,11 @@ class CDNCogWatcher(commands.Cog):
         new_data = await self.cdn_watcher.fetch_cdn()
 
         if new_data:
+            if isinstance(new_data, Exception):
+                logger.error(new_data)
+                self.notify_owner_of_exception(new_data)
+                return False
+
             embed = discord.Embed(
                 color=discord.Color.blue(),
                 title="wow.tools builds page",
@@ -304,6 +322,8 @@ class CDNCogWatcher(commands.Cog):
             await cdn_channel.send(embed=new_data)
         else:
             logger.info("No CDN changes found.")
+
+        self.last_updated = time.time()
 
     @bridge.bridge_command(name="cdnrefresh")
     @commands.has_permissions(administrator=True)
