@@ -192,22 +192,25 @@ class CDNWatcher():
                     logger.debug(f"Parsing CDN response")
                     data = self.parse_response(res.text)
 
-                    logger.debug(f"Comparing build data for {branch}")
-                    is_new = self.compare_builds(branch, data)
+                    if data:
+                        logger.debug(f"Comparing build data for {branch}")
+                        is_new = self.compare_builds(branch, data)
 
-                    if is_new:
-                        output_data = data.copy()
+                        if is_new:
+                            output_data = data.copy()
 
-                        old_data = self.load_build_data(branch)
+                            old_data = self.load_build_data(branch)
 
-                        if old_data:
-                            output_data["old"] = old_data
-                        
-                        output_data["branch"] = branch
-                        new_data.append(output_data)
+                            if old_data:
+                                output_data["old"] = old_data
+                            
+                            output_data["branch"] = branch
+                            new_data.append(output_data)
 
-                    logger.debug(f"Saving build data for {branch}")
-                    self.save_build_data(branch, data)
+                        logger.debug(f"Saving build data for {branch}")
+                        self.save_build_data(branch, data)
+                    else:
+                        return False
                 except httpx.ReadTimeout as exc:
                     logger.error(f"Timeout error during CDN check for {branch}")
                     return exc
@@ -215,18 +218,24 @@ class CDNWatcher():
             return new_data
 
     def parse_response(self, response:str) -> dict:
-        data = response.split("\n")[2].split("|")
-        region = data[0]
-        build_number = data[4]
-        build_text = data[5].replace(build_number, "")[:-1]
+        try:
+            data = response.split("\n")[2].split("|")
+            region = data[0]
+            build_number = data[4]
+            build_text = data[5].replace(build_number, "")[:-1]
 
-        output = {
-            "region": region,
-            "build": build_number,
-            "build_text": build_text
-        }
+            output = {
+                "region": region,
+                "build": build_number,
+                "build_text": build_text
+            }
 
-        return output
+            return output
+        except IndexError as exc:
+            logger.error("Encountered an error parsing API response...")
+            logger.error(exc)
+
+            return False
 
 
 class CDNCogWatcher(commands.Cog):
