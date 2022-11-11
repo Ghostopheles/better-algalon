@@ -13,7 +13,6 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 OWNERID = os.getenv('OWNERID')
 DEBUG_GUILDID = os.getenv('DEBUG_GUILDID')
-DEBUG = False
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 LOG_FILE = os.path.join(DIR, "logs", f"bot_{cogs.get_timestamp()}.log")
@@ -52,8 +51,11 @@ class CDNBot(bridge.Bot):
 
         for cog in self.COGS_LIST:
             logger.info(f"Loading {cog} cog...")
-            self.load_extension(f'cogs.{cog}')
-            logger.info(f"{cog} cog loaded!")
+            try:
+                self.load_extension(f'cogs.{cog}')
+                logger.info(f"{cog} cog loaded!")
+            except:
+                logger.error(f"Error loading cog {cog}")
 
     async def on_ready(self):
         logger.info(f"{self.user.name} has successfully connected to Discord!")

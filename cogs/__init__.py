@@ -8,3 +8,5 @@ from cogs.utils import (
     log_separator,
     get_self_path,
 )
+
+from cogs.cdnlocale import CDNLocale as Locale
