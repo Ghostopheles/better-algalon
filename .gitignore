@@ -158,3 +158,4 @@ invite.txt
 *.ipynb
 *.bat
 scratch.py
+cogs/cdnwatcher.py.new
