@@ -1,12 +1,9 @@
 import os
-import json
 import logging
-import cogs
 
 from datetime import datetime
 
 logger = logging.getLogger("discord.cdnbot_utils")
-
 
 def create_directory(path: str):
     if not os.path.exists(path):

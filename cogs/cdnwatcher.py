@@ -257,7 +257,7 @@ class CDNWatcher():
                         self.save_build_data(branch, data)
                     else:
                         return False
-                except httpx.ReadTimeout as exc:
+                except Exception as exc:
                     logger.error(f"Timeout error during CDN check for {branch}")
                     return exc
 
@@ -277,7 +277,7 @@ class CDNWatcher():
             }
 
             return output
-        except IndexError as exc:
+        except Exception as exc:
             logger.error("Encountered an error parsing API response...")
             logger.error(exc)
 
@@ -370,7 +370,7 @@ class CDNCogWatcher(commands.Cog):
         new_data = await self.cdn_watcher.fetch_cdn()
 
         if new_data:
-            if isinstance(new_data, httpx.ReadTimeout):
+            if isinstance(new_data, Exception):
                 logger.error(new_data)
                 self.notify_owner_of_exception(new_data)
                 return False
