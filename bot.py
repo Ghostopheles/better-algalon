@@ -1,13 +1,12 @@
-import os
-import sys
-import logging
-import asyncio
-import discord
-import cogs
-
 from logging.handlers import TimedRotatingFileHandler
 from dotenv import load_dotenv
 from discord.ext import bridge
+
+import os
+import sys
+import cogs
+import logging
+import discord
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -29,7 +28,8 @@ console_handler.setLevel(logging.INFO)
 
 logger.addHandler(console_handler)  # adds console handler to our logger
 
-file_handler = TimedRotatingFileHandler(filename=LOG_FILE, encoding="utf-8", when='midnight', backupCount=30)
+file_handler = TimedRotatingFileHandler(filename=LOG_FILE,
+    encoding="utf-8", when='midnight', backupCount=30)
 file_handler.setFormatter(log_format)
 file_handler.setLevel(logging.DEBUG)
 
@@ -37,29 +37,31 @@ logger.addHandler(file_handler)  # adds filehandler to our logger
 
 logger.propagate = False  # this makes the log entries not repeat themselves
 
-logger.info(f"Using Python version {sys.version}")
-logger.info(f"Using PyCord version {discord.__version__}")
+logger.info("Using Python version %s", sys.version)
+logger.info("Using PyCord version %s", discord.__version__)
 cogs.log_start()
 
-class CDNBot(bridge.Bot):
+class CDNBot(bridge.Bot): # pylint: disable=too-many-ancestors
+    """This is the almighty CDN bot, also known as Algalon. Inherits from `discord.ext.bridge.Bot`."""
     COGS_LIST = [
         'cdnwatcher'
     ]
 
     def __init__(self, description:str=None, *args, **options):
-        super().__init__(description=description, *args, **options)
+        super().__init__(description, *args, **options)
 
         for cog in self.COGS_LIST:
-            logger.info(f"Loading {cog} cog...")
+            logger.info("Loading %s cog...", cog)
             try:
-                self.load_extension(f'cogs.{cog}')
-                logger.info(f"{cog} cog loaded!")
-            except:
-                logger.error(f"Error loading cog {cog}")
+                self.load_extension('cogs.%s', cog)
+                logger.info("%s cog loaded!", cog)
+            except Exception as exc:
+                logger.error("Error loading cog %s", cog)
+                logger.error(exc)
 
     async def on_ready(self):
-        logger.info(f"{self.user.name} has successfully connected to Discord!")
-        
+        """This `async` function runs once when the bot is connected to Discord and ready to execute commands."""
+        logger.info("%s has successfully connected to Discord!", self.user.name)
 
 if __name__ == "__main__":
     bot = CDNBot(

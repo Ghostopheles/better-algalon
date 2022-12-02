@@ -1,3 +1,5 @@
+"""The great cogs module."""
+
 from cogs.utils import (
     create_directory,
     DictToClass,

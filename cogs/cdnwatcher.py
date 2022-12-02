@@ -1,4 +1,5 @@
-import discord.ui as ui
+"""This is the module that handles watching the actual Blizzard CDN."""
+
 import discord
 import logging
 import httpx
@@ -7,6 +8,7 @@ import json
 import sys
 import os
 
+from discord import ui
 from discord.ext import bridge, commands, tasks
 
 START_LOOPS = True
@@ -16,14 +18,15 @@ FETCH_INTERVAL = 5
 logger = logging.getLogger("discord.cdnwatcher")
 
 class CDNUi(ui.View):
-    def __init__(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext=None, watcher=None, utility=False):
+    def __init__(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext=None, 
+                watcher=None, utility=False):
         super().__init__()
         self.watcher = watcher
         self.ctx = ctx
         self.utility = utility
         self.guild_id = self.ctx.guild_id
 
-        if self.utility != True:
+        if not self.utility:
             self.create_select_menu()
 
     def create_select_menu(self):
@@ -56,7 +59,7 @@ class CDNUi(ui.View):
                     self.watcher.add_to_watchlist(value)
                 elif value in self.watcher.watchlist[str(self.guild_id)] and value not in selected_branches:
                     self.watcher.remove_from_watchlist(value)
-            
+
             await interaction.response.defer()
 
             return True
@@ -101,6 +104,7 @@ class CDNWatcher():
             self.save_watchlist()
 
     def init_json(self):
+        """Populates the `cdn.json` file with default values if it does not exist."""
         with open(self.data_path, "w") as file:
             template = {
                 "buildInfo": {},
@@ -112,9 +116,11 @@ class CDNWatcher():
             json.dump(template, file, indent=4)
 
     def init_watchlist(self, key:int):
+        """Creates the watchlist with default values."""
         self.add_to_watchlist("wow", key)
 
     def add_to_watchlist(self, branch:str, guild_id:int):
+        """Adds a specific `branch` to the watchlist for guild `guild_id`."""
         if branch not in self.PRODUCTS.keys():
             return "Branch is not a valid product"
         else:
@@ -131,6 +137,7 @@ class CDNWatcher():
                 return True
     
     def remove_from_watchlist(self, branch:str, guild_id:int):
+        """Removes specified `branch` from watchlist for guild `guild_id`."""
         if guild_id in self.watchlist.keys():
             if branch not in self.watchlist[guild_id]:
                 raise ValueError("Argument 'branch' is not on the watchlist.")
@@ -141,40 +148,44 @@ class CDNWatcher():
             return False
 
     def load_watchlist(self):
+        """Loads the watchlist from the `cdn.json` file."""
         logger.debug("Loading existing watchlist from file...")
         with open(self.data_path, "r") as file:
-            f = json.load(file)
-            if not "last_updated_by" in f:
-                f["last_updated_by"] = self.PLATFORM
+            file = json.load(file)
+            if not "last_updated_by" in file:
+                file["last_updated_by"] = self.PLATFORM
 
-            if not "last_updated_at" in f:
-                f["last_updated_at"] = time.time()
+            if not "last_updated_at" in file:
+                file["last_updated_at"] = time.time()
 
-            if not "channels" in f:
-                f["channels"] = {}
+            if not "channels" in file:
+                file["channels"] = {}
 
-            return f["watchlist"], f["channels"]
+            return file["watchlist"], file["channels"]
 
     def save_watchlist(self):
+        """Saves the watchlist to the `cdn.json` file."""
         logger.info("Saving configuration...")
         
         with open(self.data_path, "r+") as file:
-            f = json.load(file)
-            f["watchlist"] = self.watchlist
-            f["channels"] = self.channels
-            f["last_updated_by"] = self.PLATFORM
-            f["last_updated_at"] = time.time()
+            file_json = json.load(file)
+            file_json["watchlist"] = self.watchlist
+            file_json["channels"] = self.channels
+            file_json["last_updated_by"] = self.PLATFORM
+            file_json["last_updated_at"] = time.time()
 
             file.seek(0)
-            json.dump(f, file, indent=4)
+            json.dump(file_json, file, indent=4)
             file.truncate()
 
     def set_channel(self, channel_id:int, guild_id:int):
+        """Sets the notification channel to `channel_id` for the guild `guild_id`."""
         logger.info(f"Setting notification channel for {guild_id} to {channel_id}.")
         self.channels[str(guild_id)] = channel_id
         self.save_watchlist()
 
     def get_channel(self, guild_id:int):
+        """Returns the `channel_id` for the notification channel of guild `guild_id`."""
         logger.info(f"Getting notification channel for {guild_id}.")
         if str(guild_id) in self.channels.keys():
             return self.channels[str(guild_id)]
@@ -188,37 +199,39 @@ class CDNWatcher():
         Returns `True` if the build is new, else `False`.
         """
         with open(self.data_path, "r") as file:
-            f = json.load(file)
+            file_json = json.load(file)
 
-            if f["last_updated_by"] != self.PLATFORM and (time.time() - f["last_updated_at"]) < (FETCH_INTERVAL* 60):
+            if file_json["last_updated_by"] != self.PLATFORM and (time.time() - file_json["last_updated_at"]) < (FETCH_INTERVAL* 60):
                 logger.info("Skipping build comparison, data is outdated")
                 return False
 
-            if branch in f["buildInfo"]:
-                if f["buildInfo"][branch] != newBuild:
+            if branch in file_json["buildInfo"]:
+                if file_json["buildInfo"][branch] != newBuild:
                     return True
                 else:
                     return False
             else:
-                f["buildInfo"][branch] = newBuild
+                file_json["buildInfo"][branch] = newBuild
                 return True
 
     def save_build_data(self, branch:str, data:dict):
+        """Saves new build data to the `cdn.json` file."""
         with open(self.data_path, "r+") as file:
-            f = json.load(file)
-            f["buildInfo"][branch] = data
+            file_json = json.load(file)
+            file_json["buildInfo"][branch] = data
 
             file.seek(0)
-            json.dump(f, file, indent=4)
+            json.dump(file_json, file, indent=4)
             file.truncate()
 
     def load_build_data(self, branch:str):
+        """Loads existing build data from the `cdn.json` file."""
         with open(self.data_path, "r") as file:
-            f = json.load(file)
-            if branch in f["buildInfo"]:
-                return f["buildInfo"][branch]
+            file_json = json.load(file)
+            if branch in file_json["buildInfo"]:
+                return file_json["buildInfo"][branch]
             else:
-                f["buildInfo"][branch] = {
+                file_json["buildInfo"][branch] = {
                     "region": "us",
                     "build": "",
                     "build_text": "untracked"
@@ -226,6 +239,7 @@ class CDNWatcher():
                 return False
 
     async def fetch_cdn(self):
+        """This is a disaster."""
         logger.debug("Fetching CDN data...")
         async with httpx.AsyncClient() as client:
             new_data = []
@@ -264,6 +278,7 @@ class CDNWatcher():
             return new_data
 
     def parse_response(self, response:str) -> dict:
+        """Parses the API response and attempts to return the new data."""
         try:
             data = response.split("\n")[2].split("|")
             region = data[0]
@@ -285,6 +300,7 @@ class CDNWatcher():
 
 
 class CDNCogWatcher(commands.Cog):
+    """This is the actual Cog that gets added to the Discord bot."""
     def __init__(self, bot:bridge.Bot):
         self.bot = bot
         self.cdn_watcher = CDNWatcher()
@@ -294,6 +310,7 @@ class CDNCogWatcher(commands.Cog):
             self.cdn_auto_refresh.start()
 
     async def notify_owner_of_exception(self, error):
+        """This is supposed to notify the owner of an error, but doesn't work."""
         owner = await self.bot.fetch_user(self.bot.owner_id)
         chan = await owner.create_dm()
 
@@ -302,6 +319,7 @@ class CDNCogWatcher(commands.Cog):
         await chan.send(message)
 
     def get_date(self, relative=False):
+        """Returns a formatted timestamp for use in Discord embeds or messages."""
         current_time = int(time.time())
         if relative:
             return f"<t:{current_time}:R>"
@@ -309,6 +327,7 @@ class CDNCogWatcher(commands.Cog):
             return f"<t:{current_time}:f>"
 
     def build_embed(self, data:dict, guild_id:int):
+        """This builds a notification embed with the given data."""
         embed = discord.Embed(
                 color=discord.Color.blue(),
                 title="wow.tools builds page",
@@ -330,7 +349,7 @@ class CDNCogWatcher(commands.Cog):
             branch = ver["branch"]
 
             if str(guild_id) not in self.cdn_watcher.watchlist.keys():
-                logger.error(f"Guild ({guild_id}) not on watchlist, adding default entry [\"wow\"].")
+                logger.error("Guild (%s) not on watchlist, adding default entry [\"wow\"].", guild_id)
                 self.cdn_watcher.init_watchlist(guild_id)
                 return False
 
@@ -366,6 +385,7 @@ class CDNCogWatcher(commands.Cog):
         return embed
 
     async def distribute_embed(self):
+        """This handles distributing the generated embeds to the various servers that should receive them."""
         logger.debug("Building CDN update embed")
         new_data = await self.cdn_watcher.fetch_cdn()
 
@@ -382,9 +402,9 @@ class CDNCogWatcher(commands.Cog):
                     if str(guild.id) in self.cdn_watcher.channels.keys():
                         cdn_channel = await guild.fetch_channel(self.cdn_watcher.channels[str(guild.id)])
                     else:
-                        logger.error(f"Guild {guild.id} has not chosen a channel for notifications, skipping...")
+                        logger.error("Guild %s has not chosen a channel for notifications, skipping...", guild.id)
                 except:
-                    logger.error(f"Error fetching channel for guild {guild.id}.")
+                    logger.error("Error fetching channel for guild %s.", guild.id)
                     continue
 
                 embed = self.build_embed(new_data, guild.id)
@@ -397,6 +417,7 @@ class CDNCogWatcher(commands.Cog):
 
     @tasks.loop(minutes=FETCH_INTERVAL, reconnect=True)
     async def cdn_auto_refresh(self):
+        """Forever problematic loop that handles auto-checking for CDN updates."""
         await self.bot.wait_until_ready()
 
         logger.info("Checking for CDN updates...")
@@ -416,6 +437,7 @@ class CDNCogWatcher(commands.Cog):
     @bridge.bridge_command(name="cdnaddtowatchlist")
     @commands.has_permissions(administrator=True)
     async def cdn_add_to_watchlist(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext, branch:str):
+        """Command for adding specific branches to the watchlist for your guild."""
         added = self.cdn_watcher.add_to_watchlist(branch, ctx.guild_id)
         if added != True:
             message = f"{added}\n\n**Valid branches:**\n```\n"
@@ -433,6 +455,7 @@ class CDNCogWatcher(commands.Cog):
     @bridge.bridge_command(name="cdnremovefromwatchlist")
     @commands.has_permissions(administrator=True)
     async def cdn_remove_from_watchlist(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext, branch:str):
+        """Command for removing specific branches from the watchlist for you guild."""
         try:
             self.cdn_watcher.remove_from_watchlist(branch, ctx.guild_id)
         except ValueError:
@@ -451,6 +474,7 @@ class CDNCogWatcher(commands.Cog):
     @bridge.bridge_command(name="cdnwatchlist")
     @commands.has_permissions(administrator=True)
     async def cdn_watchlist(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext):
+        """Returns the entire watchlist for your guild."""
         message = "**These are the branches I'm currently observing:**\n```\n"
 
         if ctx.guild_id in self.cdn_watcher.watchlist.keys():
@@ -469,6 +493,7 @@ class CDNCogWatcher(commands.Cog):
     @bridge.bridge_command(name="cdnedit")
     @commands.has_permissions(administrator=True)
     async def cdn_edit(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext):
+        """Returns a graphical editor for your guilds watchlist."""
         if ctx.guild_id not in self.cdn_watcher.watchlist.keys():
             error_msg = "Your server does not have a watchlist, I'll create one for you with the Retail WoW branch as default, use this command again to edit your new watchlist!"
             self.cdn_watcher.init_watchlist(str(ctx.guild_id))
@@ -483,6 +508,7 @@ class CDNCogWatcher(commands.Cog):
     @bridge.bridge_command(name="cdnsetchannel")
     @commands.has_permissions(administrator=True)
     async def cdn_set_channel(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext):
+        """Sets the notification channel for your guild."""
         channel = ctx.channel_id
         guild = ctx.guild_id
         
@@ -493,6 +519,7 @@ class CDNCogWatcher(commands.Cog):
     @bridge.bridge_command(name="cdngetchannel")
     @commands.has_permissions(administrator=True)
     async def cdn_get_channel(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext):
+        """Returns the current notification channel for your guild."""
         guild = ctx.guild_id
 
         channel = self.cdn_watcher.get_channel(guild)
