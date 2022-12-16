@@ -1,12 +1,12 @@
-from logging.handlers import TimedRotatingFileHandler
-from dotenv import load_dotenv
-from discord.ext import bridge
-
 import os
 import sys
 import cogs
 import logging
 import discord
+
+from dotenv import load_dotenv
+from discord.ext import bridge
+from logging.handlers import TimedRotatingFileHandler
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
