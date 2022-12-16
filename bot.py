@@ -11,12 +11,9 @@ from logging.handlers import TimedRotatingFileHandler
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 OWNERID = os.getenv('OWNERID')
-DEBUG_GUILDID = os.getenv('DEBUG_GUILDID')
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 LOG_FILE = os.path.join(DIR, "logs", f"bot_{cogs.get_timestamp()}.log")
-
-START_LOOPS = True
 
 logger = logging.getLogger("discord")
 logger.setLevel(logging.DEBUG)
