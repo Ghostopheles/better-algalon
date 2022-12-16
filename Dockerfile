@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM --platform=$BUILDPLATFORM python:3.11.1-bullseye
+FROM --platform=$TARGETPLATFORM python:3.11.1-bullseye
 
 WORKDIR /usr/algalon
 
@@ -12,4 +12,4 @@ RUN pip3 install -r requirements.txt
 
 COPY . .
 
-ENTRYPOINT ["python", "-u", "bot.py"]
+ENTRYPOINT ["python3", "-u", "bot.py"]
