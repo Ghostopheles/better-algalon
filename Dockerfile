@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM arm32v7/python:3.11.1-bullseye
+FROM arm32v7/python:3.9.16-bullseye
 # --platform=linux/arm/v7 
 # --platform=$BUILDPLATFORM python:3.10.2
 
@@ -10,8 +10,8 @@ ENV DISCORD_TOKEN=$DISCORD_TOKEN
 ENV OWNERID=$OWNERID
 
 COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+RUN pip3 install -r requirements.txt
 
 COPY . .
 
-CMD ["python", "-u", "bot.py"]
+CMD ["python3", "-u", "bot.py"]
