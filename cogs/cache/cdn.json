@@ -1,0 +1,90 @@
+{
+    "buildInfo": {
+        "wow": {
+            "region": "us",
+            "build": "47120",
+            "build_text": "10.0.2"
+        },
+        "wowt": {
+            "region": "us",
+            "build": "47118",
+            "build_text": "10.0.5"
+        },
+        "wow_beta": {
+            "region": "us",
+            "build": "47120",
+            "build_text": "10.0.2"
+        },
+        "wowdev": {
+            "region": "us",
+            "build": "46924",
+            "build_text": "10.0.2"
+        },
+        "wow_classic": {
+            "region": "us",
+            "build": "46902",
+            "build_text": "3.4.0"
+        },
+        "wow_classic_ptr": {
+            "region": "us",
+            "build": "47014",
+            "build_text": "3.4.1"
+        },
+        "wow_classic_beta": {
+            "region": "us",
+            "build": "46158",
+            "build_text": "3.4.0"
+        },
+        "wow_classic_era": {
+            "region": "us",
+            "build": "46575",
+            "build_text": "1.14.3"
+        },
+        "wow_classic_era_ptr": {
+            "region": "us",
+            "build": "46575",
+            "build_text": "1.14.3"
+        },
+        "wowlivetest": {
+            "region": "us",
+            "build": "46479",
+            "build_text": "10.0.2"
+        },
+        "wowz": {
+            "region": "us",
+            "build": "46973",
+            "build_text": "3.4.1"
+        }
+    },
+    "watchlist": {
+        "857764832542851092": [
+            "wow_classic_beta",
+            "wow_classic_era",
+            "wow_beta",
+            "wow_classic_era_ptr",
+            "wowlivetest",
+            "wow_classic_ptr",
+            "wowt",
+            "wow",
+            "wow_classic"
+        ],
+        "242364846362853377": [
+            "wow",
+            "wow_classic_beta",
+            "wow_classic_era",
+            "wow_beta",
+            "wow_classic_era_ptr",
+            "wowlivetest",
+            "wow_classic_ptr",
+            "wowt",
+            "wow",
+            "wow_classic"
+        ]
+    },
+    "channels": {
+        "857764832542851092": 857891498124247040,
+        "242364846362853377": 286441865442492416
+    },
+    "last_updated_by": "win32",
+    "last_updated_at": 1671208679.5626013
+}
