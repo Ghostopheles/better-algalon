@@ -1,6 +1,8 @@
-# syntax=docker/dockerfile:1.4
+# syntax=docker/dockerfile:1
 
-FROM --platform=$BUILDPLATFORM python:latest
+ARG TARGETPLATFORM
+
+FROM --platform=$TARGETPLATFORM python:3.11-buster
 
 WORKDIR /usr/algalon
 
@@ -12,4 +14,4 @@ RUN python3 -m pip install --no-cache-dir -U -r requirements.txt
 
 COPY . .
 
-ENTRYPOINT ["python3", "-u", "bot.py"]
+CMD ["python", "-u", "bot.py"]
