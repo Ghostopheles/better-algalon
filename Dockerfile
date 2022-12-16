@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1.4
 
 FROM --platform=$TARGETPLATFORM python:3.11.1-bullseye
 
