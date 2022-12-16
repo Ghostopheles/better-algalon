@@ -38,7 +38,7 @@ logger.info("Using Python version %s", sys.version)
 logger.info("Using PyCord version %s", discord.__version__)
 cogs.log_start()
 
-class CDNBot(bridge.Bot): # pylint: disable=too-many-ancestors
+class CDNBot(bridge.Bot):
     """This is the almighty CDN bot, also known as Algalon. Inherits from `discord.ext.bridge.Bot`."""
     COGS_LIST = [
         'cdnwatcher'
