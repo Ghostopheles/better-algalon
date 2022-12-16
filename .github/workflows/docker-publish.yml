@@ -87,7 +87,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           # cache-from: type=gha
           # cache-to: type=gha,mode=max
-          platforms: linux/arm/v7,linux/arm64,linux/amd64
+          platforms: linux/arm/v7
+          #,linux/arm64,linux/amd64,
           secrets: |
                   "DISCORD_TOKEN=${{secrets.DISCORD_TOKEN}}"
                   "OWNERID=${{secrets.OWNERID}}"
