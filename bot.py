@@ -13,7 +13,12 @@ TOKEN = os.getenv('DISCORD_TOKEN')
 OWNERID = os.getenv('OWNERID')
 
 DIR = os.path.dirname(os.path.realpath(__file__))
-LOG_FILE = os.path.join(DIR, "logs", f"bot_{cogs.get_timestamp()}.log")
+
+LOGS_DIR = os.path.join(DIR, "logs")
+LOG_FILE = os.path.join(LOGS_DIR, f"bot_{cogs.get_timestamp()}.log")
+
+if not os.path.exists(LOGS_DIR):
+    os.makedirs(LOGS_DIR)
 
 logger = logging.getLogger("discord")
 logger.setLevel(logging.DEBUG)
