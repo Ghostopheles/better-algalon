@@ -8,7 +8,7 @@ ENV DISCORD_TOKEN=$DISCORD_TOKEN
 ENV OWNERID=$OWNERID
 
 COPY requirements.txt requirements.txt
-RUN pip3 install --no-cache-dir -r requirements.txt
+RUN python3 -m pip install --no-cache-dir -U -r requirements.txt
 
 COPY . .
 
