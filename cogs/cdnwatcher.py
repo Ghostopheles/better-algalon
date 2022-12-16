@@ -12,7 +12,7 @@ from discord import ui
 from discord.ext import bridge, commands, tasks
 
 START_LOOPS = True
-DEBUG = True
+DEBUG = False
 
 FETCH_INTERVAL = 5
 
