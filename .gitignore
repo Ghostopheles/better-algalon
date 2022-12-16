@@ -159,3 +159,4 @@ invite.txt
 *.bat
 scratch.py
 cogs/cdnwatcher.py.new
+example_response.json

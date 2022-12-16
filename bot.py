@@ -53,7 +53,7 @@ class CDNBot(bridge.Bot): # pylint: disable=too-many-ancestors
         for cog in self.COGS_LIST:
             logger.info("Loading %s cog...", cog)
             try:
-                self.load_extension('cogs.%s', cog)
+                self.load_extension(f'cogs.{cog}')
                 logger.info("%s cog loaded!", cog)
             except Exception as exc:
                 logger.error("Error loading cog %s", cog)
@@ -64,14 +64,18 @@ class CDNBot(bridge.Bot): # pylint: disable=too-many-ancestors
         logger.info("%s has successfully connected to Discord!", self.user.name)
 
 if __name__ == "__main__":
+    activity = discord.Activity(
+        type=discord.ActivityType.watching,
+        name="Blizzard's CDN",
+    )
+
     bot = CDNBot(
         description="Algalon 2.0",
-        command_prefix="!",
         intents=discord.Intents.default(),
         owner_id=OWNERID,
         status=discord.Status.online,
-        activity=discord.Activity(type=discord.ActivityType.watching, name="Blizzard's CDN"),
+        activity=activity,
         auto_sync_commands=True,
-        #debug_guilds=[DEBUG_GUILDID],
     )
     bot.run(TOKEN)
+

@@ -12,6 +12,7 @@ from discord import ui
 from discord.ext import bridge, commands, tasks
 
 START_LOOPS = True
+DEBUG = True
 
 FETCH_INTERVAL = 5
 
@@ -248,7 +249,7 @@ class CDNWatcher():
                     logger.debug(f"Grabbing data for branch: {branch}")
                     url = self.CDN_URL + branch + "/versions"
 
-                    res = await client.get(url)
+                    res = await client.get(url, timeout=20)
                     logger.debug(f"Parsing CDN response")
                     data = self.parse_response(res.text)
 
@@ -304,9 +305,11 @@ class CDNCogWatcher(commands.Cog):
     def __init__(self, bot:bridge.Bot):
         self.bot = bot
         self.cdn_watcher = CDNWatcher()
-        self.last_updated = 0
+        self.last_update = 0
+        self.last_update_formatted = 0
 
         if START_LOOPS:
+            self.cdn_auto_refresh.add_exception_type(httpx.ConnectTimeout)
             self.cdn_auto_refresh.start()
 
     async def notify_owner_of_exception(self, error):
@@ -341,7 +344,6 @@ class CDNCogWatcher(commands.Cog):
             )
 
         embed.set_footer(text="Data provided by the prestigious Algalon 2.0.")
-
         
         value_string = ""
 
@@ -389,8 +391,8 @@ class CDNCogWatcher(commands.Cog):
         logger.debug("Building CDN update embed")
         new_data = await self.cdn_watcher.fetch_cdn()
 
-        if new_data:
-            if isinstance(new_data, Exception):
+        if new_data and not DEBUG:
+            if not type(new_data) == dict | bool:
                 logger.error(new_data)
                 self.notify_owner_of_exception(new_data)
                 return False
@@ -406,13 +408,14 @@ class CDNCogWatcher(commands.Cog):
                 except:
                     logger.error("Error fetching channel for guild %s.", guild.id)
                     continue
-
                 embed = self.build_embed(new_data, guild.id)
-
                 if embed:
                     await cdn_channel.send(embed=embed)
 
         else:
+            if new_data and DEBUG:
+                logger.info("New data found, but not creating posts in debug mode.")
+                return
             logger.info("No CDN changes found.")
 
     @tasks.loop(minutes=FETCH_INTERVAL, reconnect=True)
@@ -424,7 +427,8 @@ class CDNCogWatcher(commands.Cog):
 
         await self.distribute_embed()
             
-        self.last_updated = time.time()
+        self.last_update = time.time()
+        self.last_update_formatted = self.get_date(relative=True)
 
     async def cdn_refresh(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext):
         new_data = await self.distribute_embed(True)
@@ -528,6 +532,11 @@ class CDNCogWatcher(commands.Cog):
             await ctx.interaction.response.send_message(f"This server's notification channel is set to <#{channel}>", ephemeral=True, delete_after=300)
         else:
             await ctx.interaction.response.send_message(f"This server does not have a notification channel set, try `/cdnsetchannel` to set your notification channel!", ephemeral=True, delete_after=300)
+    
+    @bridge.bridge_command(name="cdnlastupdate")
+    async def cdn_last_update(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext):
+        """Returns the last time the bot checked for an update."""
+        await ctx.interaction.response.send_message(f"Last update: {self.last_update_formatted}.", ephemeral=True, delete_after=300)
     
 
 
