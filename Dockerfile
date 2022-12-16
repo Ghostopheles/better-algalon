@@ -1,9 +1,6 @@
 # syntax=docker/dockerfile:1.4
 
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
-
-FROM --platform=$BUILDPLATFORM python:latest
+FROM --platform=$TARGETPLATFORM python:latest
 
 WORKDIR /usr/algalon
 
