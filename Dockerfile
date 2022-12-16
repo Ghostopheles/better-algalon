@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 
-FROM --platform=linux/arm/v7 python:3.11.1-bullseye
+FROM arm32v7/python:3.11.1-bullseye
+# --platform=linux/arm/v7 
 # --platform=$BUILDPLATFORM python:3.10.2
-
 
 WORKDIR /usr/algalon
 
