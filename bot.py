@@ -127,7 +127,6 @@ if __name__ == "__main__":
         status=discord.Status.online,
         activity=activity,
         auto_sync_commands=True,
-        debug_guilds=[857764832542851092]
     )
     bot.run(TOKEN)
 
