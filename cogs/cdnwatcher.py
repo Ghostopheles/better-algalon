@@ -83,7 +83,7 @@ class CDNWatcher():
         "wow_classic_era_ptr": "Classic Era PTR",
         "wowz": "Submission",
         "wowlivetest": "Live Test",
-        "wowdev": "Internal"
+        #"wowdev": "Internal"
     }
     PLATFORM = sys.platform
     
@@ -251,7 +251,7 @@ class CDNWatcher():
 
                     res = await client.get(url, timeout=20)
                     logger.debug(f"Parsing CDN response")
-                    data = self.parse_response(res.text)
+                    data = self.parse_response(branch, res.text)
 
                     if data:
                         logger.debug(f"Comparing build data for {branch}")
@@ -278,10 +278,13 @@ class CDNWatcher():
 
             return new_data
 
-    def parse_response(self, response:str) -> dict:
+    def parse_response(self, branch:str, response:str):
         """Parses the API response and attempts to return the new data."""
         try:
-            data = response.split("\n")[2].split("|")
+            data = response.split("\n")
+            if len(data) < 3:
+                return False
+            data = data[2].split("|")
             region = data[0]
             build_number = data[4]
             build_text = data[5].replace(build_number, "")[:-1]
@@ -294,7 +297,7 @@ class CDNWatcher():
 
             return output
         except Exception as exc:
-            logger.error("Encountered an error parsing API response...")
+            logger.error(f"Encountered an error parsing API response for branch: {branch}.")
             logger.error(exc)
 
             return False

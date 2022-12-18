@@ -26,7 +26,7 @@ log_format = logging.Formatter("[%(asctime)s]:[%(levelname)s:%(name)s]: %(messag
 
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(log_format)
-console_handler.setLevel(logging.INFO)
+console_handler.setLevel(logging.DEBUG)
 
 logger.addHandler(console_handler)  # adds console handler to our logger
 
