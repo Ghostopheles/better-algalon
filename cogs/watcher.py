@@ -8,17 +8,17 @@ import json
 import sys
 import os
 
-from discord import ui
-from discord.ext import bridge, commands, tasks
+from .utils import get_discord_timestamp
+from discord.ext import bridge, commands, tasks, pages
 
 START_LOOPS = True
-DEBUG = False
+DEBUG = True
 
-FETCH_INTERVAL = 5
+FETCH_INTERVAL = 5 # In minutes, how often the bot should check for CDN changes.
 
-logger = logging.getLogger("discord.cdnwatcher")
+logger = logging.getLogger("discord.cdn.watcher")
 
-class CDNUi(ui.View):
+class CDNUi(discord.ui.View):
     def __init__(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext=None, 
                 watcher=None, utility=False):
         super().__init__()
@@ -43,7 +43,7 @@ class CDNUi(ui.View):
             option = discord.SelectOption(label=name, value=branch, default=default)
             options.append(option)
 
-        branch_select_menu = ui.Select(
+        branch_select_menu = discord.ui.Select(
             placeholder=placeholder,
             min_values=min_values,
             max_values=max_values,
@@ -67,7 +67,6 @@ class CDNUi(ui.View):
 
         branch_select_menu.callback = update_watchlist
         self.add_item(branch_select_menu)
-
 
 class CDNWatcher():
     SELF_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -286,13 +285,19 @@ class CDNWatcher():
                 return False
             data = data[2].split("|")
             region = data[0]
+            build_config = data[1]
+            cdn_config = data[2]
             build_number = data[4]
             build_text = data[5].replace(build_number, "")[:-1]
+            product_config = data[6]
 
             output = {
                 "region": region,
+                "build_config": build_config,
+                "cdn_config": cdn_config,
                 "build": build_number,
-                "build_text": build_text
+                "build_text": build_text,
+                "product_config": product_config
             }
 
             return output
@@ -303,7 +308,7 @@ class CDNWatcher():
             return False
 
 
-class CDNCogWatcher(commands.Cog):
+class CDNCog(commands.Cog):
     """This is the actual Cog that gets added to the Discord bot."""
     def __init__(self, bot:bridge.Bot):
         self.bot = bot
@@ -315,29 +320,24 @@ class CDNCogWatcher(commands.Cog):
             self.cdn_auto_refresh.add_exception_type(httpx.ConnectTimeout)
             self.cdn_auto_refresh.start()
 
-    async def notify_owner_of_exception(self, error):
-        """This is supposed to notify the owner of an error, but doesn't work."""
+    async def notify_owner_of_exception(self, error, ctx:discord.ApplicationContext=None):
+        """This is supposed to notify the owner of an error, but doesn't always work."""
         owner = await self.bot.fetch_user(self.bot.owner_id)
-        chan = await owner.create_dm()
+        channel = await owner.create_dm()
 
-        message = f"I've encountered an error! Help!\n{error}"
+        message = f"I've encountered an error! Help!\n```py\n{error}\n```\n"
 
-        await chan.send(message)
+        if ctx:
+            message += f"CALLER: {ctx.author}\nGUILD: {ctx.guild.name}"
 
-    def get_date(self, relative=False):
-        """Returns a formatted timestamp for use in Discord embeds or messages."""
-        current_time = int(time.time())
-        if relative:
-            return f"<t:{current_time}:R>"
-        else:
-            return f"<t:{current_time}:f>"
+        await channel.send(message)
 
     def build_embed(self, data:dict, guild_id:int):
         """This builds a notification embed with the given data."""
         embed = discord.Embed(
                 color=discord.Color.blue(),
                 title="wow.tools builds page",
-                description=f"{self.get_date()} **|** {self.get_date(relative=True)}",
+                description=f"{get_discord_timestamp()} **|** {get_discord_timestamp(relative=True)}",
                 url="https://wow.tools/builds/"
             )
 
@@ -417,9 +417,50 @@ class CDNCogWatcher(commands.Cog):
 
         else:
             if new_data and DEBUG:
-                logger.info("New data found, but not creating posts in debug mode.")
+                logger.info("New data found, but debug mode is active. Sending post to debug channel.")
+                
+                channel = await self.bot.fetch_channel(857891498124247040)
+                embed = self.build_embed(new_data, 857764832542851092)
+                if embed:
+                    await channel.send(embed=embed)
+
                 return
             logger.info("No CDN changes found.")
+
+    def build_paginator_for_current_build_data(self):
+        buttons = [
+            pages.PaginatorButton("first", label="<<-", style=discord.ButtonStyle.green),
+            pages.PaginatorButton("prev", label="<-", style=discord.ButtonStyle.green),
+            pages.PaginatorButton("page_indicator", style=discord.ButtonStyle.gray, disabled=True),
+            pages.PaginatorButton("next", label="->", style=discord.ButtonStyle.green),
+            pages.PaginatorButton("last", label="->>", style=discord.ButtonStyle.green),
+        ]
+
+        data_pages = []
+
+        for product, name in self.cdn_watcher.PRODUCTS.items():
+            data = self.cdn_watcher.load_build_data(product)
+            embed = discord.Embed(title=f"CDN Data for: {name}", color=discord.Color.blurple())
+
+            data_text = f"**Region:** `{data['region']}`\n"
+            data_text += f"**Build Config:** `{data['build_config']}`\n"
+            data_text += f"**CDN Config:** `{data['cdn_config']}`\n"
+            data_text += f"**Build:** `{data['build']}`\n"
+            data_text += f"**Version:** `{data['build_text']}`\n"
+            data_text += f"**Product Config:** `{data['product_config']}`"
+
+            embed.add_field(name="Current Data", value=data_text, inline=False)
+
+            data_pages.append(embed)
+
+        paginator = pages.Paginator(
+            pages=data_pages,
+            show_indicator=True,
+            use_default_buttons=False,
+            custom_buttons=buttons
+        )
+
+        return paginator
 
     @tasks.loop(minutes=FETCH_INTERVAL, reconnect=True)
     async def cdn_auto_refresh(self):
@@ -428,18 +469,40 @@ class CDNCogWatcher(commands.Cog):
 
         logger.info("Checking for CDN updates...")
 
-        await self.distribute_embed()
+        try:
+            await self.distribute_embed()
+        except Exception as exc:
+            logger.error("Error occurred when distributing embeds.")
+            logger.error(exc)
+
+            self.notify_owner_of_exception(exc)
+
+            return
             
         self.last_update = time.time()
-        self.last_update_formatted = self.get_date(relative=True)
+        self.last_update_formatted = get_discord_timestamp(relative=True)
 
-    async def cdn_refresh(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext):
-        new_data = await self.distribute_embed(True)
+    # DISCORD LISTENERS
 
-        if new_data:
-            await ctx.interaction.response.send_message(embed=new_data)
-        else:
-            await ctx.interaction.response.send_message("No changes found.", ephemeral=True, delete_after=300)
+    @commands.Cog.listener(name="on_application_command_error")
+    async def handle_command_error(self, ctx: discord.ApplicationContext, exception: discord.DiscordException):
+        error_message = "I have encountered an error handling your command. The Titans have been notified."
+
+        logger.error(f"Logging application command error in guild {ctx.guild_id}.")
+        logger.error(exception)
+
+        await self.notify_owner_of_exception(exception)
+
+        await ctx.interaction.response.send_message(error_message, ephemeral=True, delete_after=300)
+
+
+    # DISCORD COMMANDS
+
+    @bridge.bridge_command(name="cdncurrentdata")
+    async def cdn_current_data(self, ctx:bridge.BridgeApplicationContext | bridge.BridgeContext):
+        logger.info("Generating paginator to display current build data.")
+        paginator = self.build_paginator_for_current_build_data()
+        await paginator.respond(ctx.interaction, ephemeral=True)
 
     @bridge.bridge_command(name="cdnaddtowatchlist")
     @commands.has_permissions(administrator=True)
@@ -544,4 +607,4 @@ class CDNCogWatcher(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(CDNCogWatcher(bot))
+    bot.add_cog(CDNCog(bot))
