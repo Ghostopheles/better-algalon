@@ -271,7 +271,7 @@ class CDNWatcher():
                         logger.debug(f"Saving build data for {branch}")
                         self.save_build_data(branch, data)
                     else:
-                        return False
+                        continue
                 except Exception as exc:
                     logger.error(f"Timeout error during CDN check for {branch}")
                     return exc
