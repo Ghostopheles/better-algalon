@@ -1,4 +1,4 @@
-"""This is the module that handles watching the actual Blizzard CDN."""
+"""This is the module that handles watching the Blizzard CDN and posting updates to the correct places."""
 
 import discord
 import logging
