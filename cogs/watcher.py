@@ -12,7 +12,7 @@ from .utils import get_discord_timestamp
 from discord.ext import bridge, commands, tasks, pages
 
 START_LOOPS = True
-DEBUG = False
+DEBUG = True
 
 FETCH_INTERVAL = 5 # In minutes, how often the bot should check for CDN changes.
 
@@ -84,6 +84,10 @@ class CDNWatcher():
         "wowlivetest": "Live Test",
         #"wowdev": "Internal"
     }
+    AREAS_TO_CHECK_FOR_UPDATES = [
+        "build",
+        "build_text"
+    ]
     PLATFORM = sys.platform
     
     def __init__(self):
@@ -205,14 +209,15 @@ class CDNWatcher():
                 logger.info("Skipping build comparison, data is outdated")
                 return False
 
-            if branch in file_json["buildInfo"]:
-                if file_json["buildInfo"][branch] != newBuild:
-                    return True
+            for area in self.AREAS_TO_CHECK_FOR_UPDATES:
+                if branch in file_json["buildInfo"]:
+                    if file_json["buildInfo"][branch][area] != newBuild[area]:
+                        return True
+                    else:
+                        return False
                 else:
-                    return False
-            else:
-                file_json["buildInfo"][branch] = newBuild
-                return True
+                    file_json["buildInfo"][branch][area] = newBuild[area]
+                    return True
 
     def save_build_data(self, branch:str, data:dict):
         """Saves new build data to the `cdn.json` file."""
