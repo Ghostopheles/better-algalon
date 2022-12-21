@@ -12,7 +12,7 @@ from .utils import get_discord_timestamp
 from discord.ext import bridge, commands, tasks, pages
 
 START_LOOPS = True
-DEBUG = True
+DEBUG = False
 
 FETCH_INTERVAL = 5 # In minutes, how often the bot should check for CDN changes.
 
