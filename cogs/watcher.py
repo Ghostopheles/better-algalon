@@ -12,7 +12,7 @@ from .utils import get_discord_timestamp
 from discord.ext import bridge, commands, tasks, pages
 
 START_LOOPS = True
-DEBUG = False
+DEBUG = True
 
 FETCH_INTERVAL = 5 # In minutes, how often the bot should check for CDN changes.
 
@@ -395,7 +395,7 @@ class CDNCog(commands.Cog):
         new_data = await self.cdn_watcher.fetch_cdn()
 
         if new_data and not DEBUG:
-            if not type(new_data) == dict | bool:
+            if type(new_data) == Exception:
                 logger.error(new_data)
                 self.notify_owner_of_exception(new_data)
                 return False
