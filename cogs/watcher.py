@@ -11,8 +11,9 @@ import os
 from .utils import get_discord_timestamp
 from discord.ext import bridge, commands, tasks, pages
 
+DEBUG = bool(os.getenv("DEBUG")) or True
+
 START_LOOPS = True
-DEBUG = False
 
 FETCH_INTERVAL = 5 # In minutes, how often the bot should check for CDN changes.
 
