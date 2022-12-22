@@ -4,18 +4,15 @@ import discord
 import logging
 import httpx
 import time
-import json
-import sys
-import os
 
 from .utils import get_discord_timestamp
+from .config import WatcherConfig as cfg, FETCH_INTERVAL
+from .cache import CDNCache
 from discord.ext import bridge, commands, tasks, pages
 
-DEBUG = bool(os.getenv("DEBUG")) or True
+DEBUG = False
 
 START_LOOPS = True
-
-FETCH_INTERVAL = 5 # In minutes, how often the bot should check for CDN changes.
 
 logger = logging.getLogger("discord.cdn.watcher")
 
@@ -69,258 +66,14 @@ class CDNUi(discord.ui.View):
         branch_select_menu.callback = update_watchlist
         self.add_item(branch_select_menu)
 
-class CDNWatcher():
-    SELF_PATH = os.path.dirname(os.path.realpath(__file__))
-    CDN_URL = "http://us.patch.battle.net:1119/"
-    PRODUCTS = {
-        "wow": "Retail",
-        "wowt": "Retail PTR",
-        "wow_beta": "Beta",
-        "wow_classic": "WotLK Classic",
-        "wow_classic_ptr": "WotLK Classic PTR",
-        "wow_classic_beta": "Classic Beta",
-        "wow_classic_era": "Classic Era",
-        "wow_classic_era_ptr": "Classic Era PTR",
-        "wowz": "Submission",
-        "wowlivetest": "Live Test",
-        #"wowdev": "Internal"
-    }
-    AREAS_TO_CHECK_FOR_UPDATES = [
-        "build",
-        "build_text"
-    ]
-    PLATFORM = sys.platform
-    
-    def __init__(self):
-        self.cache_path = os.path.join(self.SELF_PATH, "cache")
-        self.data_path = os.path.join(self.cache_path, "cdn.json")
-
-        load_watchlist = True
-
-        if not os.path.exists(self.cache_path):
-            os.mkdir(self.cache_path)
-            self.init_json()
-        
-        if load_watchlist:
-            self.watchlist, self.channels = self.load_watchlist()
-            self.save_watchlist()
-        else:
-            self.watchlist = ["wow", "wowt", "wow_beta"]
-            self.save_watchlist()
-
-    def init_json(self):
-        """Populates the `cdn.json` file with default values if it does not exist."""
-        with open(self.data_path, "w") as file:
-            template = {
-                "buildInfo": {},
-                "watchlist": {857764832542851092: ["wow", "wowt", "wow_beta"]},
-                "last_updated_by": self.PLATFORM,
-                "last_updated_at": time.time()
-            }
-
-            json.dump(template, file, indent=4)
-
-    def init_watchlist(self, key:int):
-        """Creates the watchlist with default values."""
-        self.add_to_watchlist("wow", key)
-
-    def add_to_watchlist(self, branch:str, guild_id:int):
-        """Adds a specific `branch` to the watchlist for guild `guild_id`."""
-        if branch not in self.PRODUCTS.keys():
-            return "Branch is not a valid product"
-        else:
-            if guild_id in self.watchlist.keys():
-                if branch in self.watchlist[guild_id]:
-                    return "Branch is already on the watchlist"
-                else:
-                    self.watchlist[guild_id].append(branch)
-                    self.save_watchlist()
-                    return True
-            else:
-                self.watchlist[guild_id] = [branch]
-                self.save_watchlist()
-                return True
-    
-    def remove_from_watchlist(self, branch:str, guild_id:int):
-        """Removes specified `branch` from watchlist for guild `guild_id`."""
-        if guild_id in self.watchlist.keys():
-            if branch not in self.watchlist[guild_id]:
-                raise ValueError("Argument 'branch' is not on the watchlist.")
-            else:
-                self.watchlist.remove(branch)
-                self.save_watchlist()
-        else:
-            return False
-
-    def load_watchlist(self):
-        """Loads the watchlist from the `cdn.json` file."""
-        logger.debug("Loading existing watchlist from file...")
-        with open(self.data_path, "r") as file:
-            file = json.load(file)
-            if not "last_updated_by" in file:
-                file["last_updated_by"] = self.PLATFORM
-
-            if not "last_updated_at" in file:
-                file["last_updated_at"] = time.time()
-
-            if not "channels" in file:
-                file["channels"] = {}
-
-            return file["watchlist"], file["channels"]
-
-    def save_watchlist(self):
-        """Saves the watchlist to the `cdn.json` file."""
-        logger.info("Saving configuration...")
-        
-        with open(self.data_path, "r+") as file:
-            file_json = json.load(file)
-            file_json["watchlist"] = self.watchlist
-            file_json["channels"] = self.channels
-            file_json["last_updated_by"] = self.PLATFORM
-            file_json["last_updated_at"] = time.time()
-
-            file.seek(0)
-            json.dump(file_json, file, indent=4)
-            file.truncate()
-
-    def set_channel(self, channel_id:int, guild_id:int):
-        """Sets the notification channel to `channel_id` for the guild `guild_id`."""
-        logger.info(f"Setting notification channel for {guild_id} to {channel_id}.")
-        self.channels[str(guild_id)] = channel_id
-        self.save_watchlist()
-
-    def get_channel(self, guild_id:int):
-        """Returns the `channel_id` for the notification channel of guild `guild_id`."""
-        logger.info(f"Getting notification channel for {guild_id}.")
-        if str(guild_id) in self.channels.keys():
-            return self.channels[str(guild_id)]
-        else:
-            return False
-
-    def compare_builds(self, branch:str, newBuild:dict) -> bool:
-        """
-        Compares two build strings.
-
-        Returns `True` if the build is new, else `False`.
-        """
-        with open(self.data_path, "r") as file:
-            file_json = json.load(file)
-
-            if file_json["last_updated_by"] != self.PLATFORM and (time.time() - file_json["last_updated_at"]) < (FETCH_INTERVAL* 60):
-                logger.info("Skipping build comparison, data is outdated")
-                return False
-
-            for area in self.AREAS_TO_CHECK_FOR_UPDATES:
-                if branch in file_json["buildInfo"]:
-                    if file_json["buildInfo"][branch][area] != newBuild[area]:
-                        return True
-                    else:
-                        return False
-                else:
-                    file_json["buildInfo"][branch][area] = newBuild[area]
-                    return True
-
-    def save_build_data(self, branch:str, data:dict):
-        """Saves new build data to the `cdn.json` file."""
-        with open(self.data_path, "r+") as file:
-            file_json = json.load(file)
-            file_json["buildInfo"][branch] = data
-
-            file.seek(0)
-            json.dump(file_json, file, indent=4)
-            file.truncate()
-
-    def load_build_data(self, branch:str):
-        """Loads existing build data from the `cdn.json` file."""
-        with open(self.data_path, "r") as file:
-            file_json = json.load(file)
-            if branch in file_json["buildInfo"]:
-                return file_json["buildInfo"][branch]
-            else:
-                file_json["buildInfo"][branch] = {
-                    "region": "us",
-                    "build": "",
-                    "build_text": "untracked"
-                }
-                return False
-
-    async def fetch_cdn(self):
-        """This is a disaster."""
-        logger.debug("Fetching CDN data...")
-        async with httpx.AsyncClient() as client:
-            new_data = []
-            for branch in self.PRODUCTS:
-                try:
-                    logger.debug(f"Grabbing data for branch: {branch}")
-                    url = self.CDN_URL + branch + "/versions"
-
-                    res = await client.get(url, timeout=20)
-                    logger.debug(f"Parsing CDN response")
-                    data = self.parse_response(branch, res.text)
-
-                    if data:
-                        logger.debug(f"Comparing build data for {branch}")
-                        is_new = self.compare_builds(branch, data)
-
-                        if is_new:
-                            output_data = data.copy()
-
-                            old_data = self.load_build_data(branch)
-
-                            if old_data:
-                                output_data["old"] = old_data
-                            
-                            output_data["branch"] = branch
-                            new_data.append(output_data)
-
-                        logger.debug(f"Saving build data for {branch}")
-                        self.save_build_data(branch, data)
-                    else:
-                        continue
-                except Exception as exc:
-                    logger.error(f"Timeout error during CDN check for {branch}")
-                    return exc
-
-            return new_data
-
-    def parse_response(self, branch:str, response:str):
-        """Parses the API response and attempts to return the new data."""
-        try:
-            data = response.split("\n")
-            if len(data) < 3:
-                return False
-            data = data[2].split("|")
-            region = data[0]
-            build_config = data[1]
-            cdn_config = data[2]
-            build_number = data[4]
-            build_text = data[5].replace(build_number, "")[:-1]
-            product_config = data[6]
-
-            output = {
-                "region": region,
-                "build_config": build_config,
-                "cdn_config": cdn_config,
-                "build": build_number,
-                "build_text": build_text,
-                "product_config": product_config
-            }
-
-            return output
-        except Exception as exc:
-            logger.error(f"Encountered an error parsing API response for branch: {branch}.")
-            logger.error(exc)
-
-            return False
-
-
 class CDNCog(commands.Cog):
     """This is the actual Cog that gets added to the Discord bot."""
     def __init__(self, bot:bridge.Bot):
         self.bot = bot
-        self.cdn_watcher = CDNWatcher()
+        self.cdn_watcher = CDNCache()
         self.last_update = 0
         self.last_update_formatted = 0
+        logger.debug("STARTING IN DEBUG MODE")
 
         if START_LOOPS:
             self.cdn_auto_refresh.add_exception_type(httpx.ConnectTimeout)
@@ -368,14 +121,14 @@ class CDNCog(commands.Cog):
                 continue
 
             if "old" in ver:
-                build_text_old = ver["old"]["build_text"]
-                build_old = ver["old"]["build"]
+                build_text_old = ver["old"][cfg.indices.BUILDTEXT]
+                build_old = ver["old"][cfg.indices.BUILD]
             else:
-                build_text_old = "untracked"
-                build_old = "0.0.0"
+                build_text_old = cfg.cache_defaults.BUILDTEXT
+                build_old = cfg.cache_defaults.BUILD
             
-            build_text = ver["build_text"]
-            build = ver["build"]
+            build_text = ver[cfg.indices.BUILDTEXT]
+            build = ver[cfg.indices.BUILD]
 
             public_name = self.cdn_watcher.PRODUCTS[branch]
 
@@ -388,7 +141,7 @@ class CDNCog(commands.Cog):
             return False
 
         embed.add_field(
-            name="Branch Updates",
+            name=cfg.strings.EMBED_UPDATE_TITLE,
             value=value_string,
             inline=False
         )
