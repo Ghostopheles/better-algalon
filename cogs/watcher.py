@@ -6,77 +6,16 @@ import httpx
 import time
 
 from .utils import get_discord_timestamp
-from .config import WatcherConfig as cfg, FETCH_INTERVAL, CacheConfig
+from .config import WatcherConfig as cfg, FETCH_INTERVAL
 from .cache import CDNCache
+from .ui import CDNUi
 from discord.ext import bridge, commands, tasks, pages
 
-DEBUG = False
+DEBUG = True
 
 START_LOOPS = True
 
 logger = logging.getLogger("discord.cdn.watcher")
-
-
-class CDNUi(discord.ui.View):
-    def __init__(
-        self,
-        ctx: bridge.BridgeApplicationContext | bridge.BridgeContext = None,
-        watcher=None,
-        utility=False,
-    ):
-        super().__init__()
-        self.watcher = watcher
-        self.config = CacheConfig()
-        self.ctx = ctx
-        self.utility = utility
-        self.guild_id = self.ctx.guild_id
-
-        if not self.utility:
-            self.create_select_menu()
-
-    def create_select_menu(self):
-        placeholder = "Edit watchlist..."
-        min_values = 0
-        max_values = len(self.config.PRODUCTS)
-        options = []
-        disabled = False
-
-        for branch, name in self.config.PRODUCTS.items():
-            default = branch in self.watcher.watchlist[str(self.guild_id)]
-
-            option = discord.SelectOption(label=name, value=branch, default=default)
-            options.append(option)
-
-        branch_select_menu = discord.ui.Select(
-            placeholder=placeholder,
-            min_values=min_values,
-            max_values=max_values,
-            options=options,
-            disabled=disabled,
-        )
-        self.branch_menu = branch_select_menu
-
-        async def update_watchlist(interaction: discord.Interaction):
-            selected_branches = branch_select_menu.values
-
-            for value in self.config.PRODUCTS.keys():
-                if (
-                    value in selected_branches
-                    and value not in self.watcher.watchlist[str(self.guild_id)]
-                ):
-                    self.watcher.add_to_watchlist(value)
-                elif (
-                    value in self.watcher.watchlist[str(self.guild_id)]
-                    and value not in selected_branches
-                ):
-                    self.watcher.remove_from_watchlist(value)
-
-            await interaction.response.defer()
-
-            return True
-
-        branch_select_menu.callback = update_watchlist
-        self.add_item(branch_select_menu)
 
 
 class CDNCog(commands.Cog):
@@ -85,7 +24,6 @@ class CDNCog(commands.Cog):
     def __init__(self, bot: bridge.Bot):
         self.bot = bot
         self.cdn_watcher = CDNCache()
-        self.cache_config = CacheConfig()
         self.last_update = 0
         self.last_update_formatted = 0
         logger.debug("STARTING IN DEBUG MODE")
@@ -150,7 +88,7 @@ class CDNCog(commands.Cog):
             build_text = ver[cfg.indices.BUILDTEXT]
             build = ver[cfg.indices.BUILD]
 
-            public_name = self.cache_config.PRODUCTS[branch]
+            public_name = self.cdn_watcher.CONFIG.PRODUCTS[branch]
 
             build_text = (
                 f"**{build_text}**" if build_text != build_text_old else build_text
@@ -228,7 +166,7 @@ class CDNCog(commands.Cog):
 
         data_pages = []
 
-        for product, name in self.cache_config.PRODUCTS.items():
+        for product, name in self.cdn_watcher.CONFIG.PRODUCTS.items():
             data = self.cdn_watcher.load_build_data(product)
             embed = discord.Embed(
                 title=f"CDN Data for: {name}", color=discord.Color.blurple()
@@ -294,9 +232,7 @@ class CDNCog(commands.Cog):
     # DISCORD COMMANDS
 
     @bridge.bridge_command(name="cdncurrentdata")
-    async def cdn_current_data(
-        self, ctx: bridge.BridgeApplicationContext | bridge.BridgeContext
-    ):
+    async def cdn_current_data(self, ctx: bridge.BridgeApplicationContext):
         logger.info("Generating paginator to display current build data.")
         paginator = self.build_paginator_for_current_build_data()
         await paginator.respond(ctx.interaction, ephemeral=True)
@@ -304,14 +240,14 @@ class CDNCog(commands.Cog):
     @bridge.bridge_command(name="cdnaddtowatchlist")
     @commands.has_permissions(administrator=True)
     async def cdn_add_to_watchlist(
-        self, ctx: bridge.BridgeApplicationContext | bridge.BridgeContext, branch: str
+        self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
         """Command for adding specific branches to the watchlist for your guild."""
         added = self.cdn_watcher.add_to_watchlist(branch, ctx.guild_id)
         if added != True:
             message = f"{added}\n\n**Valid branches:**\n```\n"
 
-            for product, name in self.cache_config.PRODUCTS.items():
+            for product, name in self.cdn_watcher.CONFIG.PRODUCTS.items():
                 message += f"{product} : {name}\n"
 
             message += "```"
@@ -330,7 +266,7 @@ class CDNCog(commands.Cog):
     @bridge.bridge_command(name="cdnremovefromwatchlist")
     @commands.has_permissions(administrator=True)
     async def cdn_remove_from_watchlist(
-        self, ctx: bridge.BridgeApplicationContext | bridge.BridgeContext, branch: str
+        self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
         """Command for removing specific branches from the watchlist for you guild."""
         try:
@@ -356,9 +292,7 @@ class CDNCog(commands.Cog):
 
     @bridge.bridge_command(name="cdnwatchlist")
     @commands.has_permissions(administrator=True)
-    async def cdn_watchlist(
-        self, ctx: bridge.BridgeApplicationContext | bridge.BridgeContext
-    ):
+    async def cdn_watchlist(self, ctx: bridge.BridgeApplicationContext):
         """Returns the entire watchlist for your guild."""
         message = "**These are the branches I'm currently observing:**\n```\n"
 
@@ -381,9 +315,7 @@ class CDNCog(commands.Cog):
 
     @bridge.bridge_command(name="cdnedit")
     @commands.has_permissions(administrator=True)
-    async def cdn_edit(
-        self, ctx: bridge.BridgeApplicationContext | bridge.BridgeContext
-    ):
+    async def cdn_edit(self, ctx: bridge.BridgeApplicationContext):
         """Returns a graphical editor for your guilds watchlist."""
         if ctx.guild_id not in self.cdn_watcher.watchlist.keys():
             error_msg = "Your server does not have a watchlist, I'll create one for you with the Retail WoW branch as default, use this command again to edit your new watchlist!"
@@ -402,9 +334,7 @@ class CDNCog(commands.Cog):
 
     @bridge.bridge_command(name="cdnsetchannel")
     @commands.has_permissions(administrator=True)
-    async def cdn_set_channel(
-        self, ctx: bridge.BridgeApplicationContext | bridge.BridgeContext
-    ):
+    async def cdn_set_channel(self, ctx: bridge.BridgeApplicationContext):
         """Sets the notification channel for your guild."""
         channel = ctx.channel_id
         guild = ctx.guild_id
@@ -417,9 +347,7 @@ class CDNCog(commands.Cog):
 
     @bridge.bridge_command(name="cdngetchannel")
     @commands.has_permissions(administrator=True)
-    async def cdn_get_channel(
-        self, ctx: bridge.BridgeApplicationContext | bridge.BridgeContext
-    ):
+    async def cdn_get_channel(self, ctx: bridge.BridgeApplicationContext):
         """Returns the current notification channel for your guild."""
         guild = ctx.guild_id
 
@@ -439,9 +367,7 @@ class CDNCog(commands.Cog):
             )
 
     @bridge.bridge_command(name="cdnlastupdate")
-    async def cdn_last_update(
-        self, ctx: bridge.BridgeApplicationContext | bridge.BridgeContext
-    ):
+    async def cdn_last_update(self, ctx: bridge.BridgeApplicationContext):
         """Returns the last time the bot checked for an update."""
         await ctx.interaction.response.send_message(
             f"Last update: {self.last_update_formatted}.",
