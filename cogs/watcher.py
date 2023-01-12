@@ -14,7 +14,7 @@ from .config import DebugConfig as dbg
 from .ui import CDNUi
 from .utils import get_discord_timestamp
 
-START_LOOPS = dbg.debug_enabled
+START_LOOPS = not dbg.debug_enabled
 
 logger = logging.getLogger("discord.cdn.watcher")
 
@@ -144,7 +144,7 @@ class CDNCog(commands.Cog):
                     await cdn_channel.send(embed=embed)
 
         else:
-            if new_data and DEBUG:
+            if new_data and dbg.debug_enabled:
                 logger.info(
                     "New data found, but debug mode is active. Sending post to debug channel."
                 )
