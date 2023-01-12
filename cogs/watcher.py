@@ -1,19 +1,20 @@
 """This is the module that handles watching the Blizzard CDN and posting updates to the correct places."""
 
+import time
+import httpx
 import discord
 import logging
-import httpx
-import time
 
-from .utils import get_discord_timestamp
-from .config import WatcherConfig as cfg, FETCH_INTERVAL
+from discord.ext import bridge, commands, pages, tasks
+
 from .cache import CDNCache
+from .config import FETCH_INTERVAL
+from .config import WatcherConfig as cfg
+from .config import DebugConfig as dbg
 from .ui import CDNUi
-from discord.ext import bridge, commands, tasks, pages
+from .utils import get_discord_timestamp
 
-DEBUG = True
-
-START_LOOPS = True
+START_LOOPS = dbg.debug_enabled
 
 logger = logging.getLogger("discord.cdn.watcher")
 
@@ -26,14 +27,18 @@ class CDNCog(commands.Cog):
         self.cdn_watcher = CDNCache()
         self.last_update = 0
         self.last_update_formatted = 0
-        logger.debug("STARTING IN DEBUG MODE")
+
+        if dbg.debug_enabled:
+            logger.debug("Starting bot in debug mode.")
 
         if START_LOOPS:
             self.cdn_auto_refresh.add_exception_type(httpx.ConnectTimeout)
             self.cdn_auto_refresh.start()
 
     async def notify_owner_of_exception(
-        self, error, ctx: discord.ApplicationContext = None
+        self,
+        error,
+        ctx: discord.ApplicationContext | bridge.BridgeApplicationContext | None = None,
     ):
         """This is supposed to notify the owner of an error, but doesn't always work."""
         owner = await self.bot.fetch_user(self.bot.owner_id)
@@ -111,7 +116,7 @@ class CDNCog(commands.Cog):
         logger.debug("Building CDN update embed")
         new_data = await self.cdn_watcher.fetch_cdn()
 
-        if new_data and not DEBUG:
+        if new_data and not dbg.debug_enabled:
             if type(new_data) == Exception:
                 logger.error(new_data)
                 await self.notify_owner_of_exception(new_data)
@@ -130,8 +135,9 @@ class CDNCog(commands.Cog):
                             "Guild %s has not chosen a channel for notifications, skipping...",
                             guild.id,
                         )
-                except:
+                except Exception as exc:
                     logger.error("Error fetching channel for guild %s.", guild.id)
+                    logger.error(exc)
                     continue
                 embed = self.build_embed(new_data, guild.id)
                 if embed:
@@ -143,8 +149,8 @@ class CDNCog(commands.Cog):
                     "New data found, but debug mode is active. Sending post to debug channel."
                 )
 
-                channel = await self.bot.fetch_channel(857891498124247040)
-                embed = self.build_embed(new_data, 857764832542851092)
+                channel = await self.bot.fetch_channel(dbg.debug_channel_id)
+                embed = self.build_embed(new_data, dbg.debug_guild_id)
                 if embed:
                     await channel.send(embed=embed)
 

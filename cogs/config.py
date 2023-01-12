@@ -1,7 +1,10 @@
+import os
+
 ## GLOBAL CONFIGURATION
 
 FETCH_INTERVAL = 5
 REGION = "us"
+
 
 class Indices:
     LAST_UPDATED_BY = "last_updated_by"
@@ -13,7 +16,9 @@ class Indices:
     BUILD = "build"
     BUILDTEXT = "build_text"
 
+
 ## CACHE CONFIGURATION
+
 
 class CacheStrings:
     ## STRINGS
@@ -27,15 +32,17 @@ class CacheStrings:
     ## ARG STRINGS
     ARG_BRANCH_NOT_ON_WATCHLIST = "Argument 'branch' is not on the watchlist."
 
+
 class CacheDefaults:
     WATCHLIST = ["wow", "wowt", "wow_beta"]
     REGION = REGION
     BUILD = "0.0.0"
     BUILDTEXT = "untracked"
 
+
 class CacheConfig:
     CDN_URL = "http://us.patch.battle.net:1119/"
-    PRODUCTS = { #wowdev is commented out because the endpoint is broken
+    PRODUCTS = {  # wowdev is commented out because the endpoint is broken
         "wow": "Retail",
         "wowt": "Retail PTR",
         "wow_beta": "Beta",
@@ -46,12 +53,9 @@ class CacheConfig:
         "wow_classic_era_ptr": "Classic Era PTR",
         "wowz": "Submission",
         "wowlivetest": "Live Test",
-        #"wowdev": "Internal"
+        # "wowdev": "Internal"
     }
-    AREAS_TO_CHECK_FOR_UPDATES = [
-        "build",
-        "build_text"
-    ]
+    AREAS_TO_CHECK_FOR_UPDATES = ["build", "build_text"]
     CACHE_FOLDER_NAME = "cache"
     CACHE_FILE_NAME = "cdn.json"
 
@@ -59,20 +63,30 @@ class CacheConfig:
     indices = Indices()
     defaults = CacheDefaults()
 
+
 ## WATCHER CONFIGURATION
+
 
 class WatcherStrings:
     EMBED_WOWTOOLS_TITLE = "wow.tools builds page"
     EMBED_WOWTOOLS_URL = "https://wow.tools/builds/"
 
     EMBED_NAME = "Blizzard CDN Update"
-    EMBED_ICON_URL = "https://bnetcmsus-a.akamaihd.net/cms/gallery/D2TTHKAPW9BH1534981363136.png"
+    EMBED_ICON_URL = (
+        "https://bnetcmsus-a.akamaihd.net/cms/gallery/D2TTHKAPW9BH1534981363136.png"
+    )
     EMBED_FOOTER = "Data provided by the prestigious Algalon 2.0."
 
     EMBED_UPDATE_TITLE = "Branch Updates"
+
 
 class WatcherConfig:
     strings = WatcherStrings()
     indices = Indices()
     cache_defaults = CacheDefaults()
-    
+
+
+class DebugConfig:
+    debug_enabled = os.getenv("DEBUG")
+    debug_guild_id = os.getenv("DEBUG_GUILD_ID")
+    debug_channel_id = os.getenv("DEBUG_CHANNEL_ID")
