@@ -100,7 +100,8 @@ class BlizzardAPI:
                 )
                 return False
 
-    def _requires_auth(func):  # decorator to require auth before calling a function
+    # decorator to ensure we're authenticated before making api calls
+    def _requires_auth(func):  # type: ignore
         async def auth_wrapper(self):
             self.logger.info("Checking for valid Blizzard authentication...")
             if not self.authenticated:
@@ -108,11 +109,11 @@ class BlizzardAPI:
 
             if self.authenticated:
                 self.logger.info("Authentication check successful!")
-                return await func(self)
+                return await func(self)  # type: ignore
 
         return auth_wrapper
 
-    @_requires_auth
+    @_requires_auth  # type: ignore
     async def get_token_price(self) -> dict | bool:
         token_endpoint = f"{self.__API_URL}/data/wow/token/index"
 
@@ -139,6 +140,7 @@ class BlizzardAPI:
                 return False
 
 
+# this is the cog that gets added to the discord bot, aka: where the above class interfaces with discord
 class BlizzardAPICog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot

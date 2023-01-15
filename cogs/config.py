@@ -108,3 +108,4 @@ class DebugConfig:
     debug_enabled = os.getenv("DEBUG", False)
     debug_guild_id = os.getenv("DEBUG_GUILD_ID")
     debug_channel_id = os.getenv("DEBUG_CHANNEL_ID")
+    print(debug_channel_id)

@@ -117,6 +117,7 @@ class CDNCog(commands.Cog):
         new_data = await self.cdn_watcher.fetch_cdn()
 
         if new_data and not dbg.debug_enabled and not first_run:
+            # Send live notification to all appropriate guilds
             if type(new_data) == Exception:
                 logger.error(new_data)
                 await self.notify_owner_of_exception(new_data)
@@ -146,6 +147,8 @@ class CDNCog(commands.Cog):
         else:
             if new_data:
                 if dbg.debug_enabled or first_run:
+                    # Debug notifcations, as well as absorbing the first update check if cache is outdated.
+                    logger.debug(f"{dbg.debug_enabled} | {first_run}")
                     logger.info(
                         "New data found, but debug mode is active or it's the first run. Sending post to debug channel."
                     )
@@ -174,20 +177,25 @@ class CDNCog(commands.Cog):
 
         for product, name in self.cdn_watcher.CONFIG.PRODUCTS.items():
             data = self.cdn_watcher.load_build_data(product)
-            embed = discord.Embed(
-                title=f"CDN Data for: {name}", color=discord.Color.blurple()
-            )
 
-            data_text = f"**Region:** `{data['region']}`\n"
-            data_text += f"**Build Config:** `{data['build_config']}`\n"
-            data_text += f"**CDN Config:** `{data['cdn_config']}`\n"
-            data_text += f"**Build:** `{data['build']}`\n"
-            data_text += f"**Version:** `{data['build_text']}`\n"
-            data_text += f"**Product Config:** `{data['product_config']}`"
+            if data:
+                embed = discord.Embed(
+                    title=f"CDN Data for: {name}", color=discord.Color.blurple()
+                )
 
-            embed.add_field(name="Current Data", value=data_text, inline=False)
+                data_text = f"**Region:** `{data['region']}`\n"
+                data_text += f"**Build Config:** `{data['build_config']}`\n"
+                data_text += f"**CDN Config:** `{data['cdn_config']}`\n"
+                data_text += f"**Build:** `{data['build']}`\n"
+                data_text += f"**Version:** `{data['build_text']}`\n"
+                data_text += f"**Product Config:** `{data['product_config']}`"
 
-            data_pages.append(embed)
+                embed.add_field(name="Current Data", value=data_text, inline=False)
+
+                data_pages.append(embed)
+            else:
+                logger.error("No build data found for paginator.")
+                return
 
         paginator = pages.Paginator(
             pages=data_pages,

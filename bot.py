@@ -10,7 +10,9 @@ from logging.handlers import TimedRotatingFileHandler
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-OWNERID = os.getenv("OWNERID")
+OWNER_ID = os.getenv("OWNER_ID")
+
+VERSION = 1.5
 
 DEBUG = os.getenv("DEBUG")
 DEBUG_GUILD_ID = os.getenv("DEBUG_GUILD_ID")
@@ -45,6 +47,7 @@ logger.info(
     f"Using Python version {sys.version}",
 )
 logger.info(f"Using PyCord version {discord.__version__}")
+logger.info(f"Now starting Algalon v{VERSION}...")
 cogs.log_start()
 
 # This subclasses the default help command to provide our bot with a prettier help command.
@@ -118,7 +121,7 @@ class CDNBot(bridge.Bot):
         help_command = help_command or commands.DefaultHelpCommand()
 
         super().__init__(
-            command_prefix=command_prefix, help_command=help_command, **options
+            command_prefix=command_prefix, help_command=help_command, **options  # type: ignore
         )
 
         for cog in self.COGS_LIST:
@@ -132,7 +135,7 @@ class CDNBot(bridge.Bot):
 
     async def on_ready(self):
         """This `async` function runs once when the bot is connected to Discord and ready to execute commands."""
-        logger.info("%s has successfully connected to Discord!", self.user.name)
+        logger.info(f"{self.user.name} has successfully connected to Discord!")  # type: ignore
 
 
 if __name__ == "__main__":
@@ -147,7 +150,7 @@ if __name__ == "__main__":
         help_command=CDNBotHelpCommand(),
         description="Algalon 2.0",
         intents=discord.Intents.default(),
-        owner_id=OWNERID,
+        owner_id=OWNER_ID,
         status=discord.Status.online,
         activity=activity,
         auto_sync_commands=True,
