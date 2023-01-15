@@ -8,7 +8,7 @@ import logging
 from discord.ext import bridge, commands, pages, tasks
 
 from .cache import CDNCache
-from .config import FETCH_INTERVAL
+from .config import FETCH_INTERVAL, CommonStrings
 from .config import WatcherConfig as cfg
 from .config import DebugConfig as dbg
 from .ui import CDNUi
@@ -47,7 +47,7 @@ class CDNCog(commands.Cog):
         message = f"I've encountered an error! Help!\n```py\n{error}\n```\n"
 
         if ctx:
-            message += f"CALLER: {ctx.author}\nGUILD: {ctx.guild.name}"
+            message += f"CALLER: {ctx.author}\nGUILD: {ctx.guild.name} | {ctx.guild_id}"
 
         await channel.send(message)
 
@@ -55,17 +55,17 @@ class CDNCog(commands.Cog):
         """This builds a notification embed with the given data."""
         embed = discord.Embed(
             color=discord.Color.blue(),
-            title="wow.tools builds page",
+            title=cfg.strings.EMBED_WOWTOOLS_TITLE,
             description=f"{get_discord_timestamp()} **|** {get_discord_timestamp(relative=True)}",
-            url="https://wow.tools/builds/",
+            url=cfg.strings.EMBED_WOWTOOLS_URL,
         )
 
         embed.set_author(
-            name="Blizzard CDN Update",
-            icon_url="https://bnetcmsus-a.akamaihd.net/cms/gallery/D2TTHKAPW9BH1534981363136.png",
+            name=cfg.strings.EMBED_NAME,
+            icon_url=cfg.strings.EMBED_ICON_URL,
         )
 
-        embed.set_footer(text="Data provided by the prestigious Algalon 2.0.")
+        embed.set_footer(text=CommonStrings.EMBED_FOOTER)
 
         value_string = ""
 
@@ -229,7 +229,7 @@ class CDNCog(commands.Cog):
         logger.error(f"Logging application command error in guild {ctx.guild_id}.")
         logger.error(exception)
 
-        await self.notify_owner_of_exception(exception)
+        await self.notify_owner_of_exception(exception, ctx)
 
         await ctx.interaction.response.send_message(
             error_message, ephemeral=True, delete_after=300

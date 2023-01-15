@@ -12,6 +12,9 @@ load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
 OWNERID = os.getenv("OWNERID")
 
+DEBUG = os.getenv("DEBUG")
+DEBUG_GUILD_ID = os.getenv("DEBUG_GUILD_ID")
+
 DIR = os.path.dirname(os.path.realpath(__file__))
 
 LOG_DIR = os.path.join(DIR, "logs")
@@ -44,7 +47,7 @@ logger.info(
 logger.info(f"Using PyCord version {discord.__version__}")
 cogs.log_start()
 
-# This subclasses the default help command to provide our bot with a prettier command.
+# This subclasses the default help command to provide our bot with a prettier help command.
 class CDNBotHelpCommand(commands.HelpCommand):
     def get_command_signature(self, command):
         return "%s%s %s" % (
@@ -108,9 +111,7 @@ class CDNBotHelpCommand(commands.HelpCommand):
 class CDNBot(bridge.Bot):
     """This is the almighty CDN bot, also known as Algalon. Inherits from `discord.ext.bridge.Bot`."""
 
-    COGS_LIST = [
-        "watcher",
-    ]
+    COGS_LIST = ["watcher", "api.blizzard"]
 
     def __init__(self, command_prefix, help_command=None, **options):
         command_prefix = command_prefix or "!"
@@ -139,6 +140,7 @@ if __name__ == "__main__":
         type=discord.ActivityType.watching,
         name="Blizzard's CDN",
     )
+    debug_guilds = [DEBUG_GUILD_ID] if DEBUG else None
 
     bot = CDNBot(
         command_prefix="!",
@@ -149,5 +151,6 @@ if __name__ == "__main__":
         status=discord.Status.online,
         activity=activity,
         auto_sync_commands=True,
+        debug_guilds=debug_guilds,
     )
     bot.run(TOKEN)

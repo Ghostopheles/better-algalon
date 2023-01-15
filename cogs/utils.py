@@ -6,11 +6,13 @@ from datetime import datetime
 
 logger = logging.getLogger("discord.cdnbot_utils")
 
+
 def create_directory(path: str):
     if not os.path.exists(path):
         os.makedirs(path)
     else:
         return False
+
 
 def get_self_path():
     return os.path.dirname(os.path.realpath(__file__))
@@ -27,12 +29,12 @@ def log_separator():
 
 
 def get_discord_timestamp(relative=False):
-        """Returns a formatted timestamp for use in Discord embeds or messages."""
-        current_time = int(time.time())
-        if relative:
-            return f"<t:{current_time}:R>"
-        else:
-            return f"<t:{current_time}:f>"
+    """Returns a formatted timestamp for use in Discord embeds or messages."""
+    current_time = int(time.time())
+    if relative:
+        return f"<t:{current_time}:R>"
+    else:
+        return f"<t:{current_time}:f>"
 
 
 def get_timestamp(day_only=False):
@@ -75,8 +77,3 @@ class DictToClass:
                     setattr(item, key, config[key])
                 objects.append(item)
             return objects
-
-
-if __name__ == "__main__":
-    time = "2022-02-20_21-19-30"
-    print(get_time_delta(time, get_timestamp()))
