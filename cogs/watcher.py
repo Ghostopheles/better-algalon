@@ -305,7 +305,6 @@ class CDNCog(commands.Cog):
         )
 
     @bridge.bridge_command(name="cdnwatchlist")
-    @commands.has_permissions(administrator=True)
     async def cdn_watchlist(self, ctx: bridge.BridgeApplicationContext):
         """Returns the entire watchlist for your guild."""
         message = "**These are the branches I'm currently observing:**\n```\n"
@@ -330,7 +329,7 @@ class CDNCog(commands.Cog):
     @bridge.bridge_command(name="cdnedit")
     @commands.has_permissions(administrator=True)
     async def cdn_edit(self, ctx: bridge.BridgeApplicationContext):
-        """Returns a graphical editor for your guilds watchlist."""
+        """Returns a graphical editor for your guild's watchlist."""
         if ctx.guild_id not in self.cdn_watcher.watchlist.keys():
             error_msg = "Your server does not have a watchlist, I'll create one for you with the Retail WoW branch as default, use this command again to edit your new watchlist!"
             self.cdn_watcher.init_watchlist(str(ctx.guild_id))
@@ -360,7 +359,6 @@ class CDNCog(commands.Cog):
         )
 
     @bridge.bridge_command(name="cdngetchannel")
-    @commands.has_permissions(administrator=True)
     async def cdn_get_channel(self, ctx: bridge.BridgeApplicationContext):
         """Returns the current notification channel for your guild."""
         guild = ctx.guild_id
