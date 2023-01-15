@@ -14,7 +14,7 @@ from .config import DebugConfig as dbg
 from .ui import CDNUi
 from .utils import get_discord_timestamp
 
-START_LOOPS = not dbg.debug_enabled
+START_LOOPS = True
 
 logger = logging.getLogger("discord.cdn.watcher")
 
@@ -29,7 +29,7 @@ class CDNCog(commands.Cog):
         self.last_update_formatted = 0
 
         if dbg.debug_enabled:
-            logger.debug("Starting bot in debug mode.")
+            logger.debug("<- Starting bot in DEBUG mode ->")
 
         if START_LOOPS:
             self.cdn_auto_refresh.add_exception_type(httpx.ConnectTimeout)
@@ -111,12 +111,12 @@ class CDNCog(commands.Cog):
 
         return embed
 
-    async def distribute_embed(self):
+    async def distribute_embed(self, first_run: bool = False):
         """This handles distributing the generated embeds to the various servers that should receive them."""
         logger.debug("Building CDN update embed")
         new_data = await self.cdn_watcher.fetch_cdn()
 
-        if new_data and not dbg.debug_enabled:
+        if new_data and not dbg.debug_enabled and not first_run:
             if type(new_data) == Exception:
                 logger.error(new_data)
                 await self.notify_owner_of_exception(new_data)
@@ -144,18 +144,18 @@ class CDNCog(commands.Cog):
                     await cdn_channel.send(embed=embed)
 
         else:
-            if new_data and dbg.debug_enabled:
-                logger.info(
-                    "New data found, but debug mode is active. Sending post to debug channel."
-                )
+            if new_data:
+                if dbg.debug_enabled or first_run:
+                    logger.info(
+                        "New data found, but debug mode is active or it's the first run. Sending post to debug channel."
+                    )
 
-                channel = await self.bot.fetch_channel(dbg.debug_channel_id)
-                embed = self.build_embed(new_data, dbg.debug_guild_id)
-                if embed:
-                    await channel.send(embed=embed)
-
-                return
-            logger.info("No CDN changes found.")
+                    channel = await self.bot.fetch_channel(dbg.debug_channel_id)
+                    embed = self.build_embed(new_data, dbg.debug_guild_id)
+                    if embed:
+                        await channel.send(embed=embed)
+            else:
+                logger.info("No CDN changes found.")
 
     def build_paginator_for_current_build_data(self):
         buttons = [
@@ -206,7 +206,7 @@ class CDNCog(commands.Cog):
         logger.info("Checking for CDN updates...")
 
         try:
-            await self.distribute_embed()
+            await self.distribute_embed(self.cdn_auto_refresh.current_loop == 0)
         except Exception as exc:
             logger.error("Error occurred when distributing embeds.")
             logger.error(exc)
