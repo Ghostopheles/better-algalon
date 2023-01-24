@@ -42,7 +42,6 @@ logger.info(
     f"Using Python version {sys.version}",
 )
 logger.info(f"Using PyCord version {discord.__version__}")
-logger.info(f"Now starting Algalon v{VERSION}...")
 cogs.log_start()
 
 # This subclasses the default help command to provide our bot with a prettier help command.
