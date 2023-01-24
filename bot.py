@@ -10,7 +10,7 @@ from logging.handlers import TimedRotatingFileHandler
 
 load_dotenv()
 TOKEN = os.getenv("DISCORD_TOKEN")
-OWNERID = os.getenv("OWNERID")
+OWNER_ID = os.getenv("OWNER_ID")
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -44,7 +44,7 @@ logger.info(
 logger.info(f"Using PyCord version {discord.__version__}")
 cogs.log_start()
 
-# This subclasses the default help command to provide our bot with a prettier command.
+# This subclasses the default help command to provide our bot with a prettier help command.
 class CDNBotHelpCommand(commands.HelpCommand):
     def get_command_signature(self, command):
         return "%s%s %s" % (
@@ -108,16 +108,14 @@ class CDNBotHelpCommand(commands.HelpCommand):
 class CDNBot(bridge.Bot):
     """This is the almighty CDN bot, also known as Algalon. Inherits from `discord.ext.bridge.Bot`."""
 
-    COGS_LIST = [
-        "watcher",
-    ]
+    COGS_LIST = ["watcher", "api.blizzard"]
 
     def __init__(self, command_prefix, help_command=None, **options):
         command_prefix = command_prefix or "!"
         help_command = help_command or commands.DefaultHelpCommand()
 
         super().__init__(
-            command_prefix=command_prefix, help_command=help_command, **options
+            command_prefix=command_prefix, help_command=help_command, **options  # type: ignore
         )
 
         for cog in self.COGS_LIST:
@@ -145,7 +143,7 @@ if __name__ == "__main__":
         help_command=CDNBotHelpCommand(),
         description="Algalon 2.0",
         intents=discord.Intents.default(),
-        owner_id=OWNERID,
+        owner_id=OWNER_ID,
         status=discord.Status.online,
         activity=activity,
         auto_sync_commands=True,

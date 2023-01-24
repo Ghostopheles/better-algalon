@@ -2,53 +2,56 @@
     "buildInfo": {
         "wow": {
             "region": "us",
-            "build_config": "968defa5a1dee9cd63c5603819067a28",
-            "cdn_config": "bd3121ccb86741318f1448af76036eb3",
-            "build": "47213",
+            "build_config": "914a955abec6b614e5907a4ee1d7a110",
+            "cdn_config": "4e2d1ea83cf7610c5d34839823913a3e",
+            "build": "47631",
             "build_text": "10.0.2",
             "product_config": "53020d32e1a25648c8e1eafd5771935f"
         },
         "wowt": {
             "region": "us",
-            "build_config": "789d49550306b09b9737189156f46612",
-            "cdn_config": "bd3121ccb86741318f1448af76036eb3",
-            "build": "47621",
+            "build_config": "e59ee65223d7a0b04e3b23eb79a47c55",
+            "cdn_config": "4e2d1ea83cf7610c5d34839823913a3e",
+            "build": "47777",
             "build_text": "10.0.5",
             "product_config": "8e1095475b945aa02fd3f2a2d22993b7"
         },
         "wow_beta": {
             "region": "us",
             "build_config": "155514ca94e87f373dfa8e244f591a58",
-            "cdn_config": "bd3121ccb86741318f1448af76036eb3",
+            "cdn_config": "4e2d1ea83cf7610c5d34839823913a3e",
             "build": "47120",
             "build_text": "10.0.2",
             "product_config": "f78960b65c1658baf0d4ffa39a3308d5"
         },
         "wowdev": {
             "region": "us",
-            "build": "46924",
-            "build_text": "10.0.2"
+            "build_config": "3222e777946d00b859dbf3d6d1b11ff2",
+            "cdn_config": "5b3eb72d923e58733370a714b3163207",
+            "build": "47621",
+            "build_text": "10.0.5",
+            "product_config": "69446b75e458b83f47383e2a2a23077a"
         },
         "wow_classic": {
             "region": "us",
-            "build_config": "ebe6bd0f586f7830d10fb37afc00c610",
-            "cdn_config": "bd3121ccb86741318f1448af76036eb3",
-            "build": "47168",
-            "build_text": "3.4.0",
-            "product_config": "298023f452b03e36fb628b5184e663c0"
+            "build_config": "3b30bb346b25af52d51d6ed3d48601f2",
+            "cdn_config": "4e2d1ea83cf7610c5d34839823913a3e",
+            "build": "47720",
+            "build_text": "3.4.1",
+            "product_config": "fac7680539cd51bc0a791a88ade3da21"
         },
         "wow_classic_ptr": {
             "region": "us",
-            "build_config": "8988c1dd73114525161d12b6a9a64324",
-            "cdn_config": "bd3121ccb86741318f1448af76036eb3",
-            "build": "47612",
+            "build_config": "39a2bdcc98e5aedece2a49cc07605b38",
+            "cdn_config": "4e2d1ea83cf7610c5d34839823913a3e",
+            "build": "47720",
             "build_text": "3.4.1",
             "product_config": "185eb12ed3095cd66d91c43e77082c06"
         },
         "wow_classic_beta": {
             "region": "us",
             "build_config": "ccce0cc7e9e008ef5453a0b27fe84376",
-            "cdn_config": "bd3121ccb86741318f1448af76036eb3",
+            "cdn_config": "4e2d1ea83cf7610c5d34839823913a3e",
             "build": "46158",
             "build_text": "3.4.0",
             "product_config": "a48b3c873c4dc6e48f15ee6db72eb600"
@@ -56,7 +59,7 @@
         "wow_classic_era": {
             "region": "us",
             "build_config": "e60d271c46224f9116bd6b97c0cacdf8",
-            "cdn_config": "bd3121ccb86741318f1448af76036eb3",
+            "cdn_config": "4e2d1ea83cf7610c5d34839823913a3e",
             "build": "46575",
             "build_text": "1.14.3",
             "product_config": "611e344b689f01aca4fd70960a9b96ff"
@@ -64,57 +67,28 @@
         "wow_classic_era_ptr": {
             "region": "us",
             "build_config": "5db52cbb911be07513bb1f04d970b20f",
-            "cdn_config": "bd3121ccb86741318f1448af76036eb3",
+            "cdn_config": "4e2d1ea83cf7610c5d34839823913a3e",
             "build": "46575",
             "build_text": "1.14.3",
             "product_config": "078e6fc7e9562636d078c827b9a59547"
         },
         "wowlivetest": {
             "region": "us",
-            "build_config": "9c36159edac4b288f535e1d48a8e7ca5",
-            "cdn_config": "bd3121ccb86741318f1448af76036eb3",
-            "build": "46479",
-            "build_text": "10.0.2",
+            "build_config": "8e89e0b1c6e3a6957edb02e8da3cc7d2",
+            "cdn_config": "4e2d1ea83cf7610c5d34839823913a3e",
+            "build": "47621",
+            "build_text": "10.0.5",
             "product_config": "2acbb87fe14d64e9d1e3c02a27d3bbc9"
         },
         "wowz": {
             "region": "us",
             "build_config": "4baf0eeceb53efb112fb603e142f0588",
-            "cdn_config": "bd3121ccb86741318f1448af76036eb3",
+            "cdn_config": "4e2d1ea83cf7610c5d34839823913a3e",
             "build": "47245",
             "build_text": "3.4.1",
             "product_config": "53b3809d9533124cf1a6e4bed70d1186"
         }
     },
-    "watchlist": {
-        "857764832542851092": [
-            "wow_classic_beta",
-            "wow_classic_era",
-            "wow_beta",
-            "wow_classic_era_ptr",
-            "wowlivetest",
-            "wow_classic_ptr",
-            "wowt",
-            "wow",
-            "wow_classic"
-        ],
-        "242364846362853377": [
-            "wow",
-            "wow_classic_beta",
-            "wow_classic_era",
-            "wow_beta",
-            "wow_classic_era_ptr",
-            "wowlivetest",
-            "wow_classic_ptr",
-            "wowt",
-            "wow",
-            "wow_classic"
-        ]
-    },
-    "channels": {
-        "857764832542851092": 857891498124247040,
-        "242364846362853377": 286441865442492416
-    },
     "last_updated_by": "win32",
-    "last_updated_at": 1673800876.2466698
+    "last_updated_at": 1673802676.0375748
 }

@@ -9,7 +9,7 @@ REGION = "us"
 class Indices:
     LAST_UPDATED_BY = "last_updated_by"
     LAST_UPDATED_AT = "last_updated_at"
-    CHANNELS = "channels"
+    CHANNEL = "channel"
     WATCHLIST = "watchlist"
     BUILDINFO = "buildInfo"
     REGION = "region"
@@ -53,15 +53,24 @@ class CacheConfig:
         "wow_classic_era_ptr": "Classic Era PTR",
         "wowz": "Submission",
         "wowlivetest": "Live Test",
-        # "wowdev": "Internal"
+        "wowdev": "Internal",
     }
     AREAS_TO_CHECK_FOR_UPDATES = ["build", "build_text"]
     CACHE_FOLDER_NAME = "cache"
     CACHE_FILE_NAME = "cdn.json"
 
+    GUILD_CFG_FILE_NAME = "guild_cfg.json"
+
     strings = CacheStrings()
     indices = Indices()
     defaults = CacheDefaults()
+
+
+## COMMON CONFIGURATION
+
+
+class CommonStrings:
+    EMBED_FOOTER = "Data provided by the prestigious Algalon 2.0."
 
 
 ## WATCHER CONFIGURATION
@@ -75,7 +84,6 @@ class WatcherStrings:
     EMBED_ICON_URL = (
         "https://bnetcmsus-a.akamaihd.net/cms/gallery/D2TTHKAPW9BH1534981363136.png"
     )
-    EMBED_FOOTER = "Data provided by the prestigious Algalon 2.0."
 
     EMBED_UPDATE_TITLE = "Branch Updates"
 
@@ -86,10 +94,19 @@ class WatcherConfig:
     cache_defaults = CacheDefaults()
 
 
+## BLIZZARD API CONFIGURATION
+
+
+class BlizzardAPIConfig:
+    assets = {
+        "token_icon": "https://wow.zamimg.com/images/wow/icons/large/wow_token01.jpg"
+    }
+
+
 ## DEBUG CONFIGURATION
 
 
 class DebugConfig:
-    debug_enabled = os.getenv("DEBUG")
+    debug_enabled = os.getenv("DEBUG", False)
     debug_guild_id = os.getenv("DEBUG_GUILD_ID")
     debug_channel_id = os.getenv("DEBUG_CHANNEL_ID")

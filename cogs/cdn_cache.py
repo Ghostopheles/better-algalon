@@ -17,114 +17,21 @@ class CDNCache:
 
     def __init__(self):
         self.cache_path = os.path.join(self.SELF_PATH, self.CONFIG.CACHE_FOLDER_NAME)
-        self.data_path = os.path.join(self.cache_path, self.CONFIG.CACHE_FILE_NAME)
-
-        load_watchlist = True
+        self.cdn_path = os.path.join(self.cache_path, self.CONFIG.CACHE_FILE_NAME)
 
         if not os.path.exists(self.cache_path):
             os.mkdir(self.cache_path)
-            self.init_json()
+            self.init_cdn()
 
-        if load_watchlist:
-            self.watchlist, self.channels = self.load_watchlist()
-            self.save_watchlist()
-        else:
-            self.watchlist = self.CONFIG.defaults.WATCHLIST
-            self.save_watchlist()
-
-    def init_json(self):
+    def init_cdn(self):
         """Populates the `cdn.json` file with default values if it does not exist."""
-        with open(self.data_path, "w") as file:
+        with open(self.cdn_path, "w") as file:
             template = {
                 self.CONFIG.indices.BUILDINFO: {},
-                self.CONFIG.indices.WATCHLIST: {
-                    857764832542851092: self.CONFIG.defaults.WATCHLIST
-                },
                 self.CONFIG.indices.LAST_UPDATED_BY: self.PLATFORM,
                 self.CONFIG.indices.LAST_UPDATED_AT: time.time(),
             }
-
             json.dump(template, file, indent=4)
-
-    def init_watchlist(self, key: int):
-        """Creates the watchlist with default values."""
-        self.add_to_watchlist("wow", key)
-
-    def add_to_watchlist(self, branch: str, guild_id: int):
-        """Adds a specific `branch` to the watchlist for guild `guild_id`."""
-        if branch not in self.CONFIG.PRODUCTS.keys():
-            return self.CONFIG.strings.BRANCH_NOT_VALID
-        else:
-            if guild_id in self.watchlist.keys():
-                if branch in self.watchlist[guild_id]:
-                    return self.CONFIG.strings.BRANCH_ALREADY_IN_WATCHLIST
-                else:
-                    self.watchlist[guild_id].append(branch)
-                    self.save_watchlist()
-                    return True
-            else:
-                self.watchlist[guild_id] = [branch]
-                self.save_watchlist()
-                return True
-
-    def remove_from_watchlist(self, branch: str, guild_id: int):
-        """Removes specified `branch` from watchlist for guild `guild_id`."""
-        if guild_id in self.watchlist.keys():
-            if branch not in self.watchlist[guild_id]:
-                raise ValueError(self.CONFIG.strings.ARG_BRANCH_NOT_ON_WATCHLIST)
-            else:
-                self.watchlist.remove(branch)
-                self.save_watchlist()
-        else:
-            return False
-
-    def load_watchlist(self):
-        """Loads the watchlist from the `cdn.json` file."""
-        logger.debug("Loading existing watchlist from file...")
-        with open(self.data_path, "r") as file:
-            file = json.load(file)
-            if not self.CONFIG.indices.LAST_UPDATED_BY in file:
-                file[self.CONFIG.indices.LAST_UPDATED_BY] = self.PLATFORM
-
-            if not self.CONFIG.indices.LAST_UPDATED_AT in file:
-                file[self.CONFIG.indices.LAST_UPDATED_AT] = time.time()
-
-            if not self.CONFIG.indices.CHANNELS in file:
-                file[self.CONFIG.indices.CHANNELS] = {}
-
-            return (
-                file[self.CONFIG.indices.WATCHLIST],
-                file[self.CONFIG.indices.CHANNELS],
-            )
-
-    def save_watchlist(self):
-        """Saves the watchlist to the `cdn.json` file."""
-        logger.info("Saving configuration...")
-
-        with open(self.data_path, "r+") as file:
-            file_json = json.load(file)
-            file_json[self.CONFIG.indices.WATCHLIST] = self.watchlist
-            file_json[self.CONFIG.indices.CHANNELS] = self.channels
-            file_json[self.CONFIG.indices.LAST_UPDATED_BY] = self.PLATFORM
-            file_json[self.CONFIG.indices.LAST_UPDATED_AT] = time.time()
-
-            file.seek(0)
-            json.dump(file_json, file, indent=4)
-            file.truncate()
-
-    def set_channel(self, channel_id: int, guild_id: int):
-        """Sets the notification channel to `channel_id` for the guild `guild_id`."""
-        logger.info(f"Setting notification channel for {guild_id} to {channel_id}.")
-        self.channels[str(guild_id)] = channel_id
-        self.save_watchlist()
-
-    def get_channel(self, guild_id: int):
-        """Returns the `channel_id` for the notification channel of guild `guild_id`."""
-        logger.info(f"Getting notification channel for {guild_id}.")
-        if str(guild_id) in self.channels.keys():
-            return self.channels[str(guild_id)]
-        else:
-            return False
 
     def compare_builds(self, branch: str, newBuild: dict) -> bool:
         """
@@ -132,7 +39,7 @@ class CDNCache:
 
         Returns `True` if the build is new, else `False`.
         """
-        with open(self.data_path, "r") as file:
+        with open(self.cdn_path, "r") as file:
             file_json = json.load(file)
 
             if file_json[self.CONFIG.indices.LAST_UPDATED_BY] != self.PLATFORM and (
@@ -159,7 +66,7 @@ class CDNCache:
 
     def save_build_data(self, branch: str, data: dict):
         """Saves new build data to the `cdn.json` file."""
-        with open(self.data_path, "r+") as file:
+        with open(self.cdn_path, "r+") as file:
             file_json = json.load(file)
             file_json[self.CONFIG.indices.BUILDINFO][branch] = data
 
@@ -169,7 +76,7 @@ class CDNCache:
 
     def load_build_data(self, branch: str):
         """Loads existing build data from the `cdn.json` file."""
-        with open(self.data_path, "r") as file:
+        with open(self.cdn_path, "r") as file:
             file_json = json.load(file)
             if branch in file_json[self.CONFIG.indices.BUILDINFO]:
                 return file_json[self.CONFIG.indices.BUILDINFO][branch]
