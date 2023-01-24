@@ -1,0 +1,39 @@
+{
+    "857764832542851092": {
+        "channel": 857866916436901919,
+        "watchlist": [
+            "wow_classic_beta",
+            "wow_classic_era",
+            "wow_beta",
+            "wow_classic_era_ptr",
+            "wowlivetest",
+            "wow_classic_ptr",
+            "wowt",
+            "wow",
+            "wowz"
+        ]
+    },
+    "242364846362853377": {
+        "channel": 286441865442492416,
+        "watchlist": [
+            "wow",
+            "wow_classic_beta",
+            "wow_classic_era",
+            "wow_beta",
+            "wow_classic_era_ptr",
+            "wowlivetest",
+            "wow_classic_ptr",
+            "wowt",
+            "wow",
+            "wow_classic"
+        ]
+    },
+    "285204385162592258": {
+        "channel": "None",
+        "watchlist": [
+            "wow",
+            "wowt",
+            "wow_beta"
+        ]
+    }
+}
