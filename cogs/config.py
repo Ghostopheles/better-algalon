@@ -9,7 +9,7 @@ REGION = "us"
 class Indices:
     LAST_UPDATED_BY = "last_updated_by"
     LAST_UPDATED_AT = "last_updated_at"
-    CHANNELS = "channels"
+    CHANNEL = "channel"
     WATCHLIST = "watchlist"
     BUILDINFO = "buildInfo"
     REGION = "region"
@@ -53,11 +53,13 @@ class CacheConfig:
         "wow_classic_era_ptr": "Classic Era PTR",
         "wowz": "Submission",
         "wowlivetest": "Live Test",
-        # "wowdev": "Internal"
+        "wowdev": "Internal",
     }
     AREAS_TO_CHECK_FOR_UPDATES = ["build", "build_text"]
     CACHE_FOLDER_NAME = "cache"
     CACHE_FILE_NAME = "cdn.json"
+
+    GUILD_CFG_FILE_NAME = "guild_cfg.json"
 
     strings = CacheStrings()
     indices = Indices()
