@@ -137,7 +137,6 @@ if __name__ == "__main__":
         type=discord.ActivityType.watching,
         name="Blizzard's CDN",
     )
-    debug_guilds = [DEBUG_GUILD_ID] if DEBUG else None
 
     bot = CDNBot(
         command_prefix="!",
@@ -148,6 +147,5 @@ if __name__ == "__main__":
         status=discord.Status.online,
         activity=activity,
         auto_sync_commands=True,
-        debug_guilds=debug_guilds,
     )
     bot.run(TOKEN)
