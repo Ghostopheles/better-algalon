@@ -116,7 +116,9 @@ class GuildCFG:
             else:
                 watchlist.append(branch)
 
-            self.update_guild_config(guild_id, watchlist, self.CONFIG.indices.WATCHLIST)
+            self.update_guild_config(
+                guild_id, [*set(watchlist)], self.CONFIG.indices.WATCHLIST
+            )
             return True
         else:
             return self.CONFIG.strings.BRANCH_NOT_VALID
@@ -135,7 +137,9 @@ class GuildCFG:
             else:
                 watchlist.remove(branch)
 
-            self.update_guild_config(guild_id, watchlist, self.CONFIG.indices.WATCHLIST)
+            self.update_guild_config(
+                guild_id, [*set(watchlist)], self.CONFIG.indices.WATCHLIST
+            )
             return True
         else:
             raise ValueError("Invalid branch ID.")

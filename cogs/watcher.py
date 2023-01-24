@@ -169,7 +169,6 @@ class CDNCog(commands.Cog):
             if new_data:
                 if dbg.debug_enabled or first_run:
                     # Debug notifcations, as well as absorbing the first update check if cache is outdated.
-                    logger.debug(f"{dbg.debug_enabled} | {first_run}")
                     logger.info(
                         "New data found, but debug mode is active or it's the first run. Sending post to debug channel."
                     )
@@ -206,19 +205,16 @@ class CDNCog(commands.Cog):
                 title=f"CDN Data for: {name}", color=discord.Color.blurple()
             )
 
-                data_text = f"**Region:** `{data['region']}`\n"
-                data_text += f"**Build Config:** `{data['build_config']}`\n"
-                data_text += f"**CDN Config:** `{data['cdn_config']}`\n"
-                data_text += f"**Build:** `{data['build']}`\n"
-                data_text += f"**Version:** `{data['build_text']}`\n"
-                data_text += f"**Product Config:** `{data['product_config']}`"
+            data_text = f"**Region:** `{data['region']}`\n"
+            data_text += f"**Build Config:** `{data['build_config']}`\n"
+            data_text += f"**CDN Config:** `{data['cdn_config']}`\n"
+            data_text += f"**Build:** `{data['build']}`\n"
+            data_text += f"**Version:** `{data['build_text']}`\n"
+            data_text += f"**Product Config:** `{data['product_config']}`"
 
-                embed.add_field(name="Current Data", value=data_text, inline=False)
+            embed.add_field(name="Current Data", value=data_text, inline=False)
 
-                data_pages.append(embed)
-            else:
-                logger.error("No build data found for paginator.")
-                return
+            data_pages.append(embed)
 
         paginator = pages.Paginator(
             pages=data_pages,
@@ -340,7 +336,9 @@ class CDNCog(commands.Cog):
     @bridge.bridge_command(name="cdnwatchlist")
     async def cdn_watchlist(self, ctx: bridge.BridgeApplicationContext):
         """Returns the entire watchlist for your guild."""
-        message = "**These are the branches I'm currently observing:**\n```\n"
+        message = (
+            "**These are the branches I'm currently observing for this guild:**\n```\n"
+        )
 
         watchlist = self.guild_cfg.get_guild_watchlist(ctx.guild_id)
 
