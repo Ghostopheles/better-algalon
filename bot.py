@@ -42,9 +42,10 @@ logger.info(
     f"Using Python version {sys.version}",
 )
 logger.info(f"Using PyCord version {discord.__version__}")
+logger.info(f"Now starting Algalon v{VERSION}...")
 cogs.log_start()
 
-# This subclasses the default help command to provide our bot with a prettier command.
+# This subclasses the default help command to provide our bot with a prettier help command.
 class CDNBotHelpCommand(commands.HelpCommand):
     def get_command_signature(self, command):
         return "%s%s %s" % (
@@ -108,9 +109,7 @@ class CDNBotHelpCommand(commands.HelpCommand):
 class CDNBot(bridge.Bot):
     """This is the almighty CDN bot, also known as Algalon. Inherits from `discord.ext.bridge.Bot`."""
 
-    COGS_LIST = [
-        "watcher",
-    ]
+    COGS_LIST = ["watcher", "api.blizzard"]
 
     def __init__(self, command_prefix, help_command=None, **options):
         command_prefix = command_prefix or "!"
@@ -131,7 +130,7 @@ class CDNBot(bridge.Bot):
 
     async def on_ready(self):
         """This `async` function runs once when the bot is connected to Discord and ready to execute commands."""
-        logger.info("%s has successfully connected to Discord!", self.user.name)  # type: ignore
+        logger.info("%s has successfully connected to Discord!", self.user.name)
 
 
 if __name__ == "__main__":
@@ -139,6 +138,7 @@ if __name__ == "__main__":
         type=discord.ActivityType.watching,
         name="Blizzard's CDN",
     )
+    debug_guilds = [DEBUG_GUILD_ID] if DEBUG else None
 
     bot = CDNBot(
         command_prefix="!",
@@ -149,5 +149,6 @@ if __name__ == "__main__":
         status=discord.Status.online,
         activity=activity,
         auto_sync_commands=True,
+        debug_guilds=debug_guilds,
     )
     bot.run(TOKEN)

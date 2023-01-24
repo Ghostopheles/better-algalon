@@ -10,7 +10,7 @@ from discord.ext import bridge, commands, pages, tasks
 
 from .guild_config import GuildCFG
 from .cdn_cache import CDNCache
-from .config import FETCH_INTERVAL
+from .config import FETCH_INTERVAL, CommonStrings
 from .config import WatcherConfig as cfg
 from .config import DebugConfig as dbg
 from .ui import CDNUi
@@ -72,7 +72,7 @@ class CDNCog(commands.Cog):
         message = f"I've encountered an error! Help!\n```py\n{error}\n```\n"
 
         if ctx:
-            message += f"CALLER: {ctx.author}\nGUILD: {ctx.guild.name}"
+            message += f"CALLER: {ctx.author}\nGUILD: {ctx.guild.name} | {ctx.guild_id}"
 
         await channel.send(message)
 
@@ -83,17 +83,17 @@ class CDNCog(commands.Cog):
 
         embed = discord.Embed(
             color=discord.Color.blue(),
-            title="wow.tools builds page",
+            title=cfg.strings.EMBED_WOWTOOLS_TITLE,
             description=f"{get_discord_timestamp()} **|** {get_discord_timestamp(relative=True)}",
-            url="https://wow.tools/builds/",
+            url=cfg.strings.EMBED_WOWTOOLS_URL,
         )
 
         embed.set_author(
-            name="Blizzard CDN Update",
-            icon_url="https://bnetcmsus-a.akamaihd.net/cms/gallery/D2TTHKAPW9BH1534981363136.png",
+            name=cfg.strings.EMBED_NAME,
+            icon_url=cfg.strings.EMBED_ICON_URL,
         )
 
-        embed.set_footer(text="Data provided by the prestigious Algalon 2.0.")
+        embed.set_footer(text=CommonStrings.EMBED_FOOTER)
 
         value_string = ""
 
@@ -137,6 +137,7 @@ class CDNCog(commands.Cog):
         new_data = await self.cdn_cache.fetch_cdn()
 
         if new_data and not dbg.debug_enabled and not first_run:
+            # Send live notification to all appropriate guilds
             if type(new_data) == Exception:
                 logger.error(new_data)
                 await self.notify_owner_of_exception(new_data)
@@ -167,6 +168,8 @@ class CDNCog(commands.Cog):
         else:
             if new_data:
                 if dbg.debug_enabled or first_run:
+                    # Debug notifcations, as well as absorbing the first update check if cache is outdated.
+                    logger.debug(f"{dbg.debug_enabled} | {first_run}")
                     logger.info(
                         "New data found, but debug mode is active or it's the first run. Sending post to debug channel."
                     )
@@ -203,16 +206,19 @@ class CDNCog(commands.Cog):
                 title=f"CDN Data for: {name}", color=discord.Color.blurple()
             )
 
-            data_text = f"**Region:** `{data['region']}`\n"
-            data_text += f"**Build Config:** `{data['build_config']}`\n"
-            data_text += f"**CDN Config:** `{data['cdn_config']}`\n"
-            data_text += f"**Build:** `{data['build']}`\n"
-            data_text += f"**Version:** `{data['build_text']}`\n"
-            data_text += f"**Product Config:** `{data['product_config']}`"
+                data_text = f"**Region:** `{data['region']}`\n"
+                data_text += f"**Build Config:** `{data['build_config']}`\n"
+                data_text += f"**CDN Config:** `{data['cdn_config']}`\n"
+                data_text += f"**Build:** `{data['build']}`\n"
+                data_text += f"**Version:** `{data['build_text']}`\n"
+                data_text += f"**Product Config:** `{data['product_config']}`"
 
-            embed.add_field(name="Current Data", value=data_text, inline=False)
+                embed.add_field(name="Current Data", value=data_text, inline=False)
 
-            data_pages.append(embed)
+                data_pages.append(embed)
+            else:
+                logger.error("No build data found for paginator.")
+                return
 
         paginator = pages.Paginator(
             pages=data_pages,
@@ -254,7 +260,7 @@ class CDNCog(commands.Cog):
         logger.error(f"Logging application command error in guild {ctx.guild_id}.")
         logger.error(exception)
 
-        await self.notify_owner_of_exception(exception)
+        await self.notify_owner_of_exception(exception, ctx)
 
         await ctx.interaction.response.send_message(
             error_message, ephemeral=True, delete_after=300
