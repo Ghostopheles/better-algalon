@@ -26,8 +26,11 @@
         },
         "wowdev": {
             "region": "us",
-            "build": "46924",
-            "build_text": "10.0.2"
+            "build_config": "3222e777946d00b859dbf3d6d1b11ff2",
+            "cdn_config": "5b3eb72d923e58733370a714b3163207",
+            "build": "47621",
+            "build_text": "10.0.5",
+            "product_config": "69446b75e458b83f47383e2a2a23077a"
         },
         "wow_classic": {
             "region": "us",
