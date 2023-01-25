@@ -19,7 +19,7 @@ Algalon provides a number of commands with questionable value.
 
 `/cdnlastupdate`: Returns a timestamp displaying when Algalon last checked for CDN updates.
 
-#### watchlist
+#### watchlist controls
 
 `/cdnaddtowatchlist`*: Adds a specific branch to your guild's watchlist.
 
@@ -27,15 +27,13 @@ Algalon provides a number of commands with questionable value.
 
 `/cdnwatchlist`: Returns your guild's current watchlist.
 
-`/cdnedit`*: Returns a graphical editor for your guild's watchlist. (prone to breaking)
-
-#### customization
+#### notifcation channel controls
 
 `/cdnsetchannel`*: Sets the channel in which it's invoked as the notification channel for your guild.
 
 `/cdngetchannel`: Returns the current notification channel for your guild.
 
-### blizzard api
+### blizzard API
 
 `/cdntokenprice`: Returns the current WoW token price in the "us" region.
 
