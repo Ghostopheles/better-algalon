@@ -66,13 +66,13 @@ class CDNCog(commands.Cog):
         ctx: discord.ApplicationContext | bridge.BridgeApplicationContext | None = None,
     ):
         """This is supposed to notify the owner of an error, but doesn't always work."""
-        owner = await self.bot.fetch_user(self.bot.owner_id)
+        owner = await self.bot.fetch_user(self.bot.owner_id)  # type: ignore
         channel = await owner.create_dm()
 
         message = f"I've encountered an error! Help!\n```py\n{error}\n```\n"
 
         if ctx:
-            message += f"CALLER: {ctx.author}\nGUILD: {ctx.guild.name} | {ctx.guild_id}"
+            message += f"CALLER: {ctx.author}\nGUILD: {ctx.guild.name} | {ctx.guild_id}"  # type: ignore
 
         await channel.send(message)
 
@@ -161,9 +161,9 @@ class CDNCog(commands.Cog):
                     logger.error(exc)
                     continue
 
-                embed = self.build_embed(new_data, guild.id)
+                embed = self.build_embed(new_data, guild.id)  # type: ignore
                 if embed and cdn_channel:
-                    await cdn_channel.send(embed=embed)
+                    await cdn_channel.send(embed=embed)  # type: ignore
 
         else:
             if new_data:
@@ -173,10 +173,10 @@ class CDNCog(commands.Cog):
                         "New data found, but debug mode is active or it's the first run. Sending post to debug channel."
                     )
 
-                    channel = await self.bot.fetch_channel(dbg.debug_channel_id)
-                    embed = self.build_embed(new_data, dbg.debug_guild_id)
+                    channel = await self.bot.fetch_channel(dbg.debug_channel_id)  # type: ignore
+                    embed = self.build_embed(new_data, dbg.debug_guild_id)  # type: ignore
                     if embed:
-                        await channel.send(embed=embed)
+                        await channel.send(embed=embed)  # type: ignore
             else:
                 logger.info("No CDN changes found.")
 
@@ -283,7 +283,7 @@ class CDNCog(commands.Cog):
         self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
         """Command for adding specific branches to the watchlist for your guild."""
-        added = self.guild_cfg.add_to_guild_watchlist(ctx.guild_id, branch)
+        added = self.guild_cfg.add_to_guild_watchlist(ctx.guild_id, branch)  # type: ignore
         if added != True:
             message = f"{added}\n\n**Valid branches:**\n```\n"
 
@@ -313,7 +313,7 @@ class CDNCog(commands.Cog):
     ):
         """Command for removing specific branches from the watchlist for you guild."""
         try:
-            self.guild_cfg.remove_from_guild_watchlist(ctx.guild_id, branch)
+            self.guild_cfg.remove_from_guild_watchlist(ctx.guild_id, branch)  # type: ignore
         except ValueError:
             message = "Invalid branch argument, please try again.\n\n**Valid branches:**\n```\n"
 
@@ -340,7 +340,7 @@ class CDNCog(commands.Cog):
             "**These are the branches I'm currently observing for this guild:**\n```\n"
         )
 
-        watchlist = self.guild_cfg.get_guild_watchlist(ctx.guild_id)
+        watchlist = self.guild_cfg.get_guild_watchlist(ctx.guild_id)  # type: ignore
 
         for product in watchlist:
             message += f"{product}\n"
@@ -372,7 +372,7 @@ class CDNCog(commands.Cog):
         channel = ctx.channel_id
         guild = ctx.guild_id
 
-        self.guild_cfg.set_notification_channel(guild, channel)
+        self.guild_cfg.set_notification_channel(guild, channel)  # type: ignore
 
         await ctx.interaction.response.send_message(
             "Notification channel set!", ephemeral=True, delete_after=300
@@ -383,7 +383,7 @@ class CDNCog(commands.Cog):
         """Returns the current notification channel for your guild."""
         guild = ctx.guild_id
 
-        channel = self.guild_cfg.get_notification_channel(guild)
+        channel = self.guild_cfg.get_notification_channel(guild)  # type: ignore
 
         if channel:
             await ctx.interaction.response.send_message(

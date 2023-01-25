@@ -129,7 +129,7 @@ class CDNBot(bridge.Bot):
 
     async def on_ready(self):
         """This `async` function runs once when the bot is connected to Discord and ready to execute commands."""
-        logger.info("%s has successfully connected to Discord!", self.user.name)
+        logger.info("%s has successfully connected to Discord!", self.user.name)  # type: ignore
 
 
 if __name__ == "__main__":
