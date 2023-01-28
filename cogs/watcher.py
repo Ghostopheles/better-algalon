@@ -12,7 +12,6 @@ from .cdn_cache import CDNCache
 from .config import FETCH_INTERVAL, CommonStrings
 from .config import WatcherConfig as cfg
 from .config import DebugConfig as dbg
-from .ui import CDNUi
 from .utils import get_discord_timestamp
 
 START_LOOPS = True

@@ -4,18 +4,7 @@ import logging
 
 from datetime import datetime
 
-logger = logging.getLogger("discord.cdnbot_utils")
-
-
-def create_directory(path: str):
-    if not os.path.exists(path):
-        os.makedirs(path)
-    else:
-        return False
-
-
-def get_self_path():
-    return os.path.dirname(os.path.realpath(__file__))
+logger = logging.getLogger("discord.cdn.utils")
 
 
 def log_start():
@@ -46,34 +35,3 @@ def get_timestamp(day_only=False):
 
 def get_date():
     return datetime.now().strftime("%m-%d-%Y @ %H:%M")
-
-
-def get_time_delta(start_time: str, end_time: str):
-    """Returns the difference between two times in minutes"""
-    t1 = datetime.strptime(start_time, "%Y-%m-%d_%H-%M-%S")
-    t2 = datetime.strptime(end_time, "%Y-%m-%d_%H-%M-%S")
-
-    delta = t2 - t1
-
-    return int(delta.seconds / 60)
-
-
-class DictToClass:
-    def __init__(self, d, target: object):
-        self.d = d
-        self.target = target
-
-    def convert(self):
-        if isinstance(self.d, dict):
-            item = self.target()
-            for key in self.d:
-                setattr(item, key, self.d[key])
-            return item
-        elif isinstance(self.d, list):
-            objects = []
-            for config in self.d:
-                item = self.target()
-                for key in config:
-                    setattr(item, key, config[key])
-                objects.append(item)
-            return objects
