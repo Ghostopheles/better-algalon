@@ -82,9 +82,9 @@ class CDNCog(commands.Cog):
 
         embed = discord.Embed(
             color=discord.Color.blue(),
-            title=cfg.strings.EMBED_WOWTOOLS_TITLE,
+            title=cfg.strings.EMBED_WAGOTOOLS_TITLE,
             description=f"{get_discord_timestamp()} **|** {get_discord_timestamp(relative=True)}",
-            url=cfg.strings.EMBED_WOWTOOLS_URL,
+            url=cfg.strings.EMBED_WAGOTOOLS_URL,
         )
 
         embed.set_author(
