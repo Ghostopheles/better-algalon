@@ -351,8 +351,10 @@ class CDNCog(commands.Cog):
         )
 
     # FIXME: This command will be a pain to fix so I'm just deleting it for now
-    # @bridge.bridge_command(name="cdnedit",
-    # default_member_permissions=discord.Permissions(administrator=True))
+    # @bridge.bridge_command(
+    #    name="cdnedit",
+    #    default_member_permissions=discord.Permissions(administrator=True),
+    # )
     # async def cdn_edit(self, ctx: bridge.BridgeApplicationContext):
     #    """Returns a graphical editor for your guilds watchlist."""
     #    view = CDNUi(ctx=ctx, guild_cfg=self.guild_cfg)
