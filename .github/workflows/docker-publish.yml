@@ -9,17 +9,14 @@ on:
   push:
     branches: [ "main" ]
     # Publish semver tags as releases.
-    tags: [ 'v*.*.*' ]
     paths:
+      - '.github/workflows'
       - 'cogs/**'
       - 'bot.py'
       - 'Dockerfile'
   pull_request:
     branches: [ "main" ]
-    paths:
-      - 'cogs/**'
-      - 'bot.py'
-      - 'Dockerfile'
+  workflow_dispatch
 
 env:
   # Use docker.io for Docker Hub if empty
