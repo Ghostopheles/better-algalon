@@ -28,7 +28,7 @@ class CDNCog(commands.Cog):
         self.cdn_cache = CDNCache()
         self.guild_cfg = GuildCFG()
         self.last_update = 0
-        self.last_update_formatted = 0
+        self.last_update_formatted = ""
 
         if dbg.debug_enabled:
             logger.debug("<- Starting bot in DEBUG mode ->")
