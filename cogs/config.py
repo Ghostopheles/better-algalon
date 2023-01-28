@@ -88,7 +88,7 @@ class WatcherStrings:
         "https://bnetcmsus-a.akamaihd.net/cms/gallery/D2TTHKAPW9BH1534981363136.png"
     )
 
-    EMBED_UPDATE_TITLE = "Branch Updates"
+    EMBED_UPDATE_TITLE = "Build Updates"
 
 
 class WatcherConfig:
