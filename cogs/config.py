@@ -80,6 +80,9 @@ class WatcherStrings:
     EMBED_WOWTOOLS_TITLE = "wow.tools builds page"
     EMBED_WOWTOOLS_URL = "https://wow.tools/builds/"
 
+    EMBED_WAGOTOOLS_TITLE = "wago.tools"
+    EMBED_WAGOTOOLS_URL = "https://wago.tools/"
+
     EMBED_NAME = "Blizzard CDN Update"
     EMBED_ICON_URL = (
         "https://bnetcmsus-a.akamaihd.net/cms/gallery/D2TTHKAPW9BH1534981363136.png"
