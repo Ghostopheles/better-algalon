@@ -7,4 +7,5 @@ run.bat
 invite.txt
 LICENSE
 scratch.py
-*/.git/*
+.git/*
+.github/*
