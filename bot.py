@@ -138,6 +138,8 @@ if __name__ == "__main__":
         name="Blizzard's CDN",
     )
 
+    debug_guilds = [os.getenv("DEBUG_GUILD_ID")] if os.getenv("DEBUG") else []
+
     bot = CDNBot(
         command_prefix="!",
         help_command=CDNBotHelpCommand(),
@@ -147,5 +149,6 @@ if __name__ == "__main__":
         status=discord.Status.online,
         activity=activity,
         auto_sync_commands=True,
+        debug_guilds=debug_guilds,
     )
     bot.run(TOKEN)
