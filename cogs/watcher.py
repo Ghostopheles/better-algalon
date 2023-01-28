@@ -2,7 +2,6 @@
 
 import time
 import httpx
-import asyncio
 import discord
 import logging
 
