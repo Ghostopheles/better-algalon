@@ -1,18 +1,44 @@
 import os
 
+from .locale import Locales
+
 ## GLOBAL CONFIGURATION
 
 FETCH_INTERVAL = 5
-REGION = "us"
+
+
+class Region:
+    def __init__(self, region_name: str, valid_locales: list):
+        self.name = region_name
+        self.locales = valid_locales
+
+
+region_US = Region("us", [Locales.en_US, Locales.es_MX, Locales.pt_BR])
+region_EU = Region(
+    "eu",
+    [
+        Locales.en_GB,
+        Locales.es_ES,
+        Locales.fr_FR,
+        Locales.ru_RU,
+        Locales.de_DE,
+        Locales.pt_PT,
+        Locales.it_IT,
+    ],
+)
+region_KR = Region("kr", [Locales.ko_KR])
+region_TW = Region("tw", [Locales.zh_TW])
+region_CN = Region("cn", [Locales.zh_CN])
+
+SUPPORTED_REGIONS = [region_US, region_EU, region_KR, region_TW, region_CN]
+SUPPORTED_REGIONS_STRINGS = [region.name for region in SUPPORTED_REGIONS]
+DEFAULT_REGION = region_US
 
 
 class Indices:
     LAST_UPDATED_BY = "last_updated_by"
     LAST_UPDATED_AT = "last_updated_at"
-    CHANNEL = "channel"
-    WATCHLIST = "watchlist"
     BUILDINFO = "buildInfo"
-    REGION = "region"
     BUILD = "build"
     BUILDTEXT = "build_text"
 
@@ -22,22 +48,49 @@ class Indices:
 
 class CacheStrings:
     ## STRINGS
-    BRANCH_NOT_VALID = "Branch is not a valid product."
-    BRANCH_ALREADY_IN_WATCHLIST = "Branch is already on your watchlist."
+    REGION_UPDATED = "Region updated."
+    REGION_LOCALE_CHANGED = "Region updated and locale reset."
+
+    LOCALE_UPDATED = "Locale updated."
 
     ## LOGGING STRINGS
     LOG_FETCH_DATA = "Fetching CDN data..."
     LOG_PARSE_DATA = "Parsing CDN response..."
 
-    ## ARG STRINGS
-    ARG_BRANCH_NOT_ON_WATCHLIST = "Argument 'branch' is not on the watchlist."
-
 
 class CacheDefaults:
+    CHANNEL = 0000
     WATCHLIST = ["wow", "wowt", "wow_beta"]
-    REGION = REGION
+    REGION = DEFAULT_REGION
+    REGION_NAME = REGION.name
+    LOCALE = REGION.locales[0]
+    LOCALE_NAME = LOCALE.value
     BUILD = "0.0.0"
     BUILDTEXT = "untracked"
+
+
+class Settings:
+    __defaults = CacheDefaults()
+
+    CHANNEL = {"name": "channel", "default": __defaults.CHANNEL}
+    WATCHLIST = {"name": "watchlist", "default": __defaults.WATCHLIST}
+    REGION = {"name": "region", "default": __defaults.REGION_NAME}
+    LOCALE = {"name": "locale", "default": __defaults.LOCALE_NAME}
+
+    KEYS = ["channel", "watchlist", "region", "locale"]
+
+
+class ErrorStrings:
+    REGION_SAME_AS_CURRENT = "New region is the same as the current region."
+    REGION_NOT_SUPPORTED = "Region not supported."
+
+    LOCALE_SAME_AS_CURRENT = "New locale is the same as the current locale."
+    LOCALE_NOT_SUPPORTED = "Locale not supported by your region."
+
+    BRANCH_NOT_VALID = "Branch is not a valid product."
+    BRANCH_ALREADY_IN_WATCHLIST = "Branch is already on your watchlist."
+
+    ARG_BRANCH_NOT_ON_WATCHLIST = "Argument 'branch' is not on the watchlist."
 
 
 class CacheConfig:
@@ -61,9 +114,14 @@ class CacheConfig:
 
     GUILD_CFG_FILE_NAME = "guild_cfg.json"
 
+    SUPPORTED_REGIONS = SUPPORTED_REGIONS
+    SUPPORTED_REGIONS_STRING = SUPPORTED_REGIONS_STRINGS
+
+    settings = Settings()
     strings = CacheStrings()
     indices = Indices()
     defaults = CacheDefaults()
+    errors = ErrorStrings()
 
 
 ## COMMON CONFIGURATION
@@ -71,6 +129,7 @@ class CacheConfig:
 
 class CommonStrings:
     EMBED_FOOTER = "Data provided by the prestigious Algalon 2.0."
+    VALID_REGIONS = SUPPORTED_REGIONS_STRINGS
 
 
 ## WATCHER CONFIGURATION
@@ -92,9 +151,9 @@ class WatcherStrings:
 
 
 class WatcherConfig:
-    strings = WatcherStrings()
-    indices = Indices()
-    cache_defaults = CacheDefaults()
+    strings = WatcherStrings
+    indices = Indices
+    cache_defaults = CacheDefaults
 
 
 ## BLIZZARD API CONFIGURATION

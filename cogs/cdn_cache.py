@@ -82,7 +82,7 @@ class CDNCache:
                 return file_json[self.CONFIG.indices.BUILDINFO][branch]
             else:
                 file_json[self.CONFIG.indices.BUILDINFO][branch] = {
-                    self.CONFIG.indices.REGION: self.CONFIG.defaults.REGION,
+                    self.CONFIG.settings.REGION["name"]: self.CONFIG.defaults.REGION,
                     self.CONFIG.indices.BUILD: self.CONFIG.defaults.BUILD,
                     self.CONFIG.indices.BUILDTEXT: self.CONFIG.defaults.BUILDTEXT,
                 }
@@ -142,7 +142,7 @@ class CDNCache:
             product_config = data[6]
 
             output = {
-                self.CONFIG.indices.REGION: region,
+                self.CONFIG.settings.REGION["name"]: region,
                 "build_config": build_config,
                 "cdn_config": cdn_config,
                 "build": build_number,

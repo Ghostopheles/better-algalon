@@ -51,12 +51,15 @@ class CDNCog(commands.Cog):
                 )
                 self.guild_cfg.add_guild_config(guild.id)
 
-        for guild in self.guild_cfg.get_all_guild_configs().keys():
-            if int(guild) not in [guild.id for guild in self.bot.guilds]:
+        for guild_id in self.guild_cfg.get_all_guild_configs():
+            for key in self.guild_cfg.CONFIG.settings.KEYS:
+                self.guild_cfg.get_guild_setting(guild_id, key)
+
+            if int(guild_id) not in [guild.id for guild in self.bot.guilds]:
                 logger.info(
-                    f"No longer a part of guild {guild}, removing guild configuration..."
+                    f"No longer a part of guild {guild_id}, removing guild configuration..."
                 )
-                self.guild_cfg.remove_guild_config(guild)
+                self.guild_cfg.remove_guild_config(guild_id)
 
     async def notify_owner_of_exception(
         self,
@@ -405,6 +408,83 @@ class CDNCog(commands.Cog):
             f"Last update: {self.last_update_formatted}.",
             ephemeral=True,
             delete_after=300,
+        )
+
+    @bridge.bridge_command(
+        name="cdnsetregion",
+        default_member_permissions=discord.Permissions(administrator=True),
+    )
+    async def cdn_set_region(self, ctx: bridge.BridgeApplicationContext, region: str):
+        """Sets the region for your guild."""
+
+        success, message = self.guild_cfg.set_region(ctx.guild_id, region)  # type: ignore
+
+        if not success:
+            valid_regions = "\n\nSupported Regions:```\n"
+            for region in self.guild_cfg.CONFIG.SUPPORTED_REGIONS_STRING:
+                valid_regions += f"{region}\n"
+            valid_regions += "```"
+
+            message += valid_regions
+
+        await ctx.interaction.response.send_message(
+            message, ephemeral=True, delete_after=300
+        )
+
+    @bridge.bridge_command(
+        name="cdngetregion",
+    )
+    async def cdn_get_region(self, ctx: bridge.BridgeApplicationContext):
+        """Returns the current region for your guild."""
+
+        region = self.guild_cfg.get_region(ctx.guild_id)  # type: ignore
+
+        message = f"This guild's region is: `{region}`."
+
+        await ctx.interaction.response.send_message(
+            message, ephemeral=True, delete_after=300
+        )
+
+    @bridge.bridge_command(
+        name="cdnsetlocale",
+        default_member_permissions=discord.Permissions(administrator=True),
+    )
+    async def cdn_set_locale(self, ctx: bridge.BridgeApplicationContext, locale: str):
+        """Sets the locale for your guild."""
+
+        success, message = self.guild_cfg.set_locale(ctx.guild_id, locale)  # type: ignore
+
+        if not success:
+            current_region = self.guild_cfg.get_region(ctx.guild_id)  # type: ignore
+            supported_locales = self.guild_cfg.get_region_supported_locales(
+                current_region
+            )
+            if not supported_locales:
+                return
+
+            help_string = f"\n\nSupported Locales for `{current_region}`: ```\n"
+            for locale in supported_locales:
+                help_string += f"{locale.value}\n"  # type: ignore
+            help_string += "```"
+
+            message += help_string
+
+        await ctx.interaction.response.send_message(
+            message, ephemeral=True, delete_after=300
+        )
+
+    @bridge.bridge_command(
+        name="cdngetlocale",
+    )
+    async def cdn_get_locale(self, ctx: bridge.BridgeApplicationContext):
+        """Returns the current locale for your guild."""
+
+        locale = self.guild_cfg.get_locale(ctx.guild_id)  # type: ignore
+
+        message = f"This guild's locale is: `{locale}`."
+
+        await ctx.interaction.response.send_message(
+            message, ephemeral=True, delete_after=300
         )
 
 

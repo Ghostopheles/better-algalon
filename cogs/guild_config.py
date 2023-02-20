@@ -28,8 +28,14 @@ class GuildCFG:
 
     def get_default_guild_cfg(self):
         return {
-            self.CONFIG.indices.CHANNEL: "None",
-            self.CONFIG.indices.WATCHLIST: self.CONFIG.defaults.WATCHLIST,
+            self.CONFIG.settings.CHANNEL["name"]: self.CONFIG.settings.CHANNEL[
+                "default"
+            ],
+            self.CONFIG.settings.WATCHLIST["name"]: self.CONFIG.settings.WATCHLIST[
+                "default"
+            ],
+            self.CONFIG.settings.REGION["name"]: self.CONFIG.settings.REGION["default"],
+            self.CONFIG.settings.LOCALE["name"]: self.CONFIG.settings.LOCALE["default"],
         }
 
     def init_guild_cfg(self, guild_id: int | str = 0):
@@ -82,22 +88,40 @@ class GuildCFG:
             file_json = json.load(file)
             return file_json
 
-    def update_guild_config(self, guild_id: int | str, new_data, category):
+    def get_guild_setting(self, guild_id: int | str, setting: str):
+        logger.info(f"Fetching {setting} for guild {guild_id}...")
+        guild_config = self.get_guild_config(guild_id)
+        _setting: dict = getattr(self.CONFIG.settings, setting.upper())
+
+        if not _setting["name"] in guild_config:
+            return self.reset_guild_setting_to_default(guild_id, _setting)
+        else:
+            return guild_config[_setting["name"]]
+
+    def reset_guild_setting_to_default(self, guild_id: int | str, setting: dict):
+        logger.info(f"Resetting {setting} to default for guild {guild_id}.")
+        logger.debug(f"Default value: {setting['default']}, name: {setting['name']}")
+        self.update_guild_config(guild_id, setting["default"], setting["name"])
+        return self.get_guild_setting(guild_id, setting["name"])
+
+    def update_guild_config(self, guild_id: int | str, new_data, setting):
         logger.info(f"Updating guild configuration for guild {guild_id}...")
         logger.debug(
-            f"Guild config update payload - new data: {new_data}, category: {category}."
+            f"Guild config update payload - new data: {new_data}, setting: {setting}."
         )
 
         if not new_data:
-            return  # WHY IS NEW_DATA NONE? HELLO?
+            return False  # WHY IS NEW_DATA NONE? HELLO?
 
         with open(self.guild_cfg_path, "r+") as file:
             file_json = json.load(file)
-            file_json[str(guild_id)][category] = new_data
+            file_json[str(guild_id)][setting] = new_data
 
             file.seek(0)
             json.dump(file_json, file, indent=4)
             file.truncate()
+
+        return True
 
     # WATCHLIST IO
 
@@ -106,10 +130,10 @@ class GuildCFG:
 
         guild_config = self.get_guild_config(guild_id)
 
-        watchlist = guild_config[self.CONFIG.indices.WATCHLIST]
+        watchlist = guild_config[self.CONFIG.settings.WATCHLIST["name"]]
 
         if branch in watchlist:
-            return self.CONFIG.strings.BRANCH_ALREADY_IN_WATCHLIST
+            return self.CONFIG.errors.BRANCH_ALREADY_IN_WATCHLIST
         elif branch in self.CONFIG.PRODUCTS.keys():
             if isinstance(watchlist, str):
                 watchlist = [watchlist, branch]
@@ -117,20 +141,20 @@ class GuildCFG:
                 watchlist.append(branch)
 
             self.update_guild_config(
-                guild_id, [*set(watchlist)], self.CONFIG.indices.WATCHLIST
+                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST["name"]
             )
             return True
         else:
-            return self.CONFIG.strings.BRANCH_NOT_VALID
+            return self.CONFIG.errors.BRANCH_NOT_VALID
 
     def remove_from_guild_watchlist(self, guild_id: int | str, branch: str):
         logger.info(f'Removing "{branch}" from watchlist for guild {guild_id}...')
         guild_config = self.get_guild_config(guild_id)
 
-        watchlist = guild_config[self.CONFIG.indices.WATCHLIST]
+        watchlist = guild_config[self.CONFIG.settings.WATCHLIST["name"]]
 
         if branch not in watchlist:
-            return self.CONFIG.strings.ARG_BRANCH_NOT_ON_WATCHLIST
+            return self.CONFIG.errors.ARG_BRANCH_NOT_ON_WATCHLIST
         elif branch in self.CONFIG.PRODUCTS.keys():
             if isinstance(watchlist, str):
                 return  # CANT REMOVE THE LAST BRANCH ON WATCHLIST
@@ -138,7 +162,7 @@ class GuildCFG:
                 watchlist.remove(branch)
 
             self.update_guild_config(
-                guild_id, [*set(watchlist)], self.CONFIG.indices.WATCHLIST
+                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST["name"]
             )
             return True
         else:
@@ -148,7 +172,7 @@ class GuildCFG:
         logger.info(f"Grabbing guild watchlist for guild {guild_id}...")
         guild_config = self.get_guild_config(guild_id)
 
-        return guild_config[self.CONFIG.indices.WATCHLIST]
+        return guild_config[self.CONFIG.settings.WATCHLIST["name"]]
 
     # CHANNEL IO
 
@@ -158,12 +182,14 @@ class GuildCFG:
         )
         guild_config = self.get_guild_config(guild_id)
 
-        channel = guild_config[self.CONFIG.indices.CHANNEL]
+        channel = guild_config[self.CONFIG.settings.CHANNEL["name"]]
 
         if channel == new_channel:
             return  # WHY ARE YOU SETTING THE CHANNEL TO THE ALREADY SET CHANNEL
 
-        self.update_guild_config(guild_id, new_channel, self.CONFIG.indices.CHANNEL)
+        self.update_guild_config(
+            guild_id, new_channel, self.CONFIG.settings.CHANNEL["name"]
+        )
         return True
 
     def get_notification_channel(self, guild_id: int | str):
@@ -171,4 +197,92 @@ class GuildCFG:
 
         guild_config = self.get_guild_config(guild_id)
 
-        return guild_config[self.CONFIG.indices.CHANNEL]
+        return guild_config[self.CONFIG.settings.CHANNEL["name"]]
+
+    # REGION / LOCALE IO
+
+    def get_region_supported_locales(self, region: str):
+        for reg in self.CONFIG.SUPPORTED_REGIONS:
+            if reg.name == region:
+                return reg.locales
+
+        return  # REGION NOT FOUND?
+
+    def is_locale_supported_by_region(self, locale: str, region: str):
+        locales = self.get_region_supported_locales(region)
+
+        if not locales:
+            return
+        else:
+            for value in locales:
+                if value.value == locale:
+                    return True
+
+            return False
+
+    def get_region_default_locale(self, region: str):
+        for reg in self.CONFIG.SUPPORTED_REGIONS:
+            if reg.name == region:
+                return reg.locales[0].value
+
+    def set_region(self, guild_id: int | str, new_region: str):
+        logger.info(f"Setting region for guild {guild_id}...")
+
+        current_region = self.get_guild_setting(guild_id, "region")
+        current_locale = self.get_guild_setting(guild_id, "locale")
+
+        if new_region == current_region:
+            logger.error(f"New region is the same as current region.")
+
+            return False, self.CONFIG.errors.REGION_SAME_AS_CURRENT
+
+        elif not new_region in self.CONFIG.SUPPORTED_REGIONS_STRING:
+            logger.error(f"Region '{new_region}' not supported, returning.")
+
+            return False, self.CONFIG.errors.REGION_NOT_SUPPORTED
+
+        elif not current_locale in self.get_region_supported_locales(new_region):
+            logger.error(
+                f"Locale '{current_locale}' not supported in {new_region}, setting locale to region default."
+            )
+            self.update_guild_config(
+                guild_id, self.get_region_default_locale(new_region), "locale"
+            )
+            self.update_guild_config(guild_id, new_region, "region")
+
+            return True, self.CONFIG.strings.REGION_LOCALE_CHANGED
+
+        else:
+            self.update_guild_config(guild_id, new_region, "region")
+
+            return True, self.CONFIG.strings.REGION_UPDATED
+
+    def get_region(self, guild_id: int | str):
+        logger.info(f"Fetching region for guild {guild_id}...")
+
+        return self.get_guild_setting(guild_id, "region")
+
+    def set_locale(self, guild_id: int | str, new_locale: str):
+        logger.info(f"Setting locale for guild {guild_id}...")
+
+        current_region = self.get_guild_setting(guild_id, "region")
+        current_locale = self.get_guild_setting(guild_id, "locale")
+
+        if new_locale == current_locale:
+            logger.error(f"New locale is the same as current locale.")
+            return False, self.CONFIG.errors.LOCALE_SAME_AS_CURRENT
+
+        elif not self.is_locale_supported_by_region(new_locale, current_region):
+            logger.error(f"New locale not supported in current region.")
+            return False, self.CONFIG.errors.LOCALE_NOT_SUPPORTED
+
+        else:
+            return (
+                self.update_guild_config(guild_id, new_locale, "locale"),
+                self.CONFIG.strings.LOCALE_UPDATED,
+            )
+
+    def get_locale(self, guild_id: int | str):
+        logger.info(f"Fetching locale for guild {guild_id}...")
+
+        return self.get_guild_setting(guild_id, "locale")
