@@ -121,6 +121,11 @@ class CDNCache:
                         self.save_build_data(branch, data)
                     else:
                         continue
+                except httpx.ConnectError as exc:
+                    logger.error(
+                        f"Connection error during CDN check for {branch} using url {url or None}"  # type: ignore
+                    )
+                    return exc
                 except Exception as exc:
                     logger.error(f"Timeout error during CDN check for {branch}")
                     return exc

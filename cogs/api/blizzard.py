@@ -33,7 +33,9 @@ class BlizzardAPI:
         )  # authenticate with the Blizzard API for self.access_token
 
     async def __auth(self) -> bool:
-        self.logger.info("Authenticating with the Blizzard API...")
+        self.logger.info(
+            f"Authenticating with the Blizzard API for region {self.REGION}..."
+        )
         body = {"grant_type": "client_credentials"}
         headers = {
             "Authorization": f"Basic {b64encode(f'{self.__CLIENT_ID}:{self.__CLIENT_SECRET}'.encode('utf-8')).decode('utf-8')}"
