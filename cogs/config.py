@@ -138,7 +138,7 @@ class CacheConfig:
 
 
 class CommonStrings:
-    EMBED_FOOTER = "Data provided by the prestigious Algalon 2.0."
+    EMBED_FOOTER = f"Data provided by Algalon {os.getenv('ENVIRONMENT', 'Redstone')}."
     VALID_REGIONS = SUPPORTED_REGIONS_STRINGS
 
     SPEECH = "$$dalaran.speech$$"
