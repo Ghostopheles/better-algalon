@@ -5,7 +5,7 @@ import discord
 import logging
 
 from base64 import b64encode
-from discord.ext import bridge, commands, tasks
+from discord.ext import bridge, commands
 
 from ..guild_config import GuildCFG
 from ..config import BlizzardAPIConfig, CommonStrings
@@ -26,7 +26,7 @@ class BlizzardAPI:
         self.__CLIENT_ID = os.getenv("BLIZZARD_API_CLIENT_ID")
         self.__CLIENT_SECRET = os.getenv("BLIZZARD_API_CLIENT_SECRET")
 
-        self.authenticated = False
+        self.__LAST_STATUS_CODE = 0
 
         asyncio.run(
             self.__auth()
@@ -59,17 +59,7 @@ class BlizzardAPI:
                 self.access_token_type = token_json["token_type"]
                 self.access_token_lifetime = token_json["expires_in"]
 
-                self.authenticated = True
                 self.logger.info("Blizzard API authentication successful.")
-
-                @tasks.loop(seconds=self.access_token_lifetime, count=1)
-                async def refresh_auth(self):
-                    if refresh_auth.current_loop != 0:
-                        self.logger.info("Refreshing Blizzard API access token...")
-                        self.authenticated = False
-                        await self.__auth()
-
-                refresh_auth.start(self)
 
                 return True
             else:
@@ -92,12 +82,16 @@ class BlizzardAPI:
     def _requires_auth(func, *args):  # type: ignore
         async def auth_wrapper(self, *args):
             self.logger.info("Checking for valid Blizzard authentication...")
-            if not self.authenticated:
-                await self.__auth()
+            self.logger.debug(f"Calling {func.__name__}.")
+            await func(self, *args)  # type: ignore
 
-            if self.authenticated:
-                self.logger.info("Authentication check successful!")
+            if self.__LAST_STATUS_CODE == 401:
+                self.logger.info("Authentication is busted. Reacquiring...")
+                await self.__auth()
+                self.__LAST_STATUS_CODE = 0
                 return await func(self, *args)  # type: ignore
+
+            return False
 
         return auth_wrapper
 
@@ -126,6 +120,7 @@ class BlizzardAPI:
                 return token_data
             else:
                 self.logger.error(f"Token API returned status code {data.status_code}.")
+                self.__LAST_STATUS_CODE = data.status_code
                 return False
 
 
