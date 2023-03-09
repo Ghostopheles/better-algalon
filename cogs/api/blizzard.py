@@ -82,7 +82,7 @@ class BlizzardAPI:
     def _requires_auth(func, *args):  # type: ignore
         async def auth_wrapper(self, *args):
             self.logger.info("Checking for valid Blizzard authentication...")
-            self.logger.debug(f"Calling {func.__name__}.")
+            self.logger.debug(f"Calling {func.__name__}.")  # type: ignore
             await func(self, *args)  # type: ignore
 
             if self.__LAST_STATUS_CODE == 401:
