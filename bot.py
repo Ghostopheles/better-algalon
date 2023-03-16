@@ -4,11 +4,16 @@ import cogs
 import logging
 import discord
 
-from dotenv import load_dotenv
 from discord.ext import bridge, commands
 from logging.handlers import TimedRotatingFileHandler
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    print("PRODUCTION ENVIRONMENT")
+
 TOKEN = os.getenv("DISCORD_TOKEN")
 OWNER_ID = os.getenv("OWNER_ID")
 
