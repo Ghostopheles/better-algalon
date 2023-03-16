@@ -99,7 +99,8 @@ class CommonURL:
 
 
 class CacheConfig:
-    PRODUCTS = {  # wowdev is commented out because the endpoint is broken
+    CDN_URL = "http://us.patch.battle.net:1119/"
+    PRODUCTS = {
         "wow": "Retail",
         "wowt": "Retail PTR",
         "wow_beta": "Beta",
@@ -111,6 +112,9 @@ class CacheConfig:
         "wowz": "Submission",
         "wowlivetest": "Live Test",
         "wowdev": "Internal",
+        "fenrisdev": "Diablo IV Internal",
+        "fenris": "Diablo IV Retail",
+        "fenrisb": "Diablo IV Beta",
     }
     AREAS_TO_CHECK_FOR_UPDATES = ["build", "build_text"]
     CACHE_FOLDER_NAME = "cache"
@@ -184,3 +188,27 @@ class DebugConfig:
     debug_enabled = os.getenv("DEBUG", False)
     debug_guild_id = os.getenv("DEBUG_GUILD_ID")
     debug_channel_id = os.getenv("DEBUG_CHANNEL_ID")
+
+
+## OPENAI CONFIGURATION
+
+
+class OpenAIStrings:
+    TOKEN_COUNT_FAILED = "Token count failed. Please try again or let Ghost know."
+    TOKEN_COUNT_MAX_REACHED = (
+        "Prompt exceeds maximum token count. Please shorten your prompt and try again."
+    )
+
+
+class OpenAIConfig:
+    strings = OpenAIStrings()
+
+    chat_model = "gpt-3.5-turbo"
+    max_tokens = 4096
+    max_tokens_per_month = 20000000
+
+    default_encoding = "cl100k_base"
+
+    conversations_enabled = False
+
+    default_messages = []

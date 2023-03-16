@@ -102,7 +102,7 @@ class CDNCache:
                     logger.debug(self.CONFIG.strings.LOG_PARSE_DATA)
                     data = self.parse_response(branch, res.text)
 
-                    if data:
+                    if data and res.status_code == 200:
                         logger.debug(f"Comparing build data for {branch}")
                         is_new = self.compare_builds(branch, data)
 
@@ -120,7 +120,7 @@ class CDNCache:
                         logger.debug(f"Saving build data for {branch}")
                         self.save_build_data(branch, data)
                     else:
-                        continue
+                        logger.error(f"Invalid API response for branch {branch}")
                 except httpx.ConnectError as exc:
                     logger.error(
                         f"Connection error during CDN check for {branch} using url {url or None}"  # type: ignore
@@ -156,7 +156,7 @@ class CDNCache:
             }
 
             return output
-        except Exception as exc:
+        except KeyError as exc:
             logger.error(
                 f"Encountered an error parsing API response for branch: {branch}."
             )

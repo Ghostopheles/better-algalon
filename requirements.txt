@@ -1,3 +1,4 @@
-python-dotenv
 py-cord
 httpx
+openai
+tiktoken
