@@ -96,14 +96,6 @@
             "build_text": "0.6.1",
             "product_config": "6f9c62da049ee0b5477982846711f661"
         },
-        "fenris": {
-            "region": "us",
-            "build_config": "4baf0eeceb53efb112fb603e142f0588",
-            "cdn_config": "eefb40ef74e045d91d7c405828b1078f",
-            "build": "untracked",
-            "build_text": "0.0.0",
-            "product_config": "53b3809d9533124cf1a6e4bed70d1186"
-        },
         "fenrisb": {
             "region": "us",
             "build_config": "e295b2313cc84936f4c98be96b05e633",
@@ -111,6 +103,14 @@
             "build": "39319",
             "build_text": "0.8.0",
             "product_config": "40d605f0dca41754a7035ec3ad588ed6"
+        },
+        "fenris": {
+            "region": "us",
+            "build_config": "untracked",
+            "cdn_config": "untracked",
+            "build": "untracked",
+            "build_text": "untracked",
+            "product_config": "untracked"
         }
     },
     "last_updated_by": "win32",

@@ -64,6 +64,22 @@ class CDNCache:
                     return True
             return False
 
+    def set_default_entry(self, name: str):
+        template = {
+            "region": "us",
+            "build_config": "untracked",
+            "cdn_config": "untracked",
+            "build": "untracked",
+            "build_text": "untracked",
+            "product_config": "untracked",
+        }
+        self.save_build_data(name, template)
+
+    def get_all_config_entries(self):
+        with open(self.cdn_path, "r") as file:
+            file_json = json.load(file)
+            return file_json[self.CONFIG.indices.BUILDINFO].keys()
+
     def save_build_data(self, branch: str, data: dict):
         """Saves new build data to the `cdn.json` file."""
         with open(self.cdn_path, "r+") as file:

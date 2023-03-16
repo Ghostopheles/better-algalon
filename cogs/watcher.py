@@ -61,6 +61,13 @@ class CDNCog(commands.Cog):
                 )
                 self.guild_cfg.remove_guild_config(guild_id)
 
+        logger.info("Running cache configuration check...")
+
+        for product in self.cdn_cache.CONFIG.PRODUCTS.keys():
+            if product not in self.cdn_cache.get_all_config_entries():
+                logger.info(f"New product detected. Adding default entry for {product}")
+                self.cdn_cache.set_default_entry(product)
+
     async def notify_owner_of_exception(
         self,
         error,
