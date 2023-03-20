@@ -5,8 +5,9 @@ import discord
 import logging
 
 from base64 import b64encode
-from discord.ext import bridge, commands, tasks
+from discord.ext import bridge, commands
 
+from ..guild_config import GuildCFG
 from ..config import BlizzardAPIConfig, CommonStrings
 
 logger = logging.getLogger("discord.api.blizzard")
@@ -22,42 +23,19 @@ class BlizzardAPI:
         self.__API_URL = f"https://{self.REGION}.api.blizzard.com"
         self.__API_TOKEN_URL = f"https://{self.REGION}.battle.net/oauth/token"
 
-        self.__NAMESPACE_PROFILE = f"profile-{self.REGION}"
-        self.__NAMESPACE_DYNAMIC = f"dynamic-{self.REGION}"
-        self.__NAMESPACE_STATIC = f"static-{self.REGION}"
-
         self.__CLIENT_ID = os.getenv("BLIZZARD_API_CLIENT_ID")
         self.__CLIENT_SECRET = os.getenv("BLIZZARD_API_CLIENT_SECRET")
 
-        self.authenticated = False
+        self.__LAST_STATUS_CODE = 0
 
         asyncio.run(
             self.__auth()
         )  # authenticate with the Blizzard API for self.access_token
 
-        self.__STATIC_HEADERS = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Battlenet-Namespace": self.__NAMESPACE_STATIC,
-            "locale": self.LOCALE,
-            "region": self.REGION,
-        }
-
-        self.__PROFILE_HEADERS = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Battlenet-Namespace": self.__NAMESPACE_PROFILE,
-            "locale": self.LOCALE,
-            "region": self.REGION,
-        }
-
-        self.__DYNAMIC_HEADERS = {
-            "Authorization": f"Bearer {self.access_token}",
-            "Battlenet-Namespace": self.__NAMESPACE_DYNAMIC,
-            "locale": self.LOCALE,
-            "region": self.REGION,
-        }
-
     async def __auth(self) -> bool:
-        self.logger.info("Authenticating with the Blizzard API...")
+        self.logger.info(
+            f"Authenticating with the Blizzard API for region {self.REGION}..."
+        )
         body = {"grant_type": "client_credentials"}
         headers = {
             "Authorization": f"Basic {b64encode(f'{self.__CLIENT_ID}:{self.__CLIENT_SECRET}'.encode('utf-8')).decode('utf-8')}"
@@ -81,17 +59,7 @@ class BlizzardAPI:
                 self.access_token_type = token_json["token_type"]
                 self.access_token_lifetime = token_json["expires_in"]
 
-                self.authenticated = True
                 self.logger.info("Blizzard API authentication successful.")
-
-                @tasks.loop(seconds=self.access_token_lifetime, count=1)
-                async def refresh_auth(self):
-                    if refresh_auth.current_loop != 0:
-                        self.logger.info("Refreshing Blizzard API access token...")
-                        self.authenticated = False
-                        await self.__auth()
-
-                refresh_auth.start(self)
 
                 return True
             else:
@@ -100,26 +68,41 @@ class BlizzardAPI:
                 )
                 return False
 
-    # decorator to ensure we're authenticated before making api calls
-    def _requires_auth(func):  # type: ignore
-        async def auth_wrapper(self):
-            self.logger.info("Checking for valid Blizzard authentication...")
-            if not self.authenticated:
-                await self.__auth()
+    def _generate_headers(self, header_type: str, locale: str):
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Battlenet-Namespace": f"{header_type}-{self.REGION}",
+            "locale": locale,
+            "region": self.REGION,
+        }
 
-            if self.authenticated:
-                self.logger.info("Authentication check successful!")
-                return await func(self)  # type: ignore
+        return headers
+
+    # decorator to ensure we're authenticated before making api calls
+    def _requires_auth(func, *args):  # type: ignore
+        async def auth_wrapper(self, *args):
+            self.logger.info("Checking for valid Blizzard authentication...")
+            self.logger.debug(f"Calling {func.__name__}.")  # type: ignore
+            await func(self, *args)  # type: ignore
+
+            if self.__LAST_STATUS_CODE == 401:
+                self.logger.info("Authentication is busted. Reacquiring...")
+                await self.__auth()
+                self.__LAST_STATUS_CODE = 0
+                return await func(self, *args)  # type: ignore
+
+            return False
 
         return auth_wrapper
 
     @_requires_auth  # type: ignore
-    async def get_token_price(self) -> dict | bool:
+    async def get_token_price(self, locale: str) -> dict | bool:
         token_endpoint = f"{self.__API_URL}/data/wow/token/index"
 
         async with httpx.AsyncClient() as client:
             try:
-                data = await client.get(token_endpoint, headers=self.__DYNAMIC_HEADERS)
+                headers = self._generate_headers("dynamic", locale)
+                data = await client.get(token_endpoint, headers=headers)  # type: ignore
             except:
                 self.logger.error("Error fetching token price.")
                 return False
@@ -137,20 +120,36 @@ class BlizzardAPI:
                 return token_data
             else:
                 self.logger.error(f"Token API returned status code {data.status_code}.")
+                self.__LAST_STATUS_CODE = data.status_code
                 return False
+
+
+class RegionalAPI:
+    us = BlizzardAPI(region="us")
+    eu = BlizzardAPI(region="eu")
+    kr = BlizzardAPI(region="kr")
+    tw = BlizzardAPI(region="tw")
+    cn = BlizzardAPI(region="cn")
 
 
 # this is the cog that gets added to the discord bot, aka: where the above class interfaces with discord
 class BlizzardAPICog(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.api = BlizzardAPI()
+        self.guild_cfg = GuildCFG()
+        self.api = RegionalAPI()
 
     @bridge.bridge_command(name="cdntokenprice")
     async def cdn_token_price(self, ctx: bridge.BridgeApplicationContext):
         """Get the current WoW Token price."""
+
+        region = self.guild_cfg.get_region(ctx.guild_id)  # type: ignore
+        locale = self.guild_cfg.get_locale(ctx.guild_id)  # type: ignore
+
+        api = getattr(self.api, region)
+
         logger.info("Grabbing newest token price...")
-        token_data = await self.api.get_token_price()
+        token_data = await api.get_token_price(locale)
 
         if isinstance(token_data, dict):
             embed = discord.Embed(

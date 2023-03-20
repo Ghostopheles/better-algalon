@@ -156,6 +156,4 @@ invite.txt
 
 *.ipynb
 *.bat
-scratch.py
-cogs/cdnwatcher.py.new
-example_response.json
+cogs/cache/*

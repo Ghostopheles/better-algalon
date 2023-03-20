@@ -11,8 +11,13 @@
             "wow_classic_era",
             "wow_classic_beta",
             "wow",
-            "wowlivetest"
-        ]
+            "wowlivetest",
+            "fenrisdev",
+            "fenrisb",
+            "fenris"
+        ],
+        "region": "us",
+        "locale": "en_US"
     },
     "242364846362853377": {
         "channel": 286441865442492416,
@@ -26,6 +31,8 @@
             "wow_classic_ptr",
             "wowt",
             "wow_classic"
-        ]
+        ],
+        "region": "us",
+        "locale": "en_US"
     }
 }
