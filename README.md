@@ -7,6 +7,24 @@ A bot that watches Blizzard's Warcraft CDN and automatically posts new build upd
 
 Inspired by, and vaguely based on the original [Algalon bot by Ellypse](https://github.com/Ellypse/Algalon).
 
+## supported branches (what it watches)
+| Branch Name     | Readable Name |
+| ----------- | ----------- |
+| wow | Retail |
+| wowt | Retail PTR |
+| wow_beta | Beta |
+| wow_classic | WotLK Classic |
+| wow_classic_ptr | WotLK Classic PTR|
+| wow_classic_beta | Classic Beta |
+| wow_classic_era | Classic Era |
+| wow_classic_era_ptr | Classic Era PTR |
+| wowz | Submission (?) |
+| wowlivetest | Live Test|
+| wowdev | Internal |
+| fenris | Diablo IV |
+| fenrisb | Diablo IV Beta |
+| fenrisdev | Diablo IV Dev |
+
 ## commands
 
 Algalon provides a number of commands with questionable value.
