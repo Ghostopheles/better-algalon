@@ -3,9 +3,11 @@
 
 v1.5
 
-A bot that watches Blizzard's Warcraft CDN and automatically posts new build updates to a specified Discord channel.
+A bot that watches Blizzard's CDN and automatically posts new build updates to a specified Discord channel.
 
 Inspired by, and vaguely based on the original [Algalon bot by Ellypse](https://github.com/Ellypse/Algalon).
+
+Includes a frankenstein Twitter integration to post updates to Twitter alongside Discord. This will be replaced in the future with Algalon 3.0. This bot can be found on Twitter as [@algalon_ghost](https://twitter.com/algalon_ghost).
 
 ## commands
 
