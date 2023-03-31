@@ -3,6 +3,8 @@ import time
 import tweepy.asynchronous as tweepy
 import logging
 
+from ..config import DebugConfig as dbg
+
 BEARER_KEY = os.getenv("TWITTER_API_BEARER_DEV")
 
 API_KEY = os.getenv("TWITTER_API_KEY_DEV")
@@ -32,7 +34,11 @@ class Twitter:
             logger.info("Tweet already sent for this package. Skipping...")
             return
 
-        title = f"New build{'s' if len(embed['fields']) > 1 else ''} detected"
+        is_warcraft = False
+
+        for field in embed["fields"]:
+            if "wow" in field["value"]:
+                is_warcraft = True
 
         updates = "".join([field["value"] for field in embed["fields"]])
         updates = updates.replace("`", "").replace("*", "")
@@ -45,14 +51,24 @@ class Twitter:
 
         timestamp = time.strftime("%m-%d-%Y@%I:%M:%S", time_object)
 
+        hashtag = ""
+        hashtag += "#Warcraft " if is_warcraft else ""
+
+        title = f"New {hashtag}build{'s' if len(embed['fields']) > 1 else ''} found"
+
         text = f"{title}:\n{updates}\nFound at: {timestamp} {time_object.tm_zone}"
 
-        response = await self.bot_client.create_tweet(text=text)
+        if not dbg.debug_enabled:
+            response = await self.bot_client.create_tweet(text=text)
 
-        if response and len(response.errors) == 0:  # type: ignore
-            logger.info("Tweet sent successfully!")
-            self.sent_tokens.append(nonce)
-            return
+            if response and len(response.errors) == 0:  # type: ignore
+                logger.info("Tweet sent successfully!")
+                self.sent_tokens.append(nonce)
+                return
+            else:
+                logger.error("Error occurred sending tweet. Please investigate.")
+                return
         else:
-            logger.error("Error occurred sending tweet. Please investigate.")
+            logger.debug("Debug mode enabled. Skipping tweet...")
+            logger.debug(f"Tweet text:\n{text}")
             return
