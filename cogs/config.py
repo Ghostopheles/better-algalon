@@ -105,16 +105,26 @@ class CacheConfig:
         "wowt": "Retail PTR",
         "wow_beta": "Beta",
         "wow_classic": "WotLK Classic",
-        "wow_classic_ptr": "WotLK Classic PTR",
         "wow_classic_beta": "Classic Beta",
+        "wow_classic_ptr": "WotLK Classic PTR",
         "wow_classic_era": "Classic Era",
+        "wow_classic_era_beta": "Classic Era Beta",
         "wow_classic_era_ptr": "Classic Era PTR",
         "wowz": "Submission",
         "wowlivetest": "Live Test",
         "wowdev": "Internal",
-        "fenrisdev": "Diablo IV Internal",
+        "wowdev2": "Internal 2",
+        "wowdev3": "Internal 3",
+        "wowv": "Vendor",
+        "wowv2": "Vendor 2",
+        "wowv3": "Vendor 3",
+        "wowv4": "Vendor 4",
+        # diablo 4
         "fenris": "Diablo IV Retail",
         "fenrisb": "Diablo IV Beta",
+        "fenrisdev": "Diablo IV Internal",
+        "fenrisvendor": "Diablo IV Vendor",
+        "fenrisvendor2": "Diablo IV Vendor 2",
     }
     AREAS_TO_CHECK_FOR_UPDATES = ["build", "build_text"]
     CACHE_FOLDER_NAME = "cache"
