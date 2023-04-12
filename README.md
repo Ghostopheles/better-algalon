@@ -19,13 +19,22 @@ Includes a frankenstein Twitter integration to post updates to Twitter alongside
 | wow_classic_ptr | WotLK Classic PTR|
 | wow_classic_beta | Classic Beta |
 | wow_classic_era | Classic Era |
+| wow_classic_era_beta | Classic Era Beta |
 | wow_classic_era_ptr | Classic Era PTR |
-| wowz | Submission (?) |
+| wowz | Submission |
 | wowlivetest | Live Test|
 | wowdev | Internal |
-| fenris | Diablo IV |
+| wowdev2 | Internal 2 |
+| wowdev3 | Internal 3 |
+| wowv | Vendor |
+| wowv2 | Vendor 2 |
+| wowv3 | Vendor 3 |
+| wowv4 | Vendor 4 |
+| fenris | Diablo IV Retail |
 | fenrisb | Diablo IV Beta |
-| fenrisdev | Diablo IV Dev |
+| fenrisdev | Diablo IV Internal |
+| fenrisvendor | Diablo IV Vendor |
+| fenrisvendor2 | Diablo IV Vendor 2 |
 
 
 ## commands
