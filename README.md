@@ -9,6 +9,25 @@ Inspired by, and vaguely based on the original [Algalon bot by Ellypse](https://
 
 Includes a frankenstein Twitter integration to post updates to Twitter alongside Discord. This will be replaced in the future with Algalon 3.0. This bot can be found on Twitter as [@algalon_ghost](https://twitter.com/algalon_ghost).
 
+## supported branches (what it watches)
+| Branch Name     | Readable Name |
+| ----------- | ----------- |
+| wow | Retail |
+| wowt | Retail PTR |
+| wow_beta | Beta |
+| wow_classic | WotLK Classic |
+| wow_classic_ptr | WotLK Classic PTR|
+| wow_classic_beta | Classic Beta |
+| wow_classic_era | Classic Era |
+| wow_classic_era_ptr | Classic Era PTR |
+| wowz | Submission (?) |
+| wowlivetest | Live Test|
+| wowdev | Internal |
+| fenris | Diablo IV |
+| fenrisb | Diablo IV Beta |
+| fenrisdev | Diablo IV Dev |
+
+
 ## commands
 
 Algalon provides a number of commands with questionable value.
