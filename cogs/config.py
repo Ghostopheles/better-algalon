@@ -152,7 +152,7 @@ class CacheConfig:
 
 
 class CommonStrings:
-    EMBED_FOOTER = f"Data provided by Algalon {os.getenv('ENVIRONMENT', 'Redstone')}."
+    EMBED_FOOTER = f"Data provided by Algalon {os.getenv('ENVIRONMENT', 'Dev')}."
     VALID_REGIONS = SUPPORTED_REGIONS_STRINGS
 
     SPEECH = "$$dalaran.speech$$"
@@ -198,27 +198,3 @@ class DebugConfig:
     debug_enabled = os.getenv("DEBUG", False)
     debug_guild_id = os.getenv("DEBUG_GUILD_ID")
     debug_channel_id = os.getenv("DEBUG_CHANNEL_ID")
-
-
-## OPENAI CONFIGURATION
-
-
-class OpenAIStrings:
-    TOKEN_COUNT_FAILED = "Token count failed. Please try again or let Ghost know."
-    TOKEN_COUNT_MAX_REACHED = (
-        "Prompt exceeds maximum token count. Please shorten your prompt and try again."
-    )
-
-
-class OpenAIConfig:
-    strings = OpenAIStrings()
-
-    chat_model = "gpt-3.5-turbo"
-    max_tokens = 4096
-    max_tokens_per_month = 20000000
-
-    default_encoding = "cl100k_base"
-
-    conversations_enabled = False
-
-    default_messages = []
