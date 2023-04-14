@@ -49,6 +49,7 @@ logger.info(
 logger.info(f"Using PyCord version {discord.__version__}")
 cogs.log_start()
 
+
 # This subclasses the default help command to provide our bot with a prettier help command.
 class CDNBotHelpCommand(commands.HelpCommand):
     def get_command_signature(self, command):

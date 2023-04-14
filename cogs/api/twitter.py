@@ -1,7 +1,8 @@
 import os
 import time
-import tweepy.asynchronous as tweepy
 import logging
+
+import tweepy.asynchronous as tweepy
 
 from ..config import DebugConfig as dbg
 
@@ -27,6 +28,7 @@ class Twitter:
         self.bot_client.user_agent = "Algalon Ghost"
 
         self.sent_tokens = []
+        self.encrypted_icon = "\U0001F510"
 
     async def send_tweet(self, embed, nonce: str):
         logger.info("Sending tweet...")
@@ -42,6 +44,7 @@ class Twitter:
 
         updates = "".join([field["value"] for field in embed["fields"]])
         updates = updates.replace("`", "").replace("*", "")
+        updates = updates.replace(":lock:", self.encrypted_icon)
 
         timestamp = (
             embed["description"].split("**|**")[0].replace("<t:", "").replace(":f>", "")
@@ -51,10 +54,9 @@ class Twitter:
 
         timestamp = time.strftime("%m-%d-%Y@%I:%M:%S", time_object)
 
-        hashtag = ""
-        hashtag += "#Warcraft " if is_warcraft else ""
+        hashtag = "#Warcraft" if is_warcraft else ""
 
-        title = f"New {hashtag}build{'s' if len(embed['fields']) > 1 else ''} found"
+        title = f"New {hashtag} build{'s' if len(embed['fields']) > 1 else ''} found"
 
         text = f"{title}:\n{updates}\nFound at: {timestamp} {time_object.tm_zone}"
 

@@ -3,8 +3,10 @@ import sys
 import time
 import json
 import httpx
+import asyncio
 import logging
 
+from .api.blizzard_tact import BlizzardTACTExplorer
 from .config import CacheConfig, FETCH_INTERVAL
 
 logger = logging.getLogger("discord.cdn.cache")
@@ -14,6 +16,7 @@ class CDNCache:
     SELF_PATH = os.path.dirname(os.path.realpath(__file__))
     PLATFORM = sys.platform
     CONFIG = CacheConfig()
+    TACT = BlizzardTACTExplorer()
 
     def __init__(self):
         self.cache_path = os.path.join(self.SELF_PATH, self.CONFIG.CACHE_FOLDER_NAME)
@@ -116,7 +119,7 @@ class CDNCache:
 
                     res = await client.get(url, timeout=20)
                     logger.debug(self.CONFIG.strings.LOG_PARSE_DATA)
-                    data = self.parse_response(branch, res.text)
+                    data = await self.parse_response(branch, res.text)
 
                     if data and res.status_code == 200:
                         logger.debug(f"Comparing build data for {branch}")
@@ -148,7 +151,7 @@ class CDNCache:
 
             return new_data
 
-    def parse_response(self, branch: str, response: str):
+    async def parse_response(self, branch: str, response: str):
         """Parses the API response and attempts to return the new data."""
         try:
             data = response.split("\n")
@@ -169,6 +172,7 @@ class CDNCache:
                 "build": build_number,
                 "build_text": build_text,
                 "product_config": product_config,
+                "encrypted": await self.TACT.is_encrypted(branch, product_config),
             }
 
             return output

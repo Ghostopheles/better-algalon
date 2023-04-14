@@ -131,7 +131,9 @@ class CDNCog(commands.Cog):
             )
             build = f"**{build}**" if build != build_old else build
 
-            value_string += f"`{public_name} ({branch})`: {build_text_old}.{build_old} --> {build_text}.{build}\n"
+            encrypted = ":lock:" if ver["encrypted"] else ""
+
+            value_string += f"`{public_name} ({branch})`{encrypted}: {build_text_old}.{build_old} --> {build_text}.{build}\n"
 
         if value_string == "":
             return False
