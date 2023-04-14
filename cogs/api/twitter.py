@@ -5,10 +5,10 @@ import logging
 
 from ..config import DebugConfig as dbg
 
-BEARER_KEY = os.getenv("TWITTER_API_BEARER_DEV")
+API_KEY = os.getenv("TWITTER_API_KEY_PROD")
+API_SECRET = os.getenv("TWITTER_API_SECRET_PROD")
 
-API_KEY = os.getenv("TWITTER_API_KEY_DEV")
-API_SECRET = os.getenv("TWITTER_API_SECRET_DEV")
+BEARER_KEY = os.getenv("TWITTER_API_BEARER_PROD")
 
 ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
 ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
@@ -66,7 +66,9 @@ class Twitter:
                 self.sent_tokens.append(nonce)
                 return
             else:
-                logger.error("Error occurred sending tweet. Please investigate.")
+                logger.error(
+                    f"Error occurred sending tweet. Please investigate.\n{response.errors or response}"  # type: ignore
+                )
                 return
         else:
             logger.debug("Debug mode enabled. Skipping tweet...")

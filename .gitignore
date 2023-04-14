@@ -157,3 +157,4 @@ invite.txt
 *.ipynb
 *.bat
 cogs/cache/*
+.vscode/

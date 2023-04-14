@@ -176,8 +176,13 @@ class CDNCog(commands.Cog):
 
                 embed = self.build_embed(new_data, guild.id)  # type: ignore
                 if embed and cdn_channel:
+                    logger.info("Sending CDN update post and tweet...")
                     await cdn_channel.send(embed=embed)  # type: ignore
                     await self.twitter.send_tweet(embed.to_dict(), token)
+                elif embed and not cdn_channel:
+                    logger.error("No channel found, aborting.")
+                elif not embed:
+                    logger.error("No embed built, aborting.")
 
         else:
             if new_data:
@@ -191,6 +196,8 @@ class CDNCog(commands.Cog):
                     embed = self.build_embed(new_data, dbg.debug_guild_id)  # type: ignore
                     if embed:
                         await channel.send(embed=embed)  # type: ignore
+                    else:
+                        logger.error("No embed built, aborting.")
             else:
                 logger.info("No CDN changes found.")
 
@@ -235,6 +242,7 @@ class CDNCog(commands.Cog):
             show_indicator=True,
             use_default_buttons=False,
             custom_buttons=buttons,
+            timeout=300,
         )
 
         return paginator
