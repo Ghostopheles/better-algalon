@@ -66,7 +66,7 @@ class CacheDefaults:
     LOCALE = REGION.locales[0]
     LOCALE_NAME = LOCALE.value
     BUILD = "0.0.0"
-    BUILDTEXT = "untracked"
+    BUILDTEXT = "no-data"
 
 
 class Settings:
