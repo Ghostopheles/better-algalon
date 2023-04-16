@@ -143,8 +143,8 @@ class CDNCache:
                     )
                     return exc
                 except Exception as exc:
-                    logger.error(f"Timeout error during CDN check for {branch}")
-                    return exc
+                    logger.error(f"Error during CDN check for {branch}")
+                    continue
 
             return new_data
 
