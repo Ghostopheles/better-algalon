@@ -119,6 +119,10 @@ class CacheConfig:
         "wowv2": "Vendor 2",
         "wowv3": "Vendor 3",
         "wowv4": "Vendor 4",
+        "wowe1": "Event",
+        "wowe2": "Event 2",
+        "wowe3": "Event 3",
+        "wowdemo": "Demo",
         # diablo 4
         "fenris": "Diablo IV Retail",
         "fenrisb": "Diablo IV Beta",

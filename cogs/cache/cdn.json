@@ -153,7 +153,7 @@
         "wowv": {
             "region": "us",
             "build_config": "bb43801fcb715c87a1d0da0b4173a799",
-            "cdn_config": "270103b9171cd13a9d7f0cc6e06d5b03",
+            "cdn_config": "7e6659b7a5dc701fc3b233729c41663c",
             "build": "46723",
             "build_text": "10.0.0",
             "product_config": "0fec822541aeab28d93f785ecc0a41ab",
@@ -162,7 +162,7 @@
         "wowv2": {
             "region": "us",
             "build_config": "59632dc7b0f3113d2f261acb18847d5b",
-            "cdn_config": "270103b9171cd13a9d7f0cc6e06d5b03",
+            "cdn_config": "7e6659b7a5dc701fc3b233729c41663c",
             "build": "48520",
             "build_text": "10.0.7",
             "product_config": "6a8f97104dd4d4c8a14599c289329656",
@@ -170,9 +170,9 @@
         },
         "wowv3": {
             "region": "us",
-            "build_config": "f5037efb910baa48197c6cb30529f118",
-            "cdn_config": "270103b9171cd13a9d7f0cc6e06d5b03",
-            "build": "49092",
+            "build_config": "9a7b98b8b63e0f5da75eb1530b31be3c",
+            "cdn_config": "7e6659b7a5dc701fc3b233729c41663c",
+            "build": "49145",
             "build_text": "10.1.0",
             "product_config": "cf360929ce16bb0d52f1020676c3fc5a",
             "encrypted": true
@@ -180,7 +180,7 @@
         "wowv4": {
             "region": "us",
             "build_config": "3c4a065fccd2397bfce1cc92a84c68b2",
-            "cdn_config": "270103b9171cd13a9d7f0cc6e06d5b03",
+            "cdn_config": "7e6659b7a5dc701fc3b233729c41663c",
             "build": "44061",
             "build_text": "9.2.5",
             "product_config": "5eab08eaba221831f482395a1d4196cd",
@@ -188,21 +188,54 @@
         },
         "fenrisvendor": {
             "region": "us",
-            "build_config": "43ed8d5cea684e49c509f33c2015ecc8",
-            "cdn_config": "2f258702816e0b34d05f00adf4c5474e",
-            "build": "40481",
+            "build_config": "47fbd7a517ab9da2f8f7e0302b7915c8",
+            "cdn_config": "f44542ba9d4cf344a2e62448df089ca2",
+            "build": "40514",
             "build_text": "1.0.x",
             "product_config": "0cfdd8736fb4ce878ed8e4aecb2ee401",
             "encrypted": true
         },
         "fenrisvendor2": {
             "region": "us",
-            "build_config": "82eefe892842c3196128fbaaec110da2",
-            "cdn_config": "2f258702816e0b34d05f00adf4c5474e",
-            "build": "40211",
+            "build_config": "6368cff66bec8af2ffc58d97f38df71f",
+            "cdn_config": "f44542ba9d4cf344a2e62448df089ca2",
+            "build": "40514",
             "build_text": "0.0.1",
             "product_config": "1134ad3c4977dd6125695f4923aa4bcd",
             "encrypted": true
+        },
+        "wowe1": {
+            "region": "us",
+            "build_config": "43a001a23efd4193a96266be43fe67d8",
+            "cdn_config": "00bf4429364a22c7a23b5cf4b40b8587",
+            "build": "35078",
+            "build_text": "9.0.1",
+            "product_config": "daab8468d91c6c4664b42103bd0ede38",
+            "encrypted": false
+        },
+        "wowe2": {
+            "region": "us",
+            "build_config": "untracked",
+            "cdn_config": "untracked",
+            "build": "untracked",
+            "build_text": "untracked",
+            "product_config": "untracked"
+        },
+        "wowe3": {
+            "region": "us",
+            "build_config": "untracked",
+            "cdn_config": "untracked",
+            "build": "untracked",
+            "build_text": "untracked",
+            "product_config": "untracked"
+        },
+        "wowdemo": {
+            "region": "us",
+            "build_config": "untracked",
+            "cdn_config": "untracked",
+            "build": "untracked",
+            "build_text": "untracked",
+            "product_config": "untracked"
         }
     },
     "last_updated_by": "win32",
