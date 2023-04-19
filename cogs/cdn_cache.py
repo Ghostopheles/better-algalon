@@ -51,6 +51,12 @@ class CDNCache:
                 logger.info("Skipping build comparison, data is outdated")
                 return False
 
+            if (
+                file_json[self.CONFIG.indices.BUILDINFO][branch]["encrypted"] == True
+                and newBuild["encrypted"] == None
+            ):
+                newBuild["encrypted"] = True
+
             for area in self.CONFIG.AREAS_TO_CHECK_FOR_UPDATES:
                 if branch in file_json[self.CONFIG.indices.BUILDINFO]:
                     if (

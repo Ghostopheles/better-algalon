@@ -12,7 +12,7 @@ try:
 
     load_dotenv()
 except ImportError:
-    print("PRODUCTION ENVIRONMENT")
+    pass
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 OWNER_ID = os.getenv("OWNER_ID")

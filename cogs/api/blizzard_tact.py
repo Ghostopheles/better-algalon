@@ -56,7 +56,12 @@ class BlizzardTACTExplorer:
     async def is_encrypted(self, branch: str, product_config_hash: str):
         async with httpx.AsyncClient() as client:
             url = f"{self.__API_URL}{branch}{self.__API_ENDPOINT}"
-            response = await client.get(url)
+            try:
+                response = await client.get(url)
+            except httpx.ConnectTimeout as exc:
+                self.logger.error("TACT CDN info request timed out.")
+                self.logger.error(exc)
+                return None
 
             if response.status_code != 200:
                 return None
