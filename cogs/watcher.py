@@ -224,8 +224,10 @@ class CDNCog(commands.Cog):
             if not data:
                 continue
 
+            lock = ":lock:" if data["encrypted"] else ""
+
             embed = discord.Embed(
-                title=f"CDN Data for: {name}", color=discord.Color.blurple()
+                title=f"CDN Data for: {name}{lock}", color=discord.Color.blurple()
             )
 
             data_text = f"**Region:** `{data['region']}`\n"

@@ -139,6 +139,16 @@ class CacheConfig:
     SUPPORTED_REGIONS = SUPPORTED_REGIONS
     SUPPORTED_REGIONS_STRING = SUPPORTED_REGIONS_STRINGS
 
+    REQUIRED_KEYS_DEFAULTS = {
+        "region": "us",
+        "build_config": "no-data",
+        "cdn_config": "no-data",
+        "build": "no-data",
+        "build_text": "no-data",
+        "product_config": "no-data",
+        "encrypted": None,
+    }
+
     settings = Settings()
     strings = CacheStrings()
     indices = Indices()

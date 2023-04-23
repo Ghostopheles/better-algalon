@@ -25,6 +25,31 @@ class CDNCache:
             os.mkdir(self.cache_path)
             self.init_cdn()
 
+        self.patch_cdn_keys()
+
+    def patch_cdn_keys(self):
+        with open(self.cdn_path, "r+") as file:
+            logger.info("Patching CDN file...")
+            file_json = json.load(file)
+            build_data = file_json[self.CONFIG.indices.BUILDINFO]
+            try:
+                for branch in build_data:
+                    for key, value in self.CONFIG.REQUIRED_KEYS_DEFAULTS.items():
+                        if key not in build_data[branch]:
+                            logger.info(
+                                f"Adding {key} to {branch} with value {value}..."
+                            )
+                            build_data[branch][key] = value
+
+            except KeyError as exc:
+                logger.error("KeyError while patching CDN file", exc_info=exc)
+
+            file_json[self.CONFIG.indices.BUILDINFO] = build_data
+
+            file.seek(0)
+            json.dump(file_json, file, indent=4)
+            file.truncate()
+
     def init_cdn(self):
         """Populates the `cdn.json` file with default values if it does not exist."""
         with open(self.cdn_path, "w") as file:
@@ -50,6 +75,9 @@ class CDNCache:
                 logger.info("Skipping build comparison, data is outdated")
                 return False
 
+            if not "encrypted" in file_json:  # just a safeguard
+                file_json["encrypted"] = None
+
             if (
                 file_json[self.CONFIG.indices.BUILDINFO][branch]["encrypted"] == True
                 and newBuild["encrypted"] == None
@@ -73,15 +101,7 @@ class CDNCache:
             return False
 
     def set_default_entry(self, name: str):
-        template = {
-            "region": "us",
-            "build_config": "untracked",
-            "cdn_config": "untracked",
-            "build": "untracked",
-            "build_text": "untracked",
-            "product_config": "untracked",
-        }
-        self.save_build_data(name, template)
+        self.save_build_data(name, self.CONFIG.REQUIRED_KEYS_DEFAULTS)
 
     def get_all_config_entries(self):
         with open(self.cdn_path, "r") as file:
@@ -151,7 +171,7 @@ class CDNCache:
                     )
                     return exc
                 except Exception as exc:
-                    logger.error(f"Error during CDN check for {branch}")
+                    logger.error(f"Error during CDN check for {branch}", exc_info=exc)
                     continue
 
             return new_data
