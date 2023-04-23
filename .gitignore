@@ -156,5 +156,5 @@ invite.txt
 
 *.ipynb
 *.bat
-cogs/cache/*
+cogs/cache/
 .vscode/
