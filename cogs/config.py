@@ -139,6 +139,8 @@ class CacheConfig:
     SUPPORTED_REGIONS = SUPPORTED_REGIONS
     SUPPORTED_REGIONS_STRING = SUPPORTED_REGIONS_STRINGS
 
+    FILE_BACKUP_COUNT = 10
+
     REQUIRED_KEYS_DEFAULTS = {
         "region": "us",
         "build_config": "no-data",

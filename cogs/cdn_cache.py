@@ -3,6 +3,7 @@ import sys
 import time
 import json
 import httpx
+import shutil
 import logging
 
 from .api.blizzard_tact import BlizzardTACTExplorer
@@ -108,6 +109,27 @@ class CDNCache:
             file_json = json.load(file)
             return file_json[self.CONFIG.indices.BUILDINFO].keys()
 
+    def create_cache_backup(self):
+        logger.info("Backing up CDN cache file...")
+        backup_path = os.path.join(self.cache_path, "backups")
+        if not os.path.exists(backup_path):
+            os.mkdir(backup_path)
+
+        backup_files = os.listdir(backup_path)
+
+        if len(backup_files) >= self.CONFIG.FILE_BACKUP_COUNT:
+            oldest_file = min(
+                backup_files,
+                key=lambda x: os.path.getmtime(os.path.join(backup_path, x)),
+            )
+            os.remove(os.path.join(backup_path, oldest_file))
+
+        backup_filename = os.path.join(
+            backup_path, f"cdn_{len(backup_files)+1}.json.bak"
+        )
+        shutil.copyfile(self.cdn_path, backup_filename)
+        logger.info("Backup complete!")
+
     def save_build_data(self, branch: str, data: dict):
         """Saves new build data to the `cdn.json` file."""
         with open(self.cdn_path, "r+") as file:
@@ -135,6 +157,7 @@ class CDNCache:
     async def fetch_cdn(self):
         """This is a disaster."""
         logger.debug(self.CONFIG.strings.LOG_FETCH_DATA)
+        self.create_cache_backup()
         async with httpx.AsyncClient() as client:
             new_data = []
             for branch in self.CONFIG.PRODUCTS:
