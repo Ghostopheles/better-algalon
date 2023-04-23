@@ -28,7 +28,8 @@ class CDNCog(commands.Cog):
         self.bot = bot
         self.cdn_cache = CDNCache()
         self.guild_cfg = GuildCFG()
-        self.twitter = Twitter()
+        self.twitter = Twitter(bot)
+        self.flags = self.bot.features.flags.watcher  # type: ignore
         self.last_update = 0
         self.last_update_formatted = ""
 
@@ -71,6 +72,8 @@ class CDNCog(commands.Cog):
                 logger.info(f"New product detected. Adding default entry for {product}")
                 self.cdn_cache.set_default_entry(product)
 
+        logger.info("Health checks complete.")
+
     async def notify_owner_of_exception(
         self,
         error,
@@ -89,6 +92,7 @@ class CDNCog(commands.Cog):
 
     def build_embed(self, data: dict, guild_id: int):
         """This builds a notification embed with the given data."""
+        logger.info("Building update embed...")
 
         guild_watchlist = self.guild_cfg.get_guild_watchlist(guild_id)
 
@@ -146,7 +150,10 @@ class CDNCog(commands.Cog):
 
     async def distribute_embed(self, first_run: bool = False):
         """This handles distributing the generated embeds to the various servers that should receive them."""
-        logger.debug("Building CDN update embed")
+        if not self.flags.doCDNCheck:
+            logger.info("CDN check is disabled, skipping...")
+            return
+
         new_data = await self.cdn_cache.fetch_cdn()
 
         token = secrets.token_urlsafe()
@@ -295,7 +302,15 @@ class CDNCog(commands.Cog):
 
     @bridge.bridge_command(name="cdncurrentdata")
     async def cdn_current_data(self, ctx: bridge.BridgeApplicationContext):
+        """Returns a paginator with the current CDN data for all tracked products."""
         logger.info("Generating paginator to display current build data.")
+
+        if not self.flags.paginatorEnabled:
+            logger.info("Paginator is disabled, aborting.")
+            message = "Paginator is currently disabled."
+            await ctx.interaction.response.send_message(message, ephemeral=True)
+            return
+
         paginator = self.build_paginator_for_current_build_data()
         await paginator.respond(ctx.interaction, ephemeral=True)
 
@@ -307,22 +322,28 @@ class CDNCog(commands.Cog):
         self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
         """Command for adding specific branches to the watchlist for your guild."""
-        added = self.guild_cfg.add_to_guild_watchlist(ctx.guild_id, branch)  # type: ignore
-        if added != True:
-            message = f"{added}\n\n**Valid branches:**\n```\n"
+        if not self.flags.watchlistEditingEnabled:
+            logger.info("Watchlist editing is disabled, aborting.")
+            message = "Watchlist editing is currently disabled."
+        else:
+            added = self.guild_cfg.add_to_guild_watchlist(ctx.guild_id, branch)  # type: ignore
+            if added != True:
+                message = f"{added}\n\n**Valid branches:**\n```\n"
 
-            for product, name in self.cdn_cache.CONFIG.PRODUCTS.items():
-                message += f"{product} : {name}\n"
+                for product, name in self.cdn_cache.CONFIG.PRODUCTS.items():
+                    message += f"{product} : {name}\n"
 
-            message += "```"
+                message += "```"
 
-            await ctx.interaction.response.send_message(
-                message, ephemeral=True, delete_after=300
-            )
-            return False
+                await ctx.interaction.response.send_message(
+                    message, ephemeral=True, delete_after=300
+                )
+                return False
+            else:
+                message = f"`{branch}` successfully added to watchlist."
 
         await ctx.interaction.response.send_message(
-            f"`{branch}` successfully added to watchlist.",
+            message,
             ephemeral=True,
             delete_after=300,
         )
@@ -336,23 +357,29 @@ class CDNCog(commands.Cog):
         self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
         """Command for removing specific branches from the watchlist for you guild."""
-        try:
-            self.guild_cfg.remove_from_guild_watchlist(ctx.guild_id, branch)  # type: ignore
-        except ValueError:
-            message = "Invalid branch argument, please try again.\n\n**Valid branches:**\n```\n"
 
-            for product in self.cdn_cache.CONFIG.PRODUCTS.keys():
-                message += f"{product}\n"
+        if not self.flags.watchlistEditingEnabled:
+            logger.info("Watchlist editing disabled by flag.")
+            message = "Watchlist editing is currently disabled."
+        else:
+            try:
+                self.guild_cfg.remove_from_guild_watchlist(ctx.guild_id, branch)  # type: ignore
+                message = f"`{branch}` successfully removed from watchlist."
+            except ValueError:
+                message = "Invalid branch argument, please try again.\n\n**Valid branches:**\n```\n"
 
-            message += "```"
+                for product in self.cdn_cache.CONFIG.PRODUCTS.keys():
+                    message += f"{product}\n"
 
-            await ctx.interaction.response.send_message(
-                message, ephemeral=True, delete_after=300
-            )
-            return False
+                message += "```"
+
+                await ctx.interaction.response.send_message(
+                    message, ephemeral=True, delete_after=300
+                )
+                return False
 
         await ctx.interaction.response.send_message(
-            f"`{branch}` successfully removed from watchlist.",
+            message,
             ephemeral=True,
             delete_after=300,
         )
@@ -375,33 +402,25 @@ class CDNCog(commands.Cog):
             message, ephemeral=True, delete_after=300
         )
 
-    # FIXME: This command will be a pain to fix so I'm just deleting it for now
-    # @bridge.bridge_command(
-    #    name="cdnedit",
-    #    default_member_permissions=discord.Permissions(administrator=True),
-    # )
-    # async def cdn_edit(self, ctx: bridge.BridgeApplicationContext):
-    #    """Returns a graphical editor for your guilds watchlist."""
-    #    view = CDNUi(ctx=ctx, guild_cfg=self.guild_cfg)
-    #    message = "Edit the branches you are currently watching using the menu below.\nTo save your changes, just click out of the menu."
-
-    #    await ctx.interaction.response.send_message(
-    #        message, view=view, ephemeral=True, delete_after=300
-    #    )
-
     @bridge.bridge_command(
         name="cdnsetchannel",
         default_member_permissions=discord.Permissions(administrator=True),
     )
     async def cdn_set_channel(self, ctx: bridge.BridgeApplicationContext):
         """Sets the notification channel for your guild."""
-        channel = ctx.channel_id
-        guild = ctx.guild_id
 
-        self.guild_cfg.set_notification_channel(guild, channel)  # type: ignore
+        if not self.flags.regionEditingEnabled:
+            logger.info("Region editing is disabled.")
+            message = "Region editing is currently disabled."
+        else:
+            channel = ctx.channel_id
+            guild = ctx.guild_id
+
+            self.guild_cfg.set_notification_channel(guild, channel)  # type: ignore
+            message = "Notification channel set!"
 
         await ctx.interaction.response.send_message(
-            "Notification channel set!", ephemeral=True, delete_after=300
+            message, ephemeral=True, delete_after=300
         )
 
     @bridge.bridge_command(name="cdngetchannel")
@@ -440,15 +459,19 @@ class CDNCog(commands.Cog):
     async def cdn_set_region(self, ctx: bridge.BridgeApplicationContext, region: str):
         """Sets the region for your guild."""
 
-        success, message = self.guild_cfg.set_region(ctx.guild_id, region)  # type: ignore
+        if not self.flags.regionEditingEnabled:
+            logger.info("Region editing is disabled.")
+            message = "Region editing is currently disabled."
+        else:
+            success, message = self.guild_cfg.set_region(ctx.guild_id, region)  # type: ignore
 
-        if not success:
-            valid_regions = "\n\nSupported Regions:```\n"
-            for region in self.guild_cfg.CONFIG.SUPPORTED_REGIONS_STRING:
-                valid_regions += f"{region}\n"
-            valid_regions += "```"
+            if not success:
+                valid_regions = "\n\nSupported Regions:```\n"
+                for region in self.guild_cfg.CONFIG.SUPPORTED_REGIONS_STRING:
+                    valid_regions += f"{region}\n"
+                valid_regions += "```"
 
-            message += valid_regions
+                message += valid_regions
 
         await ctx.interaction.response.send_message(
             message, ephemeral=True, delete_after=300
@@ -475,22 +498,26 @@ class CDNCog(commands.Cog):
     async def cdn_set_locale(self, ctx: bridge.BridgeApplicationContext, locale: str):
         """Sets the locale for your guild."""
 
-        success, message = self.guild_cfg.set_locale(ctx.guild_id, locale)  # type: ignore
+        if not self.flags.localeEditingEnabled:
+            logger.info("Locale editing is disabled.")
+            message = "Locale editing is currently disabled."
+        else:
+            success, message = self.guild_cfg.set_locale(ctx.guild_id, locale)  # type: ignore
 
-        if not success:
-            current_region = self.guild_cfg.get_region(ctx.guild_id)  # type: ignore
-            supported_locales = self.guild_cfg.get_region_supported_locales(
-                current_region
-            )
-            if not supported_locales:
-                return
+            if not success:
+                current_region = self.guild_cfg.get_region(ctx.guild_id)  # type: ignore
+                supported_locales = self.guild_cfg.get_region_supported_locales(
+                    current_region
+                )
+                if not supported_locales:
+                    return
 
-            help_string = f"\n\nSupported Locales for `{current_region}`: ```\n"
-            for locale in supported_locales:
-                help_string += f"{locale.value}\n"  # type: ignore
-            help_string += "```"
+                help_string = f"\n\nSupported Locales for `{current_region}`: ```\n"
+                for locale in supported_locales:
+                    help_string += f"{locale.value}\n"  # type: ignore
+                help_string += "```"
 
-            message += help_string
+                message += help_string
 
         await ctx.interaction.response.send_message(
             message, ephemeral=True, delete_after=300

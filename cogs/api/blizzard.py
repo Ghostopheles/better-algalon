@@ -28,11 +28,9 @@ class BlizzardAPI:
 
         self.__LAST_STATUS_CODE = 0
 
-        asyncio.run(
-            self.__auth()
-        )  # authenticate with the Blizzard API for self.access_token
+        self.__auth()  # authenticate with the Blizzard API for self.access_token
 
-    async def __auth(self) -> bool:
+    def __auth(self) -> bool:
         self.logger.info(
             f"Authenticating with the Blizzard API for region {self.REGION}..."
         )
@@ -41,11 +39,9 @@ class BlizzardAPI:
             "Authorization": f"Basic {b64encode(f'{self.__CLIENT_ID}:{self.__CLIENT_SECRET}'.encode('utf-8')).decode('utf-8')}"
         }
 
-        async with httpx.AsyncClient() as client:
+        with httpx.Client() as client:
             try:
-                response = await client.post(
-                    self.__API_TOKEN_URL, headers=headers, data=body
-                )
+                response = client.post(self.__API_TOKEN_URL, headers=headers, data=body)
             except Exception as exc:
                 self.logger.error("Blizzard API authentication failed.\n")
                 self.logger.error(exc)

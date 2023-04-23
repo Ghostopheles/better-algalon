@@ -112,7 +112,7 @@ class CDNCache:
         logger.debug(self.CONFIG.strings.LOG_FETCH_DATA)
         async with httpx.AsyncClient() as client:
             new_data = []
-            for branch in self.CONFIG.PRODUCTS:
+            for branch in self.CONFIG.PRODUCTS:  # type: ignore
                 try:
                     logger.debug(f"Grabbing data for branch: {branch}")
                     url = self.CONFIG.CDN_URL + branch + "/versions"

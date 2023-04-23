@@ -31,8 +31,13 @@ class Twitter:
         self.encrypted_icon = "\U0001F510"
 
         self.bot = bot
+        self.flags = self.bot.features.flags.twitter
 
     async def send_tweet(self, embed, nonce: str):
+        if not self.flags.doTweets:
+            logger.info("Tweets disabled, skipping...")
+            return
+
         logger.info("Sending tweet...")
         if nonce in self.sent_tokens:
             logger.info("Tweet already sent for this package. Skipping...")

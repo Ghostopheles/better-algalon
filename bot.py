@@ -1,6 +1,7 @@
 import os
 import sys
 import cogs
+import asyncio
 import logging
 import discord
 
@@ -118,13 +119,14 @@ class CDNBot(bridge.Bot):
         command_prefix = command_prefix or "!"
         help_command = help_command or commands.DefaultHelpCommand()
 
-        features = options.pop("features") or None
+        enabled_features = options.pop("features") or None
 
         super().__init__(
             command_prefix=command_prefix, help_command=help_command, **options  # type: ignore
         )
 
-        self.features = cogs.features.FeaturePanel(self, features)
+        self.features = cogs.features.FeaturePanel(self, enabled_features)
+        self.features.init_features()
 
     async def on_ready(self):
         """This `async` function runs once when the bot is connected to Discord and ready to execute commands."""
@@ -139,8 +141,6 @@ if __name__ == "__main__":
 
     debug_guilds = [os.getenv("DEBUG_GUILD_ID")] if os.getenv("DEBUG") else []
 
-    features = [cogs.features.watcher, cogs.features.api_blizzard]
-
     bot = CDNBot(
         command_prefix="!",
         help_command=CDNBotHelpCommand(),
@@ -151,5 +151,6 @@ if __name__ == "__main__":
         activity=activity,
         auto_sync_commands=True,
         debug_guilds=debug_guilds,
+        features=cogs.ALL_FEATURES,
     )
     bot.run(TOKEN)

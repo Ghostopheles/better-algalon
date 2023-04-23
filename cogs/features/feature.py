@@ -3,8 +3,6 @@ import logging
 from enum import Enum
 from dataclasses import dataclass, field
 
-from cogs import features as shared
-
 
 logger = logging.getLogger("discord.features.feature")
 
@@ -21,10 +19,11 @@ class Feature:
     id: str  # Internal name, used for loading cogs n' stuff
     name: str  # Readable name
     toggle_at_runtime: bool  # Whether the feature can be toggled while the bot is running
-    feature_type: shared.FeatureType  # The type of feature
-    flags: list[dict] = field(default_factory=list)
+    feature_type: FeatureType  # The type of feature
+    sub_id: str = ""  # Sub ID, used for loading cogs n' stuff
+    flags: dict = field(default_factory=dict)
     dependencies: list = field(default_factory=list)  # List of dependencies, if any
-    enabled: bool = False # Feature enable state
+    enabled: bool = False  # Feature enable state
     status_text: str = ""
 
     def __iter__(self):
@@ -51,15 +50,9 @@ class Feature:
     def __can_be_disabled(self):
         if not self.dependencies and self.toggle_at_runtime:
             return True
-        
-    def __set_flags(self, panel: shared.FeaturePanel):
-
-
-    def enable(self, panel: shared.FeaturePanel):
-
-
 
     def get_dependencies(self) -> list:
+        logger.info("Getting feature dependencies...")
         all_deps = []
         for dep in self.dependencies:
             all_deps.append((self, dep))

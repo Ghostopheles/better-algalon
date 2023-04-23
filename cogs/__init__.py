@@ -6,5 +6,5 @@ from cogs.utils import (
     get_timestamp,
     get_date,
 )
-
-import features
+from cogs import features
+from .feature_defs import ALL_FEATURES
