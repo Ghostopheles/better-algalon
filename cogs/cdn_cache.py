@@ -3,7 +3,6 @@ import sys
 import time
 import json
 import httpx
-import asyncio
 import logging
 
 from .api.blizzard_tact import BlizzardTACTExplorer
