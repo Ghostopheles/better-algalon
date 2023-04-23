@@ -18,7 +18,7 @@ logger = logging.getLogger("discord.api.twitter")
 
 
 class Twitter:
-    def __init__(self):
+    def __init__(self, bot):
         self.bot_client = tweepy.AsyncClient(
             consumer_key=API_KEY,
             consumer_secret=API_SECRET,
@@ -29,6 +29,8 @@ class Twitter:
 
         self.sent_tokens = []
         self.encrypted_icon = "\U0001F510"
+
+        self.bot = bot
 
     async def send_tweet(self, embed, nonce: str):
         logger.info("Sending tweet...")

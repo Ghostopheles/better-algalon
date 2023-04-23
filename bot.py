@@ -12,7 +12,7 @@ try:
 
     load_dotenv()
 except ImportError:
-    print("PRODUCTION ENVIRONMENT")
+    pass
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 OWNER_ID = os.getenv("OWNER_ID")
@@ -114,28 +114,21 @@ class CDNBotHelpCommand(commands.HelpCommand):
 class CDNBot(bridge.Bot):
     """This is the almighty CDN bot, also known as Algalon. Inherits from `discord.ext.bridge.Bot`."""
 
-    COGS_LIST = ["watcher", "api.blizzard"]
-
     def __init__(self, command_prefix, help_command=None, **options):
         command_prefix = command_prefix or "!"
         help_command = help_command or commands.DefaultHelpCommand()
+
+        features = options.pop("features") or None
 
         super().__init__(
             command_prefix=command_prefix, help_command=help_command, **options  # type: ignore
         )
 
-        for cog in self.COGS_LIST:
-            logger.info("Loading %s cog...", cog)
-            try:
-                self.load_extension(f"cogs.{cog}")
-                logger.info("%s cog loaded!", cog)
-            except Exception as exc:
-                logger.error("Error loading cog %s", cog)
-                logger.error(exc)
+        self.features = cogs.features.FeaturePanel(self, features)
 
     async def on_ready(self):
         """This `async` function runs once when the bot is connected to Discord and ready to execute commands."""
-        logger.info("%s has successfully connected to Discord!", self.user.name)  # type: ignore
+        logger.info(f"{self.user.name} has successfully connected to Discord!")  # type: ignore
 
 
 if __name__ == "__main__":
@@ -145,6 +138,8 @@ if __name__ == "__main__":
     )
 
     debug_guilds = [os.getenv("DEBUG_GUILD_ID")] if os.getenv("DEBUG") else []
+
+    features = [cogs.features.watcher, cogs.features.api_blizzard]
 
     bot = CDNBot(
         command_prefix="!",
