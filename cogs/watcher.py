@@ -180,12 +180,10 @@ class CDNCog(commands.Cog):
                 if embed and cdn_channel:
                     logger.info("Sending CDN update post and tweet...")
                     await cdn_channel.send(embed=embed)  # type: ignore
-                    response = await self.twitter.send_tweet(
-                        embed.to_dict(), token
-                    )  # type: ignore
+                    response = await self.twitter.send_tweet(embed.to_dict(), token)
                     if response:
                         logger.info(
-                            f"Tweet failed with: {response.errors or response}."  # type: ignore
+                            f"Tweet failed with: {response}.\n{embed.to_dict()}"
                         )
                         await self.notify_owner_of_exception(response)
 
@@ -244,6 +242,7 @@ class CDNCog(commands.Cog):
             data_text += f"**Build:** `{data['build']}`\n"
             data_text += f"**Version:** `{data['build_text']}`\n"
             data_text += f"**Product Config:** `{data['product_config']}`"
+            data_text += f"**Encrypted:** `{data['encrypted']}`"
 
             embed.add_field(name="Current Data", value=data_text, inline=False)
 
