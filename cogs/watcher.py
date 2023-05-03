@@ -172,8 +172,9 @@ class CDNCog(commands.Cog):
                         )
                         raise Exception("Channel not found.")
                 except Exception as exc:
-                    logger.error("Error fetching channel for guild %s.", guild.id)
-                    logger.error(exc)
+                    logger.error(
+                        "Error fetching channel for guild %s.", guild.id, exc_info=exc
+                    )
                     continue
 
                 embed = self.build_embed(new_data, guild.id)  # type: ignore
@@ -188,7 +189,7 @@ class CDNCog(commands.Cog):
                         await self.notify_owner_of_exception(response)
 
                 elif embed and not cdn_channel:
-                    logger.error("No channel found, aborting.")
+                    logger.warning("No channel found, aborting.")
                 elif not embed:
                     logger.error("No embed built, aborting.")
 
@@ -268,11 +269,9 @@ class CDNCog(commands.Cog):
         try:
             await self.distribute_embed(self.cdn_auto_refresh.current_loop == 0)
         except Exception as exc:
-            logger.error("Error occurred when distributing embeds.")
-            logger.error(exc)
+            logger.error("Error occurred when distributing embeds.", exc_info=exc)
 
             await self.notify_owner_of_exception(exc)
-
             return
 
         self.last_update = time.time()
@@ -286,8 +285,10 @@ class CDNCog(commands.Cog):
     ):
         error_message = "I have encountered an error handling your command. The Titans have been notified."
 
-        logger.error(f"Logging application command error in guild {ctx.guild_id}.")
-        logger.error(exception)
+        logger.error(
+            f"Logging application command error in guild {ctx.guild_id}.",
+            exc_info=exception,
+        )
 
         await self.notify_owner_of_exception(exception, ctx)
 

@@ -156,21 +156,21 @@ class CDNCache:
 
     async def fetch_cdn(self):
         """This is a disaster."""
-        logger.debug(self.CONFIG.strings.LOG_FETCH_DATA)
+        logger.info(self.CONFIG.strings.LOG_FETCH_DATA)
         self.create_cache_backup()
         async with httpx.AsyncClient() as client:
             new_data = []
             for branch in self.CONFIG.PRODUCTS:
                 try:
-                    logger.debug(f"Grabbing data for branch: {branch}")
+                    logger.info(f"Grabbing data for branch: {branch}")
                     url = self.CONFIG.CDN_URL + branch + "/versions"
 
                     res = await client.get(url, timeout=20)
-                    logger.debug(self.CONFIG.strings.LOG_PARSE_DATA)
+                    logger.info(self.CONFIG.strings.LOG_PARSE_DATA)
                     data = await self.parse_response(branch, res.text)
 
                     if data and res.status_code == 200:
-                        logger.debug(f"Comparing build data for {branch}")
+                        logger.info(f"Comparing build data for {branch}")
                         is_new = self.compare_builds(branch, data)
 
                         if is_new:
@@ -184,10 +184,10 @@ class CDNCache:
                             output_data["branch"] = branch
                             new_data.append(output_data)
 
-                        logger.debug(f"Saving build data for {branch}")
+                        logger.info(f"Saving build data for {branch}")
                         self.save_build_data(branch, data)
                     else:
-                        logger.error(f"Invalid API response for branch {branch}")
+                        logger.warning(f"Invalid API response for branch {branch}")
                 except httpx.ConnectError as exc:
                     logger.error(
                         f"Connection error during CDN check for {branch} using url {url or None}"  # type: ignore
@@ -225,9 +225,9 @@ class CDNCache:
 
             return output
         except KeyError or IndexError as exc:
-            logger.error(
-                f"Encountered an error parsing API response for branch: {branch}."
+            logger.warning(
+                f"Encountered an error parsing API response for branch: {branch}.",
+                exc_info=exc,
             )
-            logger.error(exc)
 
             return False

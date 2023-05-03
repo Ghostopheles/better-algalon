@@ -72,10 +72,11 @@ class Twitter:
                     )
                     return response
             except Exception as exc:
-                logger.error("Error occurred sending tweet. Please investigate.")
-                logger.error(exc)
+                logger.error(
+                    "Error occurred sending tweet. Please investigate.", exc_info=exc
+                )
                 return text
         else:
-            logger.debug("Debug mode enabled. Skipping tweet...")
+            logger.info("Debug mode enabled. Skipping tweet...")
             logger.debug(f"Tweet text:\n{text}")
             return
