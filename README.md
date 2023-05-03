@@ -7,7 +7,7 @@ A bot that watches Blizzard's CDN and automatically posts new build updates to a
 
 Inspired by, and vaguely based on the original [Algalon bot by Ellypse](https://github.com/Ellypse/Algalon).
 
-Includes a frankenstein Twitter integration to post updates to Twitter alongside Discord. This will be replaced in the future with Algalon 3.0. This bot can be found on Twitter as [@algalon_ghost](https://twitter.com/algalon_ghost).
+Includes a frankenstein Twitter integration to post updates to Twitter alongside Discord. This will be replaced in the future with Algalon 3.0. This bot can be found on Twitter as [@algalon_ghost](https://twitter.kivatech.io).
 
 ## supported branches (what it watches)
 | Branch Name     | Readable Name |
@@ -30,9 +30,9 @@ Includes a frankenstein Twitter integration to post updates to Twitter alongside
 | wowv2 :lock: | Vendor 2 |
 | wowv3 :lock: | Vendor 3 |
 | wowv4 :lock: | Vendor 4 |
-| wowe1 :lock: | Event |
-| wowe2 :lock: | Event 2 |
-| wowe3 :lock: | Event 3 |
+| wowe1 | Event |
+| wowe2 | Event 2 |
+| wowe3 | Event 3 |
 | wowdemo :lock: | Demo |
 
 
