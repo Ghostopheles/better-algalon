@@ -146,7 +146,7 @@ class CDNCog(commands.Cog):
 
     async def distribute_embed(self, first_run: bool = False):
         """This handles distributing the generated embeds to the various servers that should receive them."""
-        logger.debug("Building CDN update embed")
+        logger.info("Building CDN update embed...")
         new_data = await self.cdn_cache.fetch_cdn()
 
         token = secrets.token_urlsafe()
@@ -189,10 +189,11 @@ class CDNCog(commands.Cog):
                         await self.notify_owner_of_exception(response)
 
                 elif embed and not cdn_channel:
-                    logger.warning("No channel found, aborting.")
+                    logger.warning(f"No channel found for guild {guild}, aborting.")
+                    continue
                 elif not embed:
-                    logger.error("No embed built, aborting.")
-
+                    logger.error(f"No embed built for guild {guild}, aborting.")
+                    continue
         else:
             if new_data:
                 if dbg.debug_enabled or first_run:
