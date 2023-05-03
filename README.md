@@ -1,7 +1,7 @@
 # better-algalon
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) ![LastUpdate](https://img.shields.io/github/last-commit/Ghostamoose/better-algalon?style=flat-square) [![Docker](https://github.com/Ghostamoose/better-algalon/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Ghostamoose/better-algalon/actions/workflows/docker-publish.yml)
 
-v1.5
+v1.5 - Onyx
 
 A bot that watches Blizzard's CDN and automatically posts new build updates to a specified Discord channel.
 
@@ -30,11 +30,10 @@ Includes a frankenstein Twitter integration to post updates to Twitter alongside
 | wowv2 :lock: | Vendor 2 |
 | wowv3 :lock: | Vendor 3 |
 | wowv4 :lock: | Vendor 4 |
-| fenris | Diablo IV Retail |
-| fenrisb | Diablo IV Beta |
-| fenrisdev :lock: | Diablo IV Internal |
-| fenrisvendor :lock: | Diablo IV Vendor |
-| fenrisvendor2 :lock: | Diablo IV Vendor 2 |
+| wowe1 :lock: | Event |
+| wowe2 :lock: | Event 2 |
+| wowe3 :lock: | Event 3 |
+| wowdemo :lock: | Demo |
 
 
 ## commands
