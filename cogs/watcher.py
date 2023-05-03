@@ -180,7 +180,15 @@ class CDNCog(commands.Cog):
                 if embed and cdn_channel:
                     logger.info("Sending CDN update post and tweet...")
                     await cdn_channel.send(embed=embed)  # type: ignore
-                    await self.twitter.send_tweet(embed.to_dict(), token)
+                    response = await self.twitter.send_tweet(
+                        embed.to_dict(), token
+                    )  # type: ignore
+                    if response:
+                        logger.info(
+                            f"Tweet failed with: {response.errors or response}."  # type: ignore
+                        )
+                        await self.notify_owner_of_exception(response)
+
                 elif embed and not cdn_channel:
                     logger.error("No channel found, aborting.")
                 elif not embed:

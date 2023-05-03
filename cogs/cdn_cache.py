@@ -224,7 +224,7 @@ class CDNCache:
             }
 
             return output
-        except KeyError as exc:
+        except KeyError or IndexError as exc:
             logger.error(
                 f"Encountered an error parsing API response for branch: {branch}."
             )

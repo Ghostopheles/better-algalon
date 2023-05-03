@@ -25,7 +25,6 @@ class Twitter:
             access_token=ACCESS_TOKEN,
             access_token_secret=ACCESS_TOKEN_SECRET,
         )
-        self.bot_client.user_agent = "Algalon Ghost"
 
         self.sent_tokens = []
         self.encrypted_icon = "\U0001F510"
@@ -61,17 +60,21 @@ class Twitter:
         text = f"{title}:\n{updates}\nFound at: {timestamp} {time_object.tm_zone}"
 
         if not dbg.debug_enabled:
-            response = await self.bot_client.create_tweet(text=text)
-
-            if response and len(response.errors) == 0:  # type: ignore
-                logger.info("Tweet sent successfully!")
-                self.sent_tokens.append(nonce)
-                return
-            else:
-                logger.error(
-                    f"Error occurred sending tweet. Please investigate.\n{response.errors or response}"  # type: ignore
-                )
-                return
+            try:
+                response = await self.bot_client.create_tweet(text=text)
+                if response and len(response.errors) == 0:  # type: ignore
+                    logger.info("Tweet sent successfully!")
+                    self.sent_tokens.append(nonce)
+                    return
+                else:
+                    logger.error(
+                        f"Error occurred sending tweet. Please investigate.\n{response.errors or response}"  # type: ignore
+                    )
+                    return response
+            except Exception as exc:
+                logger.error("Error occurred sending tweet. Please investigate.")
+                logger.error(exc)
+                return text
         else:
             logger.debug("Debug mode enabled. Skipping tweet...")
             logger.debug(f"Tweet text:\n{text}")
