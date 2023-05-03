@@ -13,8 +13,15 @@ on:
       - 'cogs/**'
       - 'bot.py'
       - 'Dockerfile'
+      - 'requirements.txt'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - '.github/workflows'
+      - 'cogs/**'
+      - 'bot.py'
+      - 'Dockerfile'
+      - 'requirements.txt'
   workflow_dispatch:
 
 env:
