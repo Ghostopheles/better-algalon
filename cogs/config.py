@@ -123,6 +123,7 @@ class CacheConfig:
         "wowe1": "Event",
         "wowe2": "Event 2",
         "wowe3": "Event 3",
+        "wowdemo": "Demo",
     }
     AREAS_TO_CHECK_FOR_UPDATES = ["build", "build_text"]
     CACHE_FOLDER_NAME = "cache"
