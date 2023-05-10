@@ -6,10 +6,10 @@ import tweepy.asynchronous as tweepy
 
 from ..config import DebugConfig as dbg
 
-API_KEY = os.getenv("TWITTER_API_KEY_PROD")
-API_SECRET = os.getenv("TWITTER_API_SECRET_PROD")
+API_KEY = os.getenv("TWITTER_API_KEY")
+API_SECRET = os.getenv("TWITTER_API_SECRET")
 
-BEARER_KEY = os.getenv("TWITTER_API_BEARER_PROD")
+BEARER_KEY = os.getenv("TWITTER_API_BEARER")
 
 ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
 ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
