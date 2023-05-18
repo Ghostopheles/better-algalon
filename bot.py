@@ -12,7 +12,7 @@ try:
 
     load_dotenv()
 except ImportError:
-    print("PRODUCTION ENVIRONMENT")
+    pass
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 OWNER_ID = os.getenv("OWNER_ID")
@@ -48,6 +48,7 @@ logger.info(
 )
 logger.info(f"Using PyCord version {discord.__version__}")
 cogs.log_start()
+
 
 # This subclasses the default help command to provide our bot with a prettier help command.
 class CDNBotHelpCommand(commands.HelpCommand):

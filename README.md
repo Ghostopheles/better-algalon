@@ -1,16 +1,16 @@
 # better-algalon
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) ![LastUpdate](https://img.shields.io/github/last-commit/Ghostamoose/better-algalon?style=flat-square) [![Docker](https://github.com/Ghostamoose/better-algalon/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Ghostamoose/better-algalon/actions/workflows/docker-publish.yml)
 
-v1.5
+v1.5 - Onyx
 
 A bot that watches Blizzard's CDN and automatically posts new build updates to a specified Discord channel.
 
 Inspired by, and vaguely based on the original [Algalon bot by Ellypse](https://github.com/Ellypse/Algalon).
 
-Includes a frankenstein Twitter integration to post updates to Twitter alongside Discord. This will be replaced in the future with Algalon 3.0. This bot can be found on Twitter as [@algalon_ghost](https://twitter.com/algalon_ghost).
+Includes a frankenstein Twitter integration to post updates to Twitter alongside Discord. This will be replaced in the future with Algalon 3.0. This bot can be found on Twitter as [@algalon_ghost](https://twitter.kivatech.io).
 
 ## supported branches (what it watches)
-| Branch Name     | Readable Name |
+| Branch Name | Readable Name |
 | ----------- | ----------- |
 | wow | Retail |
 | wowt | Retail PTR |
@@ -23,18 +23,17 @@ Includes a frankenstein Twitter integration to post updates to Twitter alongside
 | wow_classic_era_ptr | Classic Era PTR |
 | wowz | Submission |
 | wowlivetest | Live Test|
-| wowdev | Internal |
-| wowdev2 | Internal 2 |
-| wowdev3 | Internal 3 |
-| wowv | Vendor |
-| wowv2 | Vendor 2 |
-| wowv3 | Vendor 3 |
-| wowv4 | Vendor 4 |
-| fenris | Diablo IV Retail |
-| fenrisb | Diablo IV Beta |
-| fenrisdev | Diablo IV Internal |
-| fenrisvendor | Diablo IV Vendor |
-| fenrisvendor2 | Diablo IV Vendor 2 |
+| wowdev :lock: | Internal |
+| wowdev2 :lock: | Internal 2 |
+| wowdev3 :lock: | Internal 3 |
+| wowv :lock: | Vendor |
+| wowv2 :lock: | Vendor 2 |
+| wowv3 :lock: | Vendor 3 |
+| wowv4 :lock: | Vendor 4 |
+| wowe1 | Event |
+| wowe2 | Event 2 |
+| wowe3 | Event 3 |
+| wowdemo :lock: | Demo |
 
 
 ## commands

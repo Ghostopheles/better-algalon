@@ -131,7 +131,9 @@ class CDNCog(commands.Cog):
             )
             build = f"**{build}**" if build != build_old else build
 
-            value_string += f"`{public_name} ({branch})`: {build_text_old}.{build_old} --> {build_text}.{build}\n"
+            encrypted = ":lock:" if ver["encrypted"] else ""
+
+            value_string += f"`{public_name} ({branch})`{encrypted}: {build_text_old}.{build_old} --> {build_text}.{build}\n"
 
         if value_string == "":
             return False
@@ -144,7 +146,7 @@ class CDNCog(commands.Cog):
 
     async def distribute_embed(self, first_run: bool = False):
         """This handles distributing the generated embeds to the various servers that should receive them."""
-        logger.debug("Building CDN update embed")
+        logger.info("Building CDN update embed...")
         new_data = await self.cdn_cache.fetch_cdn()
 
         token = secrets.token_urlsafe()
@@ -170,20 +172,28 @@ class CDNCog(commands.Cog):
                         )
                         raise Exception("Channel not found.")
                 except Exception as exc:
-                    logger.error("Error fetching channel for guild %s.", guild.id)
-                    logger.error(exc)
+                    logger.error(
+                        "Error fetching channel for guild %s.", guild.id, exc_info=exc
+                    )
                     continue
 
                 embed = self.build_embed(new_data, guild.id)  # type: ignore
                 if embed and cdn_channel:
                     logger.info("Sending CDN update post and tweet...")
                     await cdn_channel.send(embed=embed)  # type: ignore
-                    await self.twitter.send_tweet(embed.to_dict(), token)
-                elif embed and not cdn_channel:
-                    logger.error("No channel found, aborting.")
-                elif not embed:
-                    logger.error("No embed built, aborting.")
+                    response = await self.twitter.send_tweet(embed.to_dict(), token)
+                    if response:
+                        logger.info(
+                            f"Tweet failed with: {response}.\n{embed.to_dict()}"
+                        )
+                        await self.notify_owner_of_exception(response)
 
+                elif embed and not cdn_channel:
+                    logger.warning(f"No channel found for guild {guild}, aborting.")
+                    continue
+                elif not embed:
+                    logger.error(f"No embed built for guild {guild}, aborting.")
+                    continue
         else:
             if new_data:
                 if dbg.debug_enabled or first_run:
@@ -222,8 +232,10 @@ class CDNCog(commands.Cog):
             if not data:
                 continue
 
+            lock = ":lock:" if data["encrypted"] else ""
+
             embed = discord.Embed(
-                title=f"CDN Data for: {name}", color=discord.Color.blurple()
+                title=f"CDN Data for: {name}{lock}", color=discord.Color.blurple()
             )
 
             data_text = f"**Region:** `{data['region']}`\n"
@@ -232,6 +244,7 @@ class CDNCog(commands.Cog):
             data_text += f"**Build:** `{data['build']}`\n"
             data_text += f"**Version:** `{data['build_text']}`\n"
             data_text += f"**Product Config:** `{data['product_config']}`"
+            data_text += f"**Encrypted:** `{data['encrypted']}`"
 
             embed.add_field(name="Current Data", value=data_text, inline=False)
 
@@ -257,11 +270,9 @@ class CDNCog(commands.Cog):
         try:
             await self.distribute_embed(self.cdn_auto_refresh.current_loop == 0)
         except Exception as exc:
-            logger.error("Error occurred when distributing embeds.")
-            logger.error(exc)
+            logger.error("Error occurred when distributing embeds.", exc_info=exc)
 
             await self.notify_owner_of_exception(exc)
-
             return
 
         self.last_update = time.time()
@@ -275,8 +286,10 @@ class CDNCog(commands.Cog):
     ):
         error_message = "I have encountered an error handling your command. The Titans have been notified."
 
-        logger.error(f"Logging application command error in guild {ctx.guild_id}.")
-        logger.error(exception)
+        logger.error(
+            f"Logging application command error in guild {ctx.guild_id}.",
+            exc_info=exception,
+        )
 
         await self.notify_owner_of_exception(exception, ctx)
 

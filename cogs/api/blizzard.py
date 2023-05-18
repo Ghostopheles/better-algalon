@@ -127,9 +127,6 @@ class BlizzardAPI:
 class RegionalAPI:
     us = BlizzardAPI(region="us")
     eu = BlizzardAPI(region="eu")
-    kr = BlizzardAPI(region="kr")
-    tw = BlizzardAPI(region="tw")
-    cn = BlizzardAPI(region="cn")
 
 
 # this is the cog that gets added to the discord bot, aka: where the above class interfaces with discord

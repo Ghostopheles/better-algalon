@@ -1,14 +1,15 @@
 import os
 import time
-import tweepy.asynchronous as tweepy
 import logging
+
+import tweepy.asynchronous as tweepy
 
 from ..config import DebugConfig as dbg
 
-API_KEY = os.getenv("TWITTER_API_KEY_PROD")
-API_SECRET = os.getenv("TWITTER_API_SECRET_PROD")
+API_KEY = os.getenv("TWITTER_API_KEY")
+API_SECRET = os.getenv("TWITTER_API_SECRET")
 
-BEARER_KEY = os.getenv("TWITTER_API_BEARER_PROD")
+BEARER_KEY = os.getenv("TWITTER_API_BEARER")
 
 ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
 ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
@@ -24,9 +25,9 @@ class Twitter:
             access_token=ACCESS_TOKEN,
             access_token_secret=ACCESS_TOKEN_SECRET,
         )
-        self.bot_client.user_agent = "Algalon Ghost"
 
         self.sent_tokens = []
+        self.encrypted_icon = "\U0001F510"
 
     async def send_tweet(self, embed, nonce: str):
         logger.info("Sending tweet...")
@@ -42,6 +43,7 @@ class Twitter:
 
         updates = "".join([field["value"] for field in embed["fields"]])
         updates = updates.replace("`", "").replace("*", "")
+        updates = updates.replace(":lock:", self.encrypted_icon)
 
         timestamp = (
             embed["description"].split("**|**")[0].replace("<t:", "").replace(":f>", "")
@@ -51,26 +53,30 @@ class Twitter:
 
         timestamp = time.strftime("%m-%d-%Y@%I:%M:%S", time_object)
 
-        hashtag = ""
-        hashtag += "#Warcraft " if is_warcraft else ""
+        hashtag = "#Warcraft" if is_warcraft else ""
 
-        title = f"New {hashtag}build{'s' if len(embed['fields']) > 1 else ''} found"
+        title = f"New {hashtag} build{'s' if len(embed['fields']) > 1 else ''} found"
 
         text = f"{title}:\n{updates}\nFound at: {timestamp} {time_object.tm_zone}"
 
         if not dbg.debug_enabled:
-            response = await self.bot_client.create_tweet(text=text)
-
-            if response and len(response.errors) == 0:  # type: ignore
-                logger.info("Tweet sent successfully!")
-                self.sent_tokens.append(nonce)
-                return
-            else:
+            try:
+                response = await self.bot_client.create_tweet(text=text)
+                if response and len(response.errors) == 0:  # type: ignore
+                    logger.info("Tweet sent successfully!")
+                    self.sent_tokens.append(nonce)
+                    return
+                else:
+                    logger.error(
+                        f"Error occurred sending tweet. Please investigate.\n{response.errors or response}"  # type: ignore
+                    )
+                    return response
+            except Exception as exc:
                 logger.error(
-                    f"Error occurred sending tweet. Please investigate.\n{response.errors or response}"  # type: ignore
+                    "Error occurred sending tweet. Please investigate.", exc_info=exc
                 )
-                return
+                return text
         else:
-            logger.debug("Debug mode enabled. Skipping tweet...")
+            logger.info("Debug mode enabled. Skipping tweet...")
             logger.debug(f"Tweet text:\n{text}")
             return

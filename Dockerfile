@@ -5,7 +5,8 @@ FROM --platform=$TARGETPLATFORM python:latest
 WORKDIR /usr/algalon
 
 COPY requirements.txt requirements.txt
-RUN python3 -m pip install --no-cache-dir -U -r requirements.txt
+RUN python3 -m pip install -U -r requirements.txt
+RUN apt-get update && apt-get install -y nano
 
 COPY . .
 

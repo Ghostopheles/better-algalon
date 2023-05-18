@@ -66,7 +66,7 @@ class CacheDefaults:
     LOCALE = REGION.locales[0]
     LOCALE_NAME = LOCALE.value
     BUILD = "0.0.0"
-    BUILDTEXT = "untracked"
+    BUILDTEXT = "no-data"
 
 
 class Settings:
@@ -104,6 +104,7 @@ class CacheConfig:
         "wow": "Retail",
         "wowt": "Retail PTR",
         "wow_beta": "Beta",
+        "wowxptr": "Retail PTR 2",
         "wow_classic": "WotLK Classic",
         "wow_classic_beta": "Classic Beta",
         "wow_classic_ptr": "WotLK Classic PTR",
@@ -119,12 +120,10 @@ class CacheConfig:
         "wowv2": "Vendor 2",
         "wowv3": "Vendor 3",
         "wowv4": "Vendor 4",
-        # diablo 4
-        "fenris": "Diablo IV Retail",
-        "fenrisb": "Diablo IV Beta",
-        "fenrisdev": "Diablo IV Internal",
-        "fenrisvendor": "Diablo IV Vendor",
-        "fenrisvendor2": "Diablo IV Vendor 2",
+        "wowe1": "Event",
+        "wowe2": "Event 2",
+        "wowe3": "Event 3",
+        "wowdemo": "Demo",
     }
     AREAS_TO_CHECK_FOR_UPDATES = ["build", "build_text"]
     CACHE_FOLDER_NAME = "cache"
@@ -134,6 +133,18 @@ class CacheConfig:
 
     SUPPORTED_REGIONS = SUPPORTED_REGIONS
     SUPPORTED_REGIONS_STRING = SUPPORTED_REGIONS_STRINGS
+
+    FILE_BACKUP_COUNT = 10
+
+    REQUIRED_KEYS_DEFAULTS = {
+        "region": "us",
+        "build_config": "no-data",
+        "cdn_config": "no-data",
+        "build": "no-data",
+        "build_text": "no-data",
+        "product_config": "no-data",
+        "encrypted": None,
+    }
 
     settings = Settings()
     strings = CacheStrings()
@@ -152,7 +163,7 @@ class CacheConfig:
 
 
 class CommonStrings:
-    EMBED_FOOTER = f"Data provided by Algalon {os.getenv('ENVIRONMENT', 'Redstone')}."
+    EMBED_FOOTER = f"Data provided by Algalon {os.getenv('ENVIRONMENT', 'Dev')}."
     VALID_REGIONS = SUPPORTED_REGIONS_STRINGS
 
     SPEECH = "$$dalaran.speech$$"
@@ -198,27 +209,3 @@ class DebugConfig:
     debug_enabled = os.getenv("DEBUG", False)
     debug_guild_id = os.getenv("DEBUG_GUILD_ID")
     debug_channel_id = os.getenv("DEBUG_CHANNEL_ID")
-
-
-## OPENAI CONFIGURATION
-
-
-class OpenAIStrings:
-    TOKEN_COUNT_FAILED = "Token count failed. Please try again or let Ghost know."
-    TOKEN_COUNT_MAX_REACHED = (
-        "Prompt exceeds maximum token count. Please shorten your prompt and try again."
-    )
-
-
-class OpenAIConfig:
-    strings = OpenAIStrings()
-
-    chat_model = "gpt-3.5-turbo"
-    max_tokens = 4096
-    max_tokens_per_month = 20000000
-
-    default_encoding = "cl100k_base"
-
-    conversations_enabled = False
-
-    default_messages = []
