@@ -7,13 +7,14 @@ A bot that watches Blizzard's CDN and automatically posts new build updates to a
 
 Inspired by, and vaguely based on the original [Algalon bot by Ellypse](https://github.com/Ellypse/Algalon).
 
-Includes a frankenstein Twitter integration to post updates to Twitter alongside Discord. This will be replaced in the future with Algalon 3.0. This bot can be found on Twitter as [@algalon_ghost](https://twitter.kivatech.io).
+Includes a Twitter integration to post updates to Twitter alongside Discord. This will be replaced in the future with Algalon 3.0. This bot can be found on Twitter as [@algalon_ghost](https://twitter.kivatech.io).
 
 ## supported branches (what it watches)
 | Branch Name | Readable Name |
 | ----------- | ----------- |
 | wow | Retail |
 | wowt | Retail PTR |
+| wowxptr | Retail PTR 2 |
 | wow_beta | Beta |
 | wow_classic | WotLK Classic |
 | wow_classic_ptr | WotLK Classic PTR|
