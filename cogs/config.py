@@ -104,7 +104,7 @@ class CacheConfig:
         "wow": "Retail",
         "wowt": "Retail PTR",
         "wow_beta": "Beta",
-        "wowxptr": "Mystery PTR",
+        "wowxptr": "Retail PTR 2",
         "wow_classic": "WotLK Classic",
         "wow_classic_beta": "Classic Beta",
         "wow_classic_ptr": "WotLK Classic PTR",
