@@ -154,7 +154,7 @@ if __name__ == "__main__":
         owner_id=OWNER_ID,
         status=discord.Status.online,
         activity=activity,
-        auto_sync_commands=True,
+        auto_sync_commands=not os.getenv("DEBUG"),
         debug_guilds=debug_guilds,
     )
     bot.run(TOKEN)

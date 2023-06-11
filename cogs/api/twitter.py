@@ -4,7 +4,7 @@ import logging
 
 import tweepy.asynchronous as tweepy
 
-from ..config import DebugConfig as dbg
+from ..config import DebugConfig as dbg, CacheConfig as cfg
 
 API_KEY = os.getenv("TWITTER_API_KEY")
 API_SECRET = os.getenv("TWITTER_API_SECRET")
@@ -15,6 +15,10 @@ ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
 ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
 logger = logging.getLogger("discord.api.twitter")
+
+DISALLOWED_GAMES = [
+    game_name for game_name in cfg.PRODUCTS.keys() if "wow" not in game_name
+]
 
 
 class Twitter:
@@ -29,7 +33,22 @@ class Twitter:
         self.sent_tokens = []
         self.encrypted_icon = "\U0001F510"
 
+    def filter_tweet_to_remove_disallowed_games(self, data: dict):
+        for field in data["fields"]:
+            for line in field["value"].split("\n"):
+                product = line[line.find("(") + 1 : line.find(")")]
+                if product in DISALLOWED_GAMES:
+                    field["value"] = field["value"].replace(line + "\n", "")
+
+        return data
+
     async def send_tweet(self, embed, nonce: str):
+        embed = self.filter_tweet_to_remove_disallowed_games(embed)
+
+        if not embed:
+            logger.debug("Skipping tweet for disallowed game...")
+            return
+
         logger.info("Sending tweet...")
         if nonce in self.sent_tokens:
             logger.info("Tweet already sent for this package. Skipping...")
@@ -80,3 +99,7 @@ class Twitter:
             logger.info("Debug mode enabled. Skipping tweet...")
             logger.debug(f"Tweet text:\n{text}")
             return
+
+
+if __name__ == "__main__":
+    print(DISALLOWED_GAMES)

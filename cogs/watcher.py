@@ -87,62 +87,98 @@ class CDNCog(commands.Cog):
 
         await channel.send(message)
 
-    def build_embed(self, data: dict, guild_id: int):
-        """This builds a notification embed with the given data."""
+    def build_embeds(self, data: dict, guild_id: int):
+        """This builds notification embeds with the given data."""
 
         guild_watchlist = self.guild_cfg.get_guild_watchlist(guild_id)
 
-        embed = discord.Embed(
-            color=discord.Color.blue(),
-            title=cfg.strings.EMBED_WAGOTOOLS_TITLE,
-            description=f"{get_discord_timestamp()} **|** {get_discord_timestamp(relative=True)}",
-            url=cfg.strings.EMBED_WAGOTOOLS_URL,
-        )
+        all_embeds = []
 
-        embed.set_author(
-            name=cfg.strings.EMBED_NAME,
-            icon_url=cfg.strings.EMBED_ICON_URL,
-        )
+        for game, update_data in data.items():
+            target_channel = self.guild_cfg.get_notification_channel(guild_id, game)
 
-        embed.set_footer(text=CommonStrings.EMBED_FOOTER)
+            if not target_channel:
+                logger.warning(
+                    f"Guild {guild_id} has not chosen a notification channel, skipping..."
+                )
+                raise Exception(f"Notification channel not found for {game}.")
 
-        value_string = ""
+            color = (
+                discord.Color.dark_orange() if game == "wow" else discord.Color.blue()
+            )
 
-        for ver in data:
-            branch = ver["branch"]
+            embed = discord.Embed(
+                color=color,
+                title=cfg.strings.EMBED_GAME_STRINGS[game]["title"],
+                description=f"{get_discord_timestamp()} **|** {get_discord_timestamp(relative=True)}",
+                url=cfg.strings.EMBED_GAME_STRINGS[game]["url"],
+            )
 
-            if branch not in guild_watchlist:
+            embed.set_author(
+                name=cfg.strings.EMBED_GAME_STRINGS[game]["name"],
+                icon_url=cfg.strings.EMBED_GAME_STRINGS[game]["icon_url"],
+            )
+
+            embed.set_footer(text=CommonStrings.EMBED_FOOTER)
+
+            value_string = ""
+
+            for ver in update_data:
+                branch = ver["branch"]
+
+                if branch not in guild_watchlist:
+                    continue
+
+                if "old" in ver:
+                    build_text_old = ver["old"][cfg.indices.BUILDTEXT]
+                    build_old = ver["old"][cfg.indices.BUILD]
+                else:
+                    build_text_old = cfg.cache_defaults.BUILDTEXT
+                    build_old = cfg.cache_defaults.BUILD
+
+                build_text = ver[cfg.indices.BUILDTEXT]
+                build = ver[cfg.indices.BUILD]
+
+                public_name = self.cdn_cache.CONFIG.PRODUCTS[branch]
+
+                build_text = (
+                    f"**{build_text}**" if build_text != build_text_old else build_text
+                )
+                build = f"**{build}**" if build != build_old else build
+
+                encrypted = ":lock:" if ver["encrypted"] else ""
+
+                value_string += f"`{public_name} ({branch})`{encrypted}: {build_text_old}.{build_old} --> {build_text}.{build}\n"
+
+            if value_string == "":
+                return False
+
+            embed.add_field(
+                name=cfg.strings.EMBED_UPDATE_TITLE, value=value_string, inline=False
+            )
+
+            all_embeds.append({"embed": embed, "target": target_channel, "game": game})
+
+        return all_embeds
+
+    def preprocess_update_data(self, data: list):
+        embed_data = {}
+        for branch in data:
+            game = self.get_game_from_branch(branch["branch"])
+            if not game:
+                logger.warning(f"Game could not be determined for {branch['branch']}")
                 continue
 
-            if "old" in ver:
-                build_text_old = ver["old"][cfg.indices.BUILDTEXT]
-                build_old = ver["old"][cfg.indices.BUILD]
-            else:
-                build_text_old = cfg.cache_defaults.BUILDTEXT
-                build_old = cfg.cache_defaults.BUILD
+            if game not in embed_data:
+                logger.debug("Adding new game to embed data...")
+                embed_data[game] = []
 
-            build_text = ver[cfg.indices.BUILDTEXT]
-            build = ver[cfg.indices.BUILD]
+            logger.debug("Adding branch data to existing game entry")
+            embed_data[game].append(branch)
 
-            public_name = self.cdn_cache.CONFIG.PRODUCTS[branch]
+        logger.debug("EMBED DATA: ", embed_data)
 
-            build_text = (
-                f"**{build_text}**" if build_text != build_text_old else build_text
-            )
-            build = f"**{build}**" if build != build_old else build
-
-            encrypted = ":lock:" if ver["encrypted"] else ""
-
-            value_string += f"`{public_name} ({branch})`{encrypted}: {build_text_old}.{build_old} --> {build_text}.{build}\n"
-
-        if value_string == "":
-            return False
-
-        embed.add_field(
-            name=cfg.strings.EMBED_UPDATE_TITLE, value=value_string, inline=False
-        )
-
-        return embed
+        return embed_data
 
     async def distribute_embed(self, first_run: bool = False):
         """This handles distributing the generated embeds to the various servers that should receive them."""
@@ -160,56 +196,83 @@ class CDNCog(commands.Cog):
 
             logger.info("New CDN data found! Creating posts...")
 
+            embed_data = self.preprocess_update_data(new_data)
+
             for guild in self.bot.guilds:
                 try:
-                    channel_id = self.guild_cfg.get_notification_channel(guild.id)
-
-                    if channel_id:
-                        cdn_channel = await guild.fetch_channel(channel_id)
-                    else:
-                        logger.info(
-                            f"Guild {guild.id} has not chosen a notification channel, skipping..."
-                        )
-                        raise Exception("Channel not found.")
+                    embeds = self.build_embeds(embed_data, guild.id)
                 except Exception as exc:
                     logger.error(
-                        "Error fetching channel for guild %s.", guild.id, exc_info=exc
+                        f"Error distributing embed(s) for guild {guild.id}.",
+                        exc_info=exc,
+                    )
+                    await self.notify_owner_of_exception(
+                        f"Error distributing embed(s) for guild {guild.id}.\n{exc}"
                     )
                     continue
 
-                embed = self.build_embed(new_data, guild.id)  # type: ignore
-                if embed and cdn_channel:
-                    logger.info("Sending CDN update post and tweet...")
-                    await cdn_channel.send(embed=embed)  # type: ignore
-                    response = await self.twitter.send_tweet(embed.to_dict(), token)
-                    if response:
-                        logger.info(
-                            f"Tweet failed with: {response}.\n{embed.to_dict()}"
-                        )
-                        await self.notify_owner_of_exception(response)
+                if not embeds:
+                    logger.error(
+                        f"Embeds could not be built for guild {guild.id}, aborting."
+                    )
+                    continue
 
-                elif embed and not cdn_channel:
-                    logger.warning(f"No channel found for guild {guild}, aborting.")
-                    continue
-                elif not embed:
-                    logger.error(f"No embed built for guild {guild}, aborting.")
-                    continue
+                for embed in embeds:
+                    channel = await guild.fetch_channel(embed["target"])
+                    actual_embed = embed["embed"]  # god save me
+
+                    if actual_embed and channel:
+                        logger.info("Sending CDN update post and tweet...")
+                        await channel.send(embed=actual_embed)  # type: ignore
+                        response = await self.twitter.send_tweet(
+                            actual_embed.to_dict(), token
+                        )
+                        if response:
+                            logger.error(
+                                f"Tweet failed with: {response}.\n{actual_embed.to_dict()}"
+                            )
+                            await self.notify_owner_of_exception(response)
+                    elif actual_embed and not channel:
+                        logger.error(f"No channel found for guild {guild}, aborting.")
+                        continue
+                    elif not embed:
+                        logger.error(f"No embed built for guild {guild}, aborting.")
+                        continue
+            return True
         else:
             if new_data:
                 if dbg.debug_enabled or first_run:
                     # Debug notifcations, as well as absorbing the first update check if cache is outdated.
                     logger.info(
-                        "New data found, but debug mode is active or it's the first run. Sending post to debug channel."
+                        "New data found, but debug mode is active or it's the first run. Sending posts to debug channel."
                     )
 
-                    channel = await self.bot.fetch_channel(dbg.debug_channel_id)  # type: ignore
-                    embed = self.build_embed(new_data, dbg.debug_guild_id)  # type: ignore
-                    if embed:
-                        await channel.send(embed=embed)  # type: ignore
-                    else:
-                        logger.error("No embed built, aborting.")
+                    embed_data = self.preprocess_update_data(new_data)
+                    embeds = self.build_embeds(embed_data, dbg.debug_guild_id)  # type: ignore
+
+                    if not embeds:
+                        logger.error("No debug embeds built, aborting.")
+                        return False
+
+                    for embed in embeds:
+                        actual_embed = embed["embed"]  # god save me
+                        channel = await self.bot.fetch_channel(dbg.debug_channel_id_by_game[embed["game"]])  # type: ignore
+                        if actual_embed:
+                            logger.info("Sending debug CDN update...")
+                            await channel.send(embed=actual_embed)  # type: ignore
+                        else:
+                            logger.error("No debug embed built, aborting.")
+                            continue
             else:
                 logger.info("No CDN changes found.")
+
+    def get_game_from_branch(self, branch: str):
+        if "wow" in branch:
+            return "wow"
+        elif "fenris" in branch:
+            return "d4"
+        else:
+            return False
 
     def build_paginator_for_current_build_data(self):
         buttons = [

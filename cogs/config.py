@@ -34,6 +34,8 @@ SUPPORTED_REGIONS = [region_US, region_EU, region_KR, region_TW, region_CN]
 SUPPORTED_REGIONS_STRINGS = [region.name for region in SUPPORTED_REGIONS]
 DEFAULT_REGION = region_US
 
+SUPPORTED_GAMES = ["wow", "d4"]
+
 
 class Indices:
     LAST_UPDATED_BY = "last_updated_by"
@@ -73,11 +75,12 @@ class Settings:
     __defaults = CacheDefaults()
 
     CHANNEL = {"name": "channel", "default": __defaults.CHANNEL}
+    D4_CHANNEL = {"name": "d4_channel", "default": __defaults.CHANNEL}
     WATCHLIST = {"name": "watchlist", "default": __defaults.WATCHLIST}
     REGION = {"name": "region", "default": __defaults.REGION_NAME}
     LOCALE = {"name": "locale", "default": __defaults.LOCALE_NAME}
 
-    KEYS = ["channel", "watchlist", "region", "locale"]
+    KEYS = ["channel", "d4_channel", "watchlist", "region", "locale"]
 
 
 class ErrorStrings:
@@ -100,7 +103,8 @@ class CommonURL:
 
 class CacheConfig:
     CDN_URL = "http://us.patch.battle.net:1119/"
-    PRODUCTS = {
+    PRODUCTS = {  # if a product branch name (the key) does not include "wow", it will not be tweeted
+        # WoW products
         "wow": "Retail",
         "wowt": "Retail PTR",
         "wow_beta": "Beta",
@@ -124,6 +128,15 @@ class CacheConfig:
         "wowe2": "Event 2",
         "wowe3": "Event 3",
         "wowdemo": "Demo",
+        # Diablo 4 products
+        "fenris": "Diablo IV",
+        "fenrisb": "Diablo IV Beta",
+        "fenrisdev": "Diablo IV Internal",
+        "fenrisdev2": "Diablo IV Internal 2",
+        "fenrise": "Diablo IV Event",
+        "fenrisvendor1": "Diablo IV Vendor",
+        "fenrisvendor2": "Diablo IV Vendor 2",
+        "fenrisvendor3": "Diablo IV Vendor 3",
     }
     AREAS_TO_CHECK_FOR_UPDATES = ["build", "build_text"]
     CACHE_FOLDER_NAME = "cache"
@@ -179,12 +192,34 @@ class WatcherStrings:
     EMBED_WAGOTOOLS_TITLE = "wago.tools"
     EMBED_WAGOTOOLS_URL = "https://wago.tools/"
 
+    EMBED_DIABLO_TITLE = "Diablo 4"
+
     EMBED_NAME = "Blizzard CDN Update"
+    EMBED_NAME_WOW = "Warcraft CDN Update"
+    EMBED_NAME_D4 = "Diablo 4 CDN Update"
+
     EMBED_ICON_URL = (
         "https://bnetcmsus-a.akamaihd.net/cms/gallery/D2TTHKAPW9BH1534981363136.png"
     )
+    EMBED_ICON_URL_WOW = "https://blz-contentstack-images.akamaized.net/v3/assets/blt72f16e066f85e164/bltc3d5627fa96394bf/world-of-warcraft.webp?width=96&format=webply&quality=95"
+    EMBED_ICON_URL_D4 = "https://blz-contentstack-images.akamaized.net/v3/assets/blt72f16e066f85e164/blt15336eccf10cd269/diablo-IV.webp?width=96&format=webply&quality=95"
 
     EMBED_UPDATE_TITLE = "Build Updates"
+
+    EMBED_GAME_STRINGS = {
+        "wow": {
+            "title": EMBED_WAGOTOOLS_TITLE,
+            "url": EMBED_WAGOTOOLS_URL,
+            "name": EMBED_NAME_WOW,
+            "icon_url": EMBED_ICON_URL_WOW,
+        },
+        "d4": {
+            "title": EMBED_DIABLO_TITLE,
+            "url": None,
+            "name": EMBED_NAME_D4,
+            "icon_url": EMBED_ICON_URL_D4,
+        },
+    }
 
 
 class WatcherConfig:
@@ -209,3 +244,9 @@ class DebugConfig:
     debug_enabled = os.getenv("DEBUG", False)
     debug_guild_id = os.getenv("DEBUG_GUILD_ID")
     debug_channel_id = os.getenv("DEBUG_CHANNEL_ID")
+    debug_channel_id_d4 = os.getenv("DEBUG_CHANNEL_ID_D4")
+
+    debug_channel_id_by_game = {
+        "wow": debug_channel_id,
+        "d4": debug_channel_id_d4,
+    }
