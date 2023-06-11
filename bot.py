@@ -144,7 +144,7 @@ if __name__ == "__main__":
         name="Blizzard's CDN",
     )
 
-    debug_guilds = [os.getenv("DEBUG_GUILD_ID")] if os.getenv("DEBUG") else []
+    debug_guilds = [int(os.getenv("DEBUG_GUILD_ID"))] if os.getenv("DEBUG") else []
 
     bot = CDNBot(
         command_prefix="!",
