@@ -104,7 +104,7 @@ class CDNCog(commands.Cog):
                 raise Exception(f"Notification channel not found for {game}.")
 
             color = (
-                discord.Color.dark_orange() if game == "wow" else discord.Color.blue()
+                discord.Color.dark_blue() if game == "wow" else discord.Color.dark_red()
             )
 
             embed = discord.Embed(
