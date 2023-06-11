@@ -79,7 +79,7 @@ class GuildCFG:
             file.truncate()
 
     def get_guild_config(self, guild_id: int | str):
-        logger.info(f"Fetching guild config for guild {guild_id}...")
+        logger.debug(f"Fetching guild config for guild {guild_id}...")
         with open(self.guild_cfg_path, "r") as file:
             file_json = json.load(file)
             guild_id = str(guild_id)
@@ -89,14 +89,14 @@ class GuildCFG:
             return file_json[guild_id]
 
     def get_all_guild_configs(self):
-        logger.info(f"Fetching all guild configurations...")
+        logger.debug(f"Fetching all guild configurations...")
         with open(self.guild_cfg_path, "r") as file:
             file_json = json.load(file)
 
             return file_json
 
     def get_guild_setting(self, guild_id: int | str, setting: str):
-        logger.info(f"Fetching {setting} for guild {guild_id}...")
+        logger.debug(f"Fetching {setting} for guild {guild_id}...")
         guild_config = self.get_guild_config(guild_id)
         _setting: dict = getattr(self.CONFIG.settings, setting.upper())
 
@@ -109,13 +109,13 @@ class GuildCFG:
             return guild_config[_setting["name"]]
 
     def reset_guild_setting_to_default(self, guild_id: int | str, setting: dict):
-        logger.info(f"Resetting {setting} to default for guild {guild_id}.")
+        logger.debug(f"Resetting {setting} to default for guild {guild_id}.")
         logger.debug(f"Default value: {setting['default']}, name: {setting['name']}")
         self.update_guild_config(guild_id, setting["default"], setting["name"])
         return self.get_guild_setting(guild_id, setting["name"])
 
     def patch_guild_setting(self, guild_id: int | str, setting: dict):
-        logger.info(f"Patching {setting} for guild {guild_id}.")
+        logger.debug(f"Patching {setting} for guild {guild_id}.")
 
         g_config = self.get_guild_config(guild_id)
         old_channel_id = g_config["channel"]
@@ -125,7 +125,7 @@ class GuildCFG:
         return self.get_guild_setting(guild_id, setting["name"])
 
     def update_guild_config(self, guild_id: int | str, new_data, setting):
-        logger.info(f"Updating guild configuration for guild {guild_id}...")
+        logger.debug(f"Updating guild configuration for guild {guild_id}...")
         logger.debug(
             f"Guild config update payload - new data: {new_data}, setting: {setting}."
         )
