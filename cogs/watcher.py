@@ -481,11 +481,10 @@ class CDNCog(commands.Cog):
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
     )
-    @commands.has_permissions(administrator=True)
     async def cdn_remove_from_watchlist(
         self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
-        """Command for removing specific branches from the watchlist for you guild."""
+        """Remove specific branches from this guild's watchlist."""
         try:
             self.guild_cfg.remove_from_guild_watchlist(ctx.guild_id, branch)  # type: ignore
         except ValueError:
