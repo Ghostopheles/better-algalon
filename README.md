@@ -64,6 +64,8 @@ Algalon provides a number of commands to control your guild's (server) watchlist
 
 `/cdnlastupdate`: Returns a timestamp displaying when Algalon last checked for CDN updates.
 
+`/cdnbranches`: Returns a formatted list of all observable branches.
+
 #### Watchlist Controls
 
 `/cdnaddtowatchlist`*: Adds a specific branch to your guild's watchlist. Specify multiple branches at once by separating them with a comma.
