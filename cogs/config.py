@@ -139,10 +139,18 @@ class ErrorStrings:
     LOCALE_SAME_AS_CURRENT = "New locale is the same as the current locale."
     LOCALE_NOT_SUPPORTED = "Locale not supported by your region."
 
+    # TODO: replace the hardcoded command with a clickable button to the command
+    VIEW_VALID_BRANCHES = "View all valid branches with `/cdnbranches`."
+
     BRANCH_NOT_VALID = "Branch is not a valid product."
     BRANCH_ALREADY_IN_WATCHLIST = "Branch is already on your watchlist."
 
-    ARG_BRANCH_NOT_ON_WATCHLIST = "Argument 'branch' is not on the watchlist."
+    WATCHLIST_CANNOT_BE_EMPTY = "You cannot remove the last branch from your watchlist."
+
+    ARG_BRANCH_NOT_ON_WATCHLIST = "Specified branch is not on your watchlist."
+    ARG_BRANCH_NOT_VALID = "Specified branch is not a valid product."
+
+    OK = "OK"
 
 
 class CommonURL:

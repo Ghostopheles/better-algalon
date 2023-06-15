@@ -151,8 +151,8 @@ class GuildCFG:
         watchlist = guild_config[self.CONFIG.settings.WATCHLIST["name"]]
 
         if branch in watchlist:
-            return self.CONFIG.errors.BRANCH_ALREADY_IN_WATCHLIST
-        elif self.CONFIG.PRODUCTS[branch]:
+            return False, self.CONFIG.errors.BRANCH_ALREADY_IN_WATCHLIST
+        elif self.CONFIG.PRODUCTS.has_key(branch):
             if isinstance(watchlist, str):
                 watchlist = [watchlist, branch]
             else:
@@ -161,9 +161,9 @@ class GuildCFG:
             self.update_guild_config(
                 guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST["name"]
             )
-            return True
+            return True, self.CONFIG.errors.OK
         else:
-            return self.CONFIG.errors.BRANCH_NOT_VALID
+            return False, self.CONFIG.errors.ARG_BRANCH_NOT_VALID
 
     def remove_from_guild_watchlist(
         self, guild_id: int | str, branch: SUPPORTED_PRODUCTS
@@ -173,20 +173,25 @@ class GuildCFG:
 
         watchlist = guild_config[self.CONFIG.settings.WATCHLIST["name"]]
 
-        if branch not in watchlist:
-            return self.CONFIG.errors.ARG_BRANCH_NOT_ON_WATCHLIST
+        if not self.CONFIG.PRODUCTS.has_key(branch):
+            return False, self.CONFIG.errors.ARG_BRANCH_NOT_VALID
+        elif branch not in watchlist:
+            return False, self.CONFIG.errors.ARG_BRANCH_NOT_ON_WATCHLIST
         elif self.CONFIG.PRODUCTS[branch]:
             if isinstance(watchlist, str):
-                return  # CANT REMOVE THE LAST BRANCH ON WATCHLIST
+                return False, self.CONFIG.errors.WATCHLIST_CANNOT_BE_EMPTY
             else:
                 watchlist.remove(branch)
 
             self.update_guild_config(
                 guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST["name"]
             )
-            return True
+            return True, self.CONFIG.errors.OK
         else:
-            raise ValueError("Invalid branch ID.")
+            return (
+                False,
+                self.CONFIG.errors.ARG_BRANCH_NOT_VALID,
+            )  # this should never happen?
 
     def get_guild_watchlist(self, guild_id: int | str):
         logger.info(f"Grabbing guild watchlist for guild {guild_id}...")

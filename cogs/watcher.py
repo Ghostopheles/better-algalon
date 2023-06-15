@@ -17,7 +17,7 @@ from .config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
 from .utils import get_discord_timestamp
 from .api.twitter import Twitter
 
-START_LOOPS = True
+START_LOOPS = False
 
 logger = logging.getLogger("discord.cdn.watcher")
 
@@ -422,19 +422,21 @@ class CDNCog(commands.Cog):
             branches = branch.split(delimeter)
             for branch in branches:
                 if self.cdn_cache.CONFIG.is_valid_branch(branch) != True:
-                    bad_branches.append(branch + " (invalid branch)")
+                    bad_branches.append(
+                        branch + f" ({self.cdn_cache.CONFIG.errors.BRANCH_NOT_VALID})"
+                    )
                     continue
 
-                success = self.guild_cfg.add_to_guild_watchlist(ctx.guild_id, branch)  # type: ignore
+                success, error = self.guild_cfg.add_to_guild_watchlist(ctx.guild_id, branch)  # type: ignore
                 if success != True:
-                    bad_branches.append(branch + " (already present in watchlist)")
+                    bad_branches.append(branch + f" ({error})")
                 else:
                     good_branches.append(branch)
 
             if len(bad_branches) > 0:
                 message = "The following branches were invalid:\n```\n"
                 message += "\n".join(bad_branches)
-                message += "```\nView all valid branches with `/cdnbranches`."
+                message += f"```\n\n{self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES}"
 
                 if len(good_branches) > 0:
                     message += (
@@ -456,14 +458,11 @@ class CDNCog(commands.Cog):
                 )
                 return True
         else:
-            added = self.guild_cfg.add_to_guild_watchlist(ctx.guild_id, branch)  # type: ignore
-            if added != True:
-                message = f"{added}\n\n**Valid branches:**\n```\n"
-
-                for product in self.cdn_cache.CONFIG.PRODUCTS:
-                    message += f"{product.name} : {product}\n"
-
-                message += "```"
+            success, error = self.guild_cfg.add_to_guild_watchlist(ctx.guild_id, branch)  # type: ignore
+            if success != True:
+                message = (
+                    f"{error}\n\n{self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES}"
+                )
 
                 await ctx.interaction.response.send_message(
                     message, ephemeral=True, delete_after=300
@@ -485,26 +484,20 @@ class CDNCog(commands.Cog):
         self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
         """Remove specific branches from this guild's watchlist."""
-        try:
-            self.guild_cfg.remove_from_guild_watchlist(ctx.guild_id, branch)  # type: ignore
-        except ValueError:
-            message = "Invalid branch argument, please try again.\n\n**Valid branches:**\n```\n"
-
-            for product in self.cdn_cache.CONFIG.PRODUCTS:
-                message += f"{product}\n"
-
-            message += "```"
+        success, error = self.guild_cfg.remove_from_guild_watchlist(ctx.guild_id, branch)  # type: ignore
+        if success != True:
+            message = f"{error}\n\n{self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES}"
 
             await ctx.interaction.response.send_message(
                 message, ephemeral=True, delete_after=300
             )
             return False
-
-        await ctx.interaction.response.send_message(
-            f"`{branch}` successfully removed from watchlist.",
-            ephemeral=True,
-            delete_after=300,
-        )
+        else:
+            await ctx.interaction.response.send_message(
+                f"`{branch}` successfully removed from watchlist.",
+                ephemeral=True,
+                delete_after=300,
+            )
 
     @bridge.bridge_command(
         name="cdnwatchlist",
