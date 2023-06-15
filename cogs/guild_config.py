@@ -84,7 +84,7 @@ class GuildCFG:
         with open(self.guild_cfg_path, "r") as file:
             file_json = json.load(file)
             guild_id = str(guild_id)
-            if guild_id not in file_json:
+            if guild_id not in file_json and guild_id.isdigit():
                 self.add_guild_config(guild_id)
 
             return file_json[guild_id]
