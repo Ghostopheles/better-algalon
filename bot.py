@@ -134,7 +134,25 @@ class CDNBot(bridge.Bot):
 
     async def on_ready(self):
         """This `async` function runs once when the bot is connected to Discord and ready to execute commands."""
-        logger.info("%s has successfully connected to Discord!", self.user.name)  # type: ignore
+        logger.info(f"{self.user.name} has successfully connected to Discord!")  # type: ignore
+
+    async def notify_owner_of_command_exception(
+        self, ctx: discord.ApplicationContext, exc: discord.DiscordException
+    ):
+        owner = await self.get_or_fetch_user(self.owner_id)  # type: ignore
+        dm_channel = await owner.create_dm()  # type: ignore
+        message += f"Args:\n"
+        message += "\n".join(arg for arg in exc.args)
+        message += f"\nCALLER: {ctx.author} ({ctx.author.id})\n"
+        message += f"GUILD: {ctx.guild} ({ctx.guild.id})\n```"  # type: ignore
+        message += "See logs for traceback."
+
+        await dm_channel.send(message)
+
+    async def send_message_to_owner(self, message: str):
+        owner = await self.get_or_fetch_user(self.owner_id)  # type: ignore
+        dm_channel = await owner.create_dm()  # type: ignore
+        await dm_channel.send(message)
 
 
 if __name__ == "__main__":

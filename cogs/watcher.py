@@ -371,6 +371,7 @@ class CDNCog(commands.Cog):
 
     # DISCORD LISTENERS
 
+    @commands.Cog.listener(name="on_command_error")
     @commands.Cog.listener(name="on_application_command_error")
     async def handle_command_error(
         self, ctx: discord.ApplicationContext, exception: discord.DiscordException
@@ -382,7 +383,7 @@ class CDNCog(commands.Cog):
             exc_info=exception,
         )
 
-        await self.notify_owner_of_exception(exception, ctx)
+        await self.bot.notify_owner_of_command_exception(ctx, exception)  # type: ignore
 
         await ctx.interaction.response.send_message(
             error_message, ephemeral=True, delete_after=300
