@@ -511,9 +511,9 @@ class CDNCog(commands.Cog):
         guild_only=True,
     )
     async def cdn_watchlist(self, ctx: bridge.BridgeApplicationContext):
-        """Returns the entire watchlist for your guild."""
+        """Returns the watchlist for your guild."""
         message = (
-            "**These are the branches I'm currently observing for this guild:**\n```\n"
+            "## These are the branches I'm currently observing for this guild:\n```\n"
         )
 
         watchlist = self.guild_cfg.get_guild_watchlist(ctx.guild_id)  # type: ignore
