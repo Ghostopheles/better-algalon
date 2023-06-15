@@ -4,6 +4,7 @@ import json
 import logging
 
 from .config import CacheConfig
+from .config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
 
 
 logger = logging.getLogger("discord.cdn.guild-cfg")
@@ -142,7 +143,7 @@ class GuildCFG:
 
     # WATCHLIST IO
 
-    def add_to_guild_watchlist(self, guild_id: int | str, branch: str):
+    def add_to_guild_watchlist(self, guild_id: int | str, branch: SUPPORTED_PRODUCTS):
         logger.info(f'Adding "{branch}" to watchlist for guild {guild_id}...')
 
         guild_config = self.get_guild_config(guild_id)
@@ -151,7 +152,7 @@ class GuildCFG:
 
         if branch in watchlist:
             return self.CONFIG.errors.BRANCH_ALREADY_IN_WATCHLIST
-        elif branch in self.CONFIG.PRODUCTS.keys():
+        elif self.CONFIG.PRODUCTS[branch]:
             if isinstance(watchlist, str):
                 watchlist = [watchlist, branch]
             else:
@@ -164,7 +165,9 @@ class GuildCFG:
         else:
             return self.CONFIG.errors.BRANCH_NOT_VALID
 
-    def remove_from_guild_watchlist(self, guild_id: int | str, branch: str):
+    def remove_from_guild_watchlist(
+        self, guild_id: int | str, branch: SUPPORTED_PRODUCTS
+    ):
         logger.info(f'Removing "{branch}" from watchlist for guild {guild_id}...')
         guild_config = self.get_guild_config(guild_id)
 
@@ -172,7 +175,7 @@ class GuildCFG:
 
         if branch not in watchlist:
             return self.CONFIG.errors.ARG_BRANCH_NOT_ON_WATCHLIST
-        elif branch in self.CONFIG.PRODUCTS.keys():
+        elif self.CONFIG.PRODUCTS[branch]:
             if isinstance(watchlist, str):
                 return  # CANT REMOVE THE LAST BRANCH ON WATCHLIST
             else:
@@ -194,17 +197,17 @@ class GuildCFG:
     # CHANNEL IO
 
     def set_notification_channel(
-        self, guild_id: int | str, new_channel: int, game: str = None
+        self, guild_id: int | str, new_channel: int, game: SUPPORTED_GAMES | None = None
     ) -> bool:
         logger.info(
             f"Setting {game or 'wow'} notification channel for guild {guild_id} to {new_channel}..."
         )
 
-        if game == "wow" or not game:
+        if game == SUPPORTED_GAMES.Warcraft or not game:
             self.update_guild_config(
                 guild_id, new_channel, self.CONFIG.settings.CHANNEL["name"]
             )
-        elif game == "d4":
+        elif game == SUPPORTED_GAMES.Diablo4:
             self.update_guild_config(
                 guild_id, new_channel, self.CONFIG.settings.D4_CHANNEL["name"]
             )
@@ -213,12 +216,14 @@ class GuildCFG:
 
         return True
 
-    def get_notification_channel(self, guild_id: int | str, game: str = None):
+    def get_notification_channel(
+        self, guild_id: int | str, game: SUPPORTED_GAMES | None = None
+    ):
         logger.info(f"Grabbing notification channel setting for guild {guild_id}...")
 
         key = (
             self.CONFIG.settings.CHANNEL["name"]
-            if game == "wow" or not game
+            if game == SUPPORTED_GAMES.Warcraft or not game
             else self.CONFIG.settings.D4_CHANNEL["name"]
         )
 
