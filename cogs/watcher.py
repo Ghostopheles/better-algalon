@@ -392,6 +392,7 @@ class CDNCog(commands.Cog):
     @bridge.bridge_command(
         name="cdnaddtowatchlist",
         default_member_permissions=discord.Permissions(administrator=True),
+        guild_only=True,
     )
     async def cdn_add_to_watchlist(
         self, ctx: bridge.BridgeApplicationContext, branch: str
@@ -420,6 +421,7 @@ class CDNCog(commands.Cog):
     @bridge.bridge_command(
         name="cdnremovefromwatchlist",
         default_member_permissions=discord.Permissions(administrator=True),
+        guild_only=True,
     )
     @commands.has_permissions(administrator=True)
     async def cdn_remove_from_watchlist(
@@ -447,7 +449,10 @@ class CDNCog(commands.Cog):
             delete_after=300,
         )
 
-    @bridge.bridge_command(name="cdnwatchlist")
+    @bridge.bridge_command(
+        name="cdnwatchlist",
+        guild_only=True,
+    )
     async def cdn_watchlist(self, ctx: bridge.BridgeApplicationContext):
         """Returns the entire watchlist for your guild."""
         message = (
@@ -483,6 +488,7 @@ class CDNCog(commands.Cog):
     @bridge.bridge_command(
         name="cdnsetchannel",
         default_member_permissions=discord.Permissions(administrator=True),
+        guild_only=True,
     )
     async def cdn_set_channel(self, ctx: bridge.BridgeApplicationContext):
         """Sets the notification channel for your guild."""
@@ -533,9 +539,11 @@ class CDNCog(commands.Cog):
             delete_after=300,
         )
 
+    @commands.is_owner()
     @bridge.bridge_command(
         name="cdnsetregion",
         default_member_permissions=discord.Permissions(administrator=True),
+        guild_only=True,
     )
     async def cdn_set_region(self, ctx: bridge.BridgeApplicationContext, region: str):
         """Sets the region for your guild."""
@@ -554,8 +562,10 @@ class CDNCog(commands.Cog):
             message, ephemeral=True, delete_after=300
         )
 
+    @commands.is_owner()
     @bridge.bridge_command(
         name="cdngetregion",
+        guild_only=True,
     )
     async def cdn_get_region(self, ctx: bridge.BridgeApplicationContext):
         """Returns the current region for your guild."""
@@ -568,9 +578,11 @@ class CDNCog(commands.Cog):
             message, ephemeral=True, delete_after=300
         )
 
+    @commands.is_owner()
     @bridge.bridge_command(
         name="cdnsetlocale",
         default_member_permissions=discord.Permissions(administrator=True),
+        guild_only=True,
     )
     async def cdn_set_locale(self, ctx: bridge.BridgeApplicationContext, locale: str):
         """Sets the locale for your guild."""
@@ -596,6 +608,7 @@ class CDNCog(commands.Cog):
             message, ephemeral=True, delete_after=300
         )
 
+    @commands.is_owner()
     @bridge.bridge_command(
         name="cdngetlocale",
     )
