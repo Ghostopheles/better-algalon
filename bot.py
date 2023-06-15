@@ -141,6 +141,8 @@ class CDNBot(bridge.Bot):
     ):
         owner = await self.get_or_fetch_user(self.owner_id)  # type: ignore
         dm_channel = await owner.create_dm()  # type: ignore
+
+        message = f"An error occurred in command `{ctx.command}`:\n```py\n{exc.__class__.__name__}\n"
         message += f"Args:\n"
         message += "\n".join(arg for arg in exc.args)
         message += f"\nCALLER: {ctx.author} ({ctx.author.id})\n"
