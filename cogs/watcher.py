@@ -81,7 +81,12 @@ class CDNCog(commands.Cog):
         owner = await self.bot.fetch_user(self.bot.owner_id)  # type: ignore
         channel = await owner.create_dm()
 
-        message = f"I've encountered an error! Help!\n```py\n{error}\n```\n"
+        if isinstance(error, Exception):
+            message = (
+                f"I've encountered an error! Help!\n```py\n{error.args}\n{error}\n```\n"
+            )
+        else:
+            message = f"I've encountered an error! Help!\n```py\n{error}\n```\n"
 
         if ctx:
             message += f"CALLER: {ctx.author}\nGUILD: {ctx.guild.name} | {ctx.guild_id}"  # type: ignore
@@ -126,6 +131,7 @@ class CDNCog(commands.Cog):
 
             for ver in update_data:
                 branch = ver["branch"]
+                logger.debug(f"Building embed for {branch}")
 
                 if branch not in guild_watchlist:
                     continue
@@ -247,6 +253,12 @@ class CDNCog(commands.Cog):
                     logger.info(
                         "New data found, but debug mode is active or it's the first run. Sending posts to debug channel."
                     )
+
+                    if not dbg.debug_guild_id:
+                        logger.error(
+                            "Debug mode is enabled, but no debug guild ID is set. Aborting."
+                        )
+                        return False
 
                     embed_data = self.preprocess_update_data(new_data)
                     embeds = self.build_embeds(embed_data, dbg.debug_guild_id)  # type: ignore
