@@ -161,6 +161,7 @@ class CDNCache:
         async with httpx.AsyncClient() as client:
             new_data = []
             for branch in self.CONFIG.PRODUCTS:
+                branch = branch.name
                 try:
                     logger.info(f"Grabbing data for branch: {branch}")
                     url = self.CONFIG.CDN_URL + branch + "/versions"
