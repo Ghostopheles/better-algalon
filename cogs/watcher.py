@@ -384,9 +384,10 @@ class CDNCog(commands.Cog):
 
     # DISCORD COMMANDS
 
-    @bridge.bridge_command(name="cdncurrentdata")
-    async def cdn_current_data(self, ctx: bridge.BridgeApplicationContext):
-        logger.info("Generating paginator to display current build data.")
+    @bridge.bridge_command(name="cdndata")
+    async def cdn_data(self, ctx: bridge.BridgeApplicationContext):
+        """Returns a paginator with the currently cached CDN data."""
+        logger.info("Generating paginator to display CDN data.")
         paginator = self.build_paginator_for_current_build_data()
         await paginator.respond(ctx.interaction, ephemeral=True)
 
