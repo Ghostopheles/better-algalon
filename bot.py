@@ -124,12 +124,12 @@ class CDNBot(bridge.Bot):
         )
 
         for cog in self.COGS_LIST:
-            logger.info("Loading %s cog...", cog)
+            logger.info(f"Loading {cog} cog...")
             try:
                 self.load_extension(f"cogs.{cog}")
-                logger.info("%s cog loaded!", cog)
+                logger.info(f"{cog} cog loaded!")
             except Exception as exc:
-                logger.error("Error loading cog %s", cog)
+                logger.error(f"Error loading cog {cog}")
                 logger.error(exc)
 
     async def on_ready(self):
