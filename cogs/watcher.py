@@ -412,26 +412,69 @@ class CDNCog(commands.Cog):
     async def cdn_add_to_watchlist(
         self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
-        """Command for adding specific branches to the watchlist for your guild."""
-        added = self.guild_cfg.add_to_guild_watchlist(ctx.guild_id, branch)  # type: ignore
-        if added != True:
-            message = f"{added}\n\n**Valid branches:**\n```\n"
+        """Add a branch to the watchlist. Add multiple branches by separating them with a comma."""
+        branch = branch.lower()
+        branch = branch.replace(" ", "")
+        delimeter = ","
+        if delimeter in branch:
+            bad_branches = []
+            good_branches = []
+            branches = branch.split(delimeter)
+            for branch in branches:
+                if self.cdn_cache.CONFIG.is_valid_branch(branch) != True:
+                    bad_branches.append(branch + " (invalid branch)")
+                    continue
 
-            for product, name in self.cdn_cache.CONFIG.PRODUCTS.items():
-                message += f"{product} : {name}\n"
+                success = self.guild_cfg.add_to_guild_watchlist(ctx.guild_id, branch)  # type: ignore
+                if success != True:
+                    bad_branches.append(branch + " (already present in watchlist)")
+                else:
+                    good_branches.append(branch)
 
-            message += "```"
+            if len(bad_branches) > 0:
+                message = "The following branches were invalid:\n```\n"
+                message += "\n".join(bad_branches)
+                message += "```\nView all valid branches with `/cdnbranches`."
+
+                if len(good_branches) > 0:
+                    message += (
+                        "\n\nThe following branches were added succesfully:\n```\n"
+                    )
+                    message += "\n".join(good_branches)
+                    message += "```"
+
+                await ctx.interaction.response.send_message(
+                    message, ephemeral=True, delete_after=300
+                )
+                return False
+            else:
+                message = "The following branches were successfully added to the watchlist:\n```\n"
+                message += "\n".join(good_branches)
+                message += "```"
+                await ctx.interaction.response.send_message(
+                    message, ephemeral=True, delete_after=300
+                )
+                return True
+        else:
+            added = self.guild_cfg.add_to_guild_watchlist(ctx.guild_id, branch)  # type: ignore
+            if added != True:
+                message = f"{added}\n\n**Valid branches:**\n```\n"
+
+                for product in self.cdn_cache.CONFIG.PRODUCTS:
+                    message += f"{product.name} : {product}\n"
+
+                message += "```"
+
+                await ctx.interaction.response.send_message(
+                    message, ephemeral=True, delete_after=300
+                )
+                return False
 
             await ctx.interaction.response.send_message(
-                message, ephemeral=True, delete_after=300
+                f"`{branch}` successfully added to watchlist.",
+                ephemeral=True,
+                delete_after=300,
             )
-            return False
-
-        await ctx.interaction.response.send_message(
-            f"`{branch}` successfully added to watchlist.",
-            ephemeral=True,
-            delete_after=300,
-        )
 
     @bridge.bridge_command(
         name="cdnremovefromwatchlist",
