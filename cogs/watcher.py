@@ -528,20 +528,6 @@ class CDNCog(commands.Cog):
             message, ephemeral=True, delete_after=300
         )
 
-    # FIXME: This command will be a pain to fix so I'm just deleting it for now
-    # @bridge.bridge_command(
-    #    name="cdnedit",
-    #    default_member_permissions=discord.Permissions(administrator=True),
-    # )
-    # async def cdn_edit(self, ctx: bridge.BridgeApplicationContext):
-    #    """Returns a graphical editor for your guilds watchlist."""
-    #    view = CDNUi(ctx=ctx, guild_cfg=self.guild_cfg)
-    #    message = "Edit the branches you are currently watching using the menu below.\nTo save your changes, just click out of the menu."
-
-    #    await ctx.interaction.response.send_message(
-    #        message, view=view, ephemeral=True, delete_after=300
-    #    )
-
     @bridge.bridge_command(
         name="cdnsetchannel",
         default_member_permissions=discord.Permissions(administrator=True),
