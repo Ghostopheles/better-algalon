@@ -1,5 +1,6 @@
 import os
 
+from enum import StrEnum
 from .locale import Locales
 
 ## GLOBAL CONFIGURATION
@@ -34,7 +35,55 @@ SUPPORTED_REGIONS = [region_US, region_EU, region_KR, region_TW, region_CN]
 SUPPORTED_REGIONS_STRINGS = [region.name for region in SUPPORTED_REGIONS]
 DEFAULT_REGION = region_US
 
-SUPPORTED_GAMES = ["wow", "d4"]
+
+class SUPPORTED_GAMES(StrEnum):
+    """Supported Games"""
+
+    Warcraft = "wow"
+    Diablo4 = "d4"
+
+
+class SUPPORTED_PRODUCTS(StrEnum):
+    """Supported Branches"""
+
+    # if a product branch name (the key) does not include "wow", it will not be tweeted
+    # WoW products
+    wow = "Retail"
+    wowt = "Retail PTR"
+    wow_beta = "Beta"
+    wowxptr = "Retail PTR 2"
+    wow_classic = "WotLK Classic"
+    wow_classic_beta = "Classic Beta"
+    wow_classic_ptr = "WotLK Classic PTR"
+    wow_classic_era = "Classic Era"
+    wow_classic_era_beta = "Classic Era Beta"
+    wow_classic_era_ptr = "Classic Era PTR"
+    wowz = "Submission"
+    wowlivetest = "Live Test"
+    wowdev = "Internal"
+    wowdev2 = "Internal 2"
+    wowdev3 = "Internal 3"
+    wowv = "Vendor"
+    wowv2 = "Vendor 2"
+    wowv3 = "Vendor 3"
+    wowv4 = "Vendor 4"
+    wowe1 = "Event"
+    wowe2 = "Event 2"
+    wowe3 = "Event 3"
+    wowdemo = "Demo"
+    # Diablo 4 products
+    fenris = "Diablo IV"
+    fenrisb = "Diablo IV Beta"
+    fenrisdev = "Diablo IV Internal"
+    fenrisdev2 = "Diablo IV Internal 2"
+    fenrise = "Diablo IV Event"
+    fenrisvendor1 = "Diablo IV Vendor"
+    fenrisvendor2 = "Diablo IV Vendor 2"
+    fenrisvendor3 = "Diablo IV Vendor 3"
+
+    @classmethod
+    def has_key(cls, value):
+        return value in cls._member_names_
 
 
 class Indices:
@@ -103,41 +152,8 @@ class CommonURL:
 
 class CacheConfig:
     CDN_URL = "http://us.patch.battle.net:1119/"
-    PRODUCTS = {  # if a product branch name (the key) does not include "wow", it will not be tweeted
-        # WoW products
-        "wow": "Retail",
-        "wowt": "Retail PTR",
-        "wow_beta": "Beta",
-        "wowxptr": "Retail PTR 2",
-        "wow_classic": "WotLK Classic",
-        "wow_classic_beta": "Classic Beta",
-        "wow_classic_ptr": "WotLK Classic PTR",
-        "wow_classic_era": "Classic Era",
-        "wow_classic_era_beta": "Classic Era Beta",
-        "wow_classic_era_ptr": "Classic Era PTR",
-        "wowz": "Submission",
-        "wowlivetest": "Live Test",
-        "wowdev": "Internal",
-        "wowdev2": "Internal 2",
-        "wowdev3": "Internal 3",
-        "wowv": "Vendor",
-        "wowv2": "Vendor 2",
-        "wowv3": "Vendor 3",
-        "wowv4": "Vendor 4",
-        "wowe1": "Event",
-        "wowe2": "Event 2",
-        "wowe3": "Event 3",
-        "wowdemo": "Demo",
-        # Diablo 4 products
-        "fenris": "Diablo IV",
-        "fenrisb": "Diablo IV Beta",
-        "fenrisdev": "Diablo IV Internal",
-        "fenrisdev2": "Diablo IV Internal 2",
-        "fenrise": "Diablo IV Event",
-        "fenrisvendor1": "Diablo IV Vendor",
-        "fenrisvendor2": "Diablo IV Vendor 2",
-        "fenrisvendor3": "Diablo IV Vendor 3",
-    }
+
+    PRODUCTS = SUPPORTED_PRODUCTS
     AREAS_TO_CHECK_FOR_UPDATES = ["build", "build_text"]
     CACHE_FOLDER_NAME = "cache"
     CACHE_FILE_NAME = "cdn.json"
@@ -170,6 +186,10 @@ class CacheConfig:
         self.CDN_URL = (
             self.urls.HTTPS + self.settings.REGION["default"] + self.urls.CDN_URL
         )
+
+    @staticmethod
+    def is_valid_branch(branch) -> bool:
+        return SUPPORTED_PRODUCTS.has_key(branch)
 
 
 ## COMMON CONFIGURATION
