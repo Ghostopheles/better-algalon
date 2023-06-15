@@ -13,6 +13,7 @@ from .cdn_cache import CDNCache
 from .config import FETCH_INTERVAL, CommonStrings
 from .config import WatcherConfig as cfg
 from .config import DebugConfig as dbg
+from .config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
 from .utils import get_discord_timestamp
 from .api.twitter import Twitter
 
@@ -66,10 +67,10 @@ class CDNCog(commands.Cog):
 
         logger.info("Running cache configuration check...")
 
-        for product in self.cdn_cache.CONFIG.PRODUCTS.keys():
-            if product not in self.cdn_cache.get_all_config_entries():
+        for product in self.cdn_cache.CONFIG.PRODUCTS:
+            if product.name not in self.cdn_cache.get_all_config_entries():
                 logger.info(f"New product detected. Adding default entry for {product}")
-                self.cdn_cache.set_default_entry(product)
+                self.cdn_cache.set_default_entry(product.name)
 
     async def notify_owner_of_exception(
         self,
@@ -289,10 +290,13 @@ class CDNCog(commands.Cog):
 
         data_pages = []
 
-        for product, name in self.cdn_cache.CONFIG.PRODUCTS.items():
-            data = self.cdn_cache.load_build_data(product)
+        for product in self.cdn_cache.CONFIG.PRODUCTS:
+            data = self.cdn_cache.load_build_data(product.name)
 
             if not data:
+                logger.warning(
+                    f"No data found for product {product}, skipping paginator entry..."
+                )
                 continue
 
             lock = ":lock:" if data["encrypted"] else ""
@@ -415,7 +419,7 @@ class CDNCog(commands.Cog):
         except ValueError:
             message = "Invalid branch argument, please try again.\n\n**Valid branches:**\n```\n"
 
-            for product in self.cdn_cache.CONFIG.PRODUCTS.keys():
+            for product in self.cdn_cache.CONFIG.PRODUCTS:
                 message += f"{product}\n"
 
             message += "```"
@@ -441,7 +445,8 @@ class CDNCog(commands.Cog):
         watchlist = self.guild_cfg.get_guild_watchlist(ctx.guild_id)  # type: ignore
 
         for product in watchlist:
-            message += f"{product}\n"
+            product = SUPPORTED_PRODUCTS[product]
+            message += f"{product.name} : {product}\n"
 
         message += "```"
 
@@ -472,22 +477,31 @@ class CDNCog(commands.Cog):
         channel = ctx.channel_id
         guild = ctx.guild_id
 
-        self.guild_cfg.set_notification_channel(guild, channel)  # type: ignore
+        game = game or SUPPORTED_GAMES.Warcraft
+
+        self.guild_cfg.set_notification_channel(guild, channel, game)  # type: ignore
 
         await ctx.interaction.response.send_message(
-            "Notification channel set!", ephemeral=True, delete_after=300
+            f"{game.name} notification channel set!",
+            ephemeral=True,
+            delete_after=300,
         )
 
-    @bridge.bridge_command(name="cdngetchannel")
-    async def cdn_get_channel(self, ctx: bridge.BridgeApplicationContext):
-        """Returns the current notification channel for your guild."""
+    @bridge.bridge_command(
+        name="cdngetchannel",
+        guild_only=True,
+    )
+    async def cdn_get_channel(
+        self, ctx: bridge.BridgeApplicationContext, game: SUPPORTED_GAMES | None = None
+    ):
+        """Returns the current notification channel for the given game. Defaults to Warcraft."""
         guild = ctx.guild_id
-
-        channel = self.guild_cfg.get_notification_channel(guild)  # type: ignore
+        game = game or SUPPORTED_GAMES.Warcraft
+        channel = self.guild_cfg.get_notification_channel(guild, game)  # type: ignore
 
         if channel:
             await ctx.interaction.response.send_message(
-                f"This server's notification channel is set to <#{channel}>",
+                f"This server's {game.name} notification channel is set to <#{channel}>",
                 ephemeral=True,
                 delete_after=300,
             )
