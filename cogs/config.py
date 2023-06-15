@@ -140,7 +140,7 @@ class ErrorStrings:
     LOCALE_NOT_SUPPORTED = "Locale not supported by your region."
 
     # TODO: replace the hardcoded command with a clickable button to the command
-    VIEW_VALID_BRANCHES = "View all valid branches with `/cdnbranches`."
+    VIEW_VALID_BRANCHES = "View all valid branches with {cmdlink}."
 
     BRANCH_NOT_VALID = "Branch is not a valid product."
     BRANCH_ALREADY_IN_WATCHLIST = "Branch is already on your watchlist."

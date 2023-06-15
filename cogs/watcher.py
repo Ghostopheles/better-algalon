@@ -72,6 +72,17 @@ class CDNCog(commands.Cog):
                 logger.info(f"New product detected. Adding default entry for {product}")
                 self.cdn_cache.set_default_entry(product.name)
 
+    def get_command_link(self, command: str):
+        all_cmds = self.get_commands()
+        for cmd in all_cmds:
+            if isinstance(cmd, bridge.BridgeCommand):
+                slash = cmd.slash_variant
+                if slash and slash.name == command:
+                    return slash.mention
+            elif isinstance(cmd, discord.SlashCommand):
+                if cmd.name == command:
+                    return cmd.mention
+
     async def notify_owner_of_exception(
         self,
         error,
@@ -436,7 +447,12 @@ class CDNCog(commands.Cog):
             if len(bad_branches) > 0:
                 message = "The following branches were invalid:\n```\n"
                 message += "\n".join(bad_branches)
-                message += f"```\n\n{self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES}"
+
+                help_string = self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES
+                cmdlink = self.get_command_link("cdnbranches")
+                help_string = help_string.format(cmdlink=cmdlink)
+
+                message += f"```\n\n{help_string}"
 
                 if len(good_branches) > 0:
                     message += (
@@ -460,9 +476,13 @@ class CDNCog(commands.Cog):
         else:
             success, error = self.guild_cfg.add_to_guild_watchlist(ctx.guild_id, branch)  # type: ignore
             if success != True:
-                message = (
-                    f"{error}\n\n{self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES}"
-                )
+                message = f"{error}\n\n"
+
+                help_string = self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES
+                cmdlink = self.get_command_link("cdnbranches")
+                help_string = help_string.format(cmdlink=cmdlink)
+
+                message += help_string
 
                 await ctx.interaction.response.send_message(
                     message, ephemeral=True, delete_after=300
@@ -486,7 +506,13 @@ class CDNCog(commands.Cog):
         """Remove specific branches from this guild's watchlist."""
         success, error = self.guild_cfg.remove_from_guild_watchlist(ctx.guild_id, branch)  # type: ignore
         if success != True:
-            message = f"{error}\n\n{self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES}"
+            message = f"{error}\n\n"
+
+            help_string = self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES
+            cmdlink = self.get_command_link("cdnbranches")
+            help_string = help_string.format(cmdlink=cmdlink)
+
+            message += help_string
 
             await ctx.interaction.response.send_message(
                 message, ephemeral=True, delete_after=300
