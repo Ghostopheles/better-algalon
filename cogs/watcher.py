@@ -533,8 +533,10 @@ class CDNCog(commands.Cog):
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
     )
-    async def cdn_set_channel(self, ctx: bridge.BridgeApplicationContext):
-        """Sets the notification channel for your guild."""
+    async def cdn_set_channel(
+        self, ctx: bridge.BridgeApplicationContext, game: SUPPORTED_GAMES | None = None
+    ):
+        """Sets the current channel as the notification channel for the given game. Defaults to Warcraft."""
         channel = ctx.channel_id
         guild = ctx.guild_id
 
