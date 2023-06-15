@@ -314,7 +314,8 @@ class CDNCog(commands.Cog):
             lock = ":lock:" if data["encrypted"] else ""
 
             embed = discord.Embed(
-                title=f"CDN Data for: {name}{lock}", color=discord.Color.blurple()
+                title=f"CDN Data for: {product}{lock}",
+                color=discord.Color.blurple(),
             )
 
             data_text = f"**Region:** `{data['region']}`\n"
@@ -322,7 +323,7 @@ class CDNCog(commands.Cog):
             data_text += f"**CDN Config:** `{data['cdn_config']}`\n"
             data_text += f"**Build:** `{data['build']}`\n"
             data_text += f"**Version:** `{data['build_text']}`\n"
-            data_text += f"**Product Config:** `{data['product_config']}`"
+            data_text += f"**Product Config:** `{data['product_config']}`\n"
             data_text += f"**Encrypted:** `{data['encrypted']}`"
 
             embed.add_field(name="Current Data", value=data_text, inline=False)
