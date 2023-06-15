@@ -158,7 +158,7 @@ class CDNCog(commands.Cog):
                 value_string += f"`{public_name} ({branch})`{encrypted}: {build_text_old}.{build_old} --> {build_text}.{build}\n"
 
             if value_string == "":
-                return False
+                continue
 
             embed.add_field(
                 name=cfg.strings.EMBED_UPDATE_TITLE, value=value_string, inline=False
