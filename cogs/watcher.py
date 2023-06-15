@@ -17,7 +17,7 @@ from .config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
 from .utils import get_discord_timestamp
 from .api.twitter import Twitter
 
-START_LOOPS = False
+START_LOOPS = True
 
 logger = logging.getLogger("discord.cdn.watcher")
 
