@@ -14,7 +14,6 @@ try:
 except ImportError:
     pass
 
-TOKEN = os.getenv("DISCORD_TOKEN")
 OWNER_ID = os.getenv("OWNER_ID")
 
 DIR = os.path.dirname(os.path.realpath(__file__))
@@ -144,7 +143,12 @@ if __name__ == "__main__":
         name="Blizzard's CDN",
     )
 
-    debug_guilds = [int(os.getenv("DEBUG_GUILD_ID"))] if os.getenv("DEBUG") else []
+    if os.getenv("DEBUG"):  # is debug mode
+        token = os.getenv("DEBUG_DISCORD_TOKEN")
+        debug_guilds = [int(os.getenv("DEBUG_GUILD_ID")), int(os.getenv("DEBUG_GUILD_ID2"))]  # type: ignore
+    else:  # is NOT debug mode
+        token = os.getenv("DISCORD_TOKEN")
+        debug_guilds = []
 
     bot = CDNBot(
         command_prefix="!",
@@ -154,7 +158,7 @@ if __name__ == "__main__":
         owner_id=OWNER_ID,
         status=discord.Status.online,
         activity=activity,
-        auto_sync_commands=not os.getenv("DEBUG"),
-        debug_guilds=debug_guilds,
+        auto_sync_commands=True,
+        debug_guilds=debug_guilds,  # debug_guilds,
     )
-    bot.run(TOKEN)
+    bot.run(token)
