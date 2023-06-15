@@ -391,6 +391,19 @@ class CDNCog(commands.Cog):
         paginator = self.build_paginator_for_current_build_data()
         await paginator.respond(ctx.interaction, ephemeral=True)
 
+    @bridge.bridge_command(name="cdnbranches")
+    async def cdn_branches(self, ctx: bridge.BridgeApplicationContext):
+        """Returns all observable branches."""
+        message = f"## These are all the branches I can watch for you:\n```\n"
+        for product in self.cdn_cache.CONFIG.PRODUCTS:
+            message += f"{product.name} : {product}\n"
+
+        message += "```"
+
+        await ctx.interaction.response.send_message(
+            message, ephemeral=True, delete_after=300
+        )
+
     @bridge.bridge_command(
         name="cdnaddtowatchlist",
         default_member_permissions=discord.Permissions(administrator=True),
