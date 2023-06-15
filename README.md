@@ -9,7 +9,7 @@ Inspired by, and vaguely based on the original [Algalon bot by Ellypse](https://
 
 Includes a Twitter integration to post updates to Twitter alongside Discord. This will be replaced in the future with Algalon 3.0 (lol). This bot can be found on Twitter as [@algalon_ghost](https://twitter.kivatech.io).
 
-Check out the [[CHANGELOG]] to view the most recent changes.
+Check out the [changelog](CHANGELOG.md) to view the most recent changes.
 
 ## Observable Branches
 A lock indicates that the given branch is encrypted and not accessible to the public.
