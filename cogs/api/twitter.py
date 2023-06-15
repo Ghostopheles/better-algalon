@@ -16,9 +16,7 @@ ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
 logger = logging.getLogger("discord.api.twitter")
 
-DISALLOWED_GAMES = [
-    game_name for game_name in cfg.PRODUCTS.keys() if "wow" not in game_name
-]
+DISALLOWED_GAMES = [game.name for game in cfg.PRODUCTS if "wow" not in game.name]
 
 
 class Twitter:
@@ -39,6 +37,9 @@ class Twitter:
                 product = line[line.find("(") + 1 : line.find(")")]
                 if product in DISALLOWED_GAMES:
                     field["value"] = field["value"].replace(line + "\n", "")
+
+        if len(data["fields"][0]["value"].splitlines()) <= 3:
+            return False
 
         return data
 
@@ -72,9 +73,9 @@ class Twitter:
 
         timestamp = time.strftime("%m-%d-%Y@%I:%M:%S", time_object)
 
-        hashtag = "#Warcraft" if is_warcraft else ""
+        hashtag = " #Warcraft" if is_warcraft else ""
 
-        title = f"New {hashtag} build{'s' if len(embed['fields']) > 1 else ''} found"
+        title = f"New{hashtag} build{'s' if len(embed['fields']) > 1 else ''} found"
 
         text = f"{title}:\n{updates}\nFound at: {timestamp} {time_object.tm_zone}"
 
@@ -99,7 +100,3 @@ class Twitter:
             logger.info("Debug mode enabled. Skipping tweet...")
             logger.debug(f"Tweet text:\n{text}")
             return
-
-
-if __name__ == "__main__":
-    print(DISALLOWED_GAMES)
