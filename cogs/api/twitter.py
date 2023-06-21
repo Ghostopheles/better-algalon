@@ -38,7 +38,7 @@ class Twitter:
                 if product in DISALLOWED_GAMES:
                     field["value"] = field["value"].replace(line + "\n", "")
 
-        if len(data["fields"][0]["value"].splitlines()) <= 3:
+        if len(data["fields"][0]["value"].splitlines()) == 0:
             return False
 
         return data
