@@ -161,6 +161,7 @@ class CDNCache:
         async with httpx.AsyncClient() as client:
             new_data = []
             for branch in self.CONFIG.PRODUCTS:
+                branch = branch.name
                 try:
                     logger.info(f"Grabbing data for branch: {branch}")
                     url = self.CONFIG.CDN_URL + branch + "/versions"
@@ -192,7 +193,7 @@ class CDNCache:
                     logger.error(
                         f"Connection error during CDN check for {branch} using url {url or None}"  # type: ignore
                     )
-                    return exc
+                    continue
                 except Exception as exc:
                     logger.error(f"Error during CDN check for {branch}", exc_info=exc)
                     continue
@@ -227,7 +228,7 @@ class CDNCache:
         except KeyError or IndexError as exc:
             logger.warning(
                 f"Encountered an error parsing API response for branch: {branch}.",
-                exc_info=exc,
+                exc_info=exc if isinstance(exc, IndexError) else None,
             )
 
             return False

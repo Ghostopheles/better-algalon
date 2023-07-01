@@ -1,5 +1,6 @@
 import os
 
+from enum import StrEnum
 from .locale import Locales
 
 ## GLOBAL CONFIGURATION
@@ -33,6 +34,56 @@ region_CN = Region("cn", [Locales.zh_CN])
 SUPPORTED_REGIONS = [region_US, region_EU, region_KR, region_TW, region_CN]
 SUPPORTED_REGIONS_STRINGS = [region.name for region in SUPPORTED_REGIONS]
 DEFAULT_REGION = region_US
+
+
+class SUPPORTED_GAMES(StrEnum):
+    """Supported Games"""
+
+    Warcraft = "wow"
+    Diablo4 = "d4"
+
+
+class SUPPORTED_PRODUCTS(StrEnum):
+    """Supported Branches"""
+
+    # if a product branch name (the key) does not include "wow", it will not be tweeted
+    # WoW products
+    wow = "Retail"
+    wowt = "Retail PTR"
+    wow_beta = "Beta"
+    wowxptr = "Retail PTR 2"
+    wow_classic = "WotLK Classic"
+    wow_classic_beta = "Classic Beta"
+    wow_classic_ptr = "WotLK Classic PTR"
+    wow_classic_era = "Classic Era"
+    wow_classic_era_beta = "Classic Era Beta"
+    wow_classic_era_ptr = "Classic Era PTR"
+    wowz = "Submission"
+    wowlivetest = "Live Test"
+    wowdev = "Internal"
+    wowdev2 = "Internal 2"
+    wowdev3 = "Internal 3"
+    wowv = "Vendor"
+    wowv2 = "Vendor 2"
+    wowv3 = "Vendor 3"
+    wowv4 = "Vendor 4"
+    wowe1 = "Event"
+    wowe2 = "Event 2"
+    wowe3 = "Event 3"
+    wowdemo = "Demo"
+    # Diablo 4 products
+    fenris = "Diablo IV"
+    fenrisb = "Diablo IV Beta"
+    fenrisdev = "Diablo IV Internal"
+    fenrisdev2 = "Diablo IV Internal 2"
+    fenrise = "Diablo IV Event"
+    fenrisvendor1 = "Diablo IV Vendor"
+    fenrisvendor2 = "Diablo IV Vendor 2"
+    fenrisvendor3 = "Diablo IV Vendor 3"
+
+    @classmethod
+    def has_key(cls, value):
+        return value in cls._member_names_
 
 
 class Indices:
@@ -73,11 +124,12 @@ class Settings:
     __defaults = CacheDefaults()
 
     CHANNEL = {"name": "channel", "default": __defaults.CHANNEL}
+    D4_CHANNEL = {"name": "d4_channel", "default": __defaults.CHANNEL}
     WATCHLIST = {"name": "watchlist", "default": __defaults.WATCHLIST}
     REGION = {"name": "region", "default": __defaults.REGION_NAME}
     LOCALE = {"name": "locale", "default": __defaults.LOCALE_NAME}
 
-    KEYS = ["channel", "watchlist", "region", "locale"]
+    KEYS = ["channel", "d4_channel", "watchlist", "region", "locale"]
 
 
 class ErrorStrings:
@@ -87,10 +139,17 @@ class ErrorStrings:
     LOCALE_SAME_AS_CURRENT = "New locale is the same as the current locale."
     LOCALE_NOT_SUPPORTED = "Locale not supported by your region."
 
+    VIEW_VALID_BRANCHES = "View all valid branches with {cmdlink}."
+
     BRANCH_NOT_VALID = "Branch is not a valid product."
     BRANCH_ALREADY_IN_WATCHLIST = "Branch is already on your watchlist."
 
-    ARG_BRANCH_NOT_ON_WATCHLIST = "Argument 'branch' is not on the watchlist."
+    WATCHLIST_CANNOT_BE_EMPTY = "You cannot remove the last branch from your watchlist."
+
+    ARG_BRANCH_NOT_ON_WATCHLIST = "Specified branch is not on your watchlist."
+    ARG_BRANCH_NOT_VALID = "Specified branch is not a valid product."
+
+    OK = "OK"
 
 
 class CommonURL:
@@ -100,31 +159,8 @@ class CommonURL:
 
 class CacheConfig:
     CDN_URL = "http://us.patch.battle.net:1119/"
-    PRODUCTS = {
-        "wow": "Retail",
-        "wowt": "Retail PTR",
-        "wow_beta": "Beta",
-        "wowxptr": "Retail PTR 2",
-        "wow_classic": "WotLK Classic",
-        "wow_classic_beta": "Classic Beta",
-        "wow_classic_ptr": "WotLK Classic PTR",
-        "wow_classic_era": "Classic Era",
-        "wow_classic_era_beta": "Classic Era Beta",
-        "wow_classic_era_ptr": "Classic Era PTR",
-        "wowz": "Submission",
-        "wowlivetest": "Live Test",
-        "wowdev": "Internal",
-        "wowdev2": "Internal 2",
-        "wowdev3": "Internal 3",
-        "wowv": "Vendor",
-        "wowv2": "Vendor 2",
-        "wowv3": "Vendor 3",
-        "wowv4": "Vendor 4",
-        "wowe1": "Event",
-        "wowe2": "Event 2",
-        "wowe3": "Event 3",
-        "wowdemo": "Demo",
-    }
+
+    PRODUCTS = SUPPORTED_PRODUCTS
     AREAS_TO_CHECK_FOR_UPDATES = ["build", "build_text"]
     CACHE_FOLDER_NAME = "cache"
     CACHE_FILE_NAME = "cdn.json"
@@ -158,6 +194,10 @@ class CacheConfig:
             self.urls.HTTPS + self.settings.REGION["default"] + self.urls.CDN_URL
         )
 
+    @staticmethod
+    def is_valid_branch(branch) -> bool:
+        return SUPPORTED_PRODUCTS.has_key(branch)
+
 
 ## COMMON CONFIGURATION
 
@@ -179,12 +219,34 @@ class WatcherStrings:
     EMBED_WAGOTOOLS_TITLE = "wago.tools"
     EMBED_WAGOTOOLS_URL = "https://wago.tools/"
 
+    EMBED_DIABLO_TITLE = "Diablo 4"
+
     EMBED_NAME = "Blizzard CDN Update"
+    EMBED_NAME_WOW = "Warcraft CDN Update"
+    EMBED_NAME_D4 = "Diablo 4 CDN Update"
+
     EMBED_ICON_URL = (
         "https://bnetcmsus-a.akamaihd.net/cms/gallery/D2TTHKAPW9BH1534981363136.png"
     )
+    EMBED_ICON_URL_WOW = "https://blz-contentstack-images.akamaized.net/v3/assets/blt72f16e066f85e164/bltc3d5627fa96394bf/world-of-warcraft.webp?width=96&format=webply&quality=95"
+    EMBED_ICON_URL_D4 = "https://blz-contentstack-images.akamaized.net/v3/assets/blt72f16e066f85e164/blt15336eccf10cd269/diablo-IV.webp?width=96&format=webply&quality=95"
 
     EMBED_UPDATE_TITLE = "Build Updates"
+
+    EMBED_GAME_STRINGS = {
+        "wow": {
+            "title": EMBED_WAGOTOOLS_TITLE,
+            "url": EMBED_WAGOTOOLS_URL,
+            "name": EMBED_NAME_WOW,
+            "icon_url": EMBED_ICON_URL_WOW,
+        },
+        "d4": {
+            "title": EMBED_DIABLO_TITLE,
+            "url": None,
+            "name": EMBED_NAME_D4,
+            "icon_url": EMBED_ICON_URL_D4,
+        },
+    }
 
 
 class WatcherConfig:
@@ -209,3 +271,9 @@ class DebugConfig:
     debug_enabled = os.getenv("DEBUG", False)
     debug_guild_id = os.getenv("DEBUG_GUILD_ID")
     debug_channel_id = os.getenv("DEBUG_CHANNEL_ID")
+    debug_channel_id_d4 = os.getenv("DEBUG_CHANNEL_ID_D4")
+
+    debug_channel_id_by_game = {
+        "wow": debug_channel_id,
+        "d4": debug_channel_id_d4,
+    }

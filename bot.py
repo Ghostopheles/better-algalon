@@ -14,7 +14,6 @@ try:
 except ImportError:
     pass
 
-TOKEN = os.getenv("DISCORD_TOKEN")
 OWNER_ID = os.getenv("OWNER_ID")
 
 DIR = os.path.dirname(os.path.realpath(__file__))
@@ -114,7 +113,7 @@ class CDNBotHelpCommand(commands.HelpCommand):
 class CDNBot(bridge.Bot):
     """This is the almighty CDN bot, also known as Algalon. Inherits from `discord.ext.bridge.Bot`."""
 
-    COGS_LIST = ["watcher", "api.blizzard"]
+    COGS_LIST = ["watcher"]
 
     def __init__(self, command_prefix, help_command=None, **options):
         command_prefix = command_prefix or "!"
@@ -125,17 +124,37 @@ class CDNBot(bridge.Bot):
         )
 
         for cog in self.COGS_LIST:
-            logger.info("Loading %s cog...", cog)
+            logger.info(f"Loading {cog} cog...")
             try:
                 self.load_extension(f"cogs.{cog}")
-                logger.info("%s cog loaded!", cog)
+                logger.info(f"{cog} cog loaded!")
             except Exception as exc:
-                logger.error("Error loading cog %s", cog)
+                logger.error(f"Error loading cog {cog}")
                 logger.error(exc)
 
     async def on_ready(self):
         """This `async` function runs once when the bot is connected to Discord and ready to execute commands."""
-        logger.info("%s has successfully connected to Discord!", self.user.name)  # type: ignore
+        logger.info(f"{self.user.name} has successfully connected to Discord!")  # type: ignore
+
+    async def notify_owner_of_command_exception(
+        self, ctx: discord.ApplicationContext, exc: discord.DiscordException
+    ):
+        owner = await self.get_or_fetch_user(self.owner_id)  # type: ignore
+        dm_channel = await owner.create_dm()  # type: ignore
+
+        message = f"An error occurred in command `{ctx.command}`:\n```py\n{exc.__class__.__name__}\n"
+        message += f"Args:\n"
+        message += "\n".join(arg for arg in exc.args)
+        message += f"\nCALLER: {ctx.author} ({ctx.author.id})\n"
+        message += f"GUILD: {ctx.guild} ({ctx.guild.id})\n```"  # type: ignore
+        message += "See logs for traceback."
+
+        await dm_channel.send(message)
+
+    async def send_message_to_owner(self, message: str):
+        owner = await self.get_or_fetch_user(self.owner_id)  # type: ignore
+        dm_channel = await owner.create_dm()  # type: ignore
+        await dm_channel.send(message)
 
 
 if __name__ == "__main__":
@@ -144,7 +163,12 @@ if __name__ == "__main__":
         name="Blizzard's CDN",
     )
 
-    debug_guilds = [os.getenv("DEBUG_GUILD_ID")] if os.getenv("DEBUG") else []
+    if os.getenv("DEBUG"):  # is debug mode
+        token = os.getenv("DEBUG_DISCORD_TOKEN")
+        debug_guilds = [int(os.getenv("DEBUG_GUILD_ID")), int(os.getenv("DEBUG_GUILD_ID2"))]  # type: ignore
+    else:  # is NOT debug mode
+        token = os.getenv("DISCORD_TOKEN")
+        debug_guilds = []
 
     bot = CDNBot(
         command_prefix="!",
@@ -155,6 +179,6 @@ if __name__ == "__main__":
         status=discord.Status.online,
         activity=activity,
         auto_sync_commands=True,
-        debug_guilds=debug_guilds,
+        debug_guilds=debug_guilds,  # debug_guilds,
     )
-    bot.run(TOKEN)
+    bot.run(token)
