@@ -26,7 +26,7 @@ class GuildCFG:
             self.init_guild_cfg()
 
         # remember to clear and update with new builds - contains an old key and a new value
-        self.KEYS_TO_PATCH = ["channel", "d4_channel"]
+        self.KEYS_TO_PATCH = ["d4_channel"]
 
     # GUILD CFG DEFAULTS
 
@@ -102,10 +102,10 @@ class GuildCFG:
         _setting: dict = getattr(self.CONFIG.settings, setting.upper())
 
         if not _setting["name"] in guild_config:
-            if _setting["name"] in self.KEYS_TO_PATCH:
+            return self.reset_guild_setting_to_default(guild_id, _setting)
+        elif _setting["name"] in self.KEYS_TO_PATCH:
+            if _setting["name"] == "d4_channel" and guild_config["d4_channel"] == 0:
                 return self.patch_guild_setting(guild_id, _setting)
-            else:
-                return self.reset_guild_setting_to_default(guild_id, _setting)
         else:
             return guild_config[_setting["name"]]
 
