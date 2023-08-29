@@ -241,7 +241,7 @@ class CDNCog(commands.Cog):
 
                     if actual_embed and channel:
                         logger.info("Sending CDN update post and tweet...")
-                        msg_nonce = secrets.token_urlsafe()
+                        msg_nonce = secrets.token_urlsafe(24)
                         message = await channel.send(embed=actual_embed, nonce=msg_nonce)  # type: ignore
 
                         if channel.id == int(os.getenv("ANNOUNCEMENT_CHANNEL")):
