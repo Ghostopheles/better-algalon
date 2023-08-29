@@ -63,6 +63,14 @@ Banner: {guild.banner.url if guild.banner else 'N/A'}
             message, ephemeral=True, delete_after=300
         )
 
+    @commands.is_owner()
+    @bridge.bridge_command(name="forceupdate", guild_ids=DEBUG_GUILDS, guild_only=True)
+    async def force_update_check(self, ctx: bridge.BridgeApplicationContext):
+        """Forces a CDN check."""
+        watcher = self.bot.get_cog("CDNCog")
+        await watcher.cdn_auto_refresh()
+        await ctx.respond("Update in progress...")
+
 
 def setup(bot):
     bot.add_cog(AdminCog(bot))
