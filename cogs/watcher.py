@@ -55,7 +55,7 @@ class CDNCog(commands.Cog):
                 )
                 self.guild_cfg.add_guild_config(guild.id)
 
-        for guild_id in self.guild_cfg.get_all_guild_configs():
+        for guild_id in self.guild_cfg.get_all_guild_configs().keys():
             for key in self.guild_cfg.CONFIG.settings.KEYS:
                 self.guild_cfg.get_guild_setting(guild_id, key)
 
@@ -388,11 +388,6 @@ class CDNCog(commands.Cog):
         await ctx.interaction.response.send_message(
             error_message, ephemeral=True, delete_after=300
         )
-
-    @commands.Cog.listener("on_guild_join")
-    async def on_guild_join(self, guild: discord.Guild):
-        logger.info(f"Joined new guild {guild.id}!")
-        self.guild_cfg.add_guild_config(guild.id)
 
     # DISCORD COMMANDS
 

@@ -109,6 +109,19 @@ class GuildCFG:
         else:
             return guild_config[_setting["name"]]
 
+    def validate_guild_configs(self):
+        logger.debug(f"Validating guild configurations...")
+        all_configs = self.get_all_guild_configs()
+
+        for guild_id, config in all_configs.items():
+            for key in self.CONFIG.settings.KEYS:
+                _setting: dict = getattr(self.CONFIG.settings, key.upper())
+                if key not in config:
+                    self.reset_guild_setting_to_default(guild_id, _setting)
+                elif key == "d4_channel" and config[key] == 0:
+                    channel = config["channel"]
+                    self.update_guild_config(guild_id, "d4_channel", channel)
+
     def reset_guild_setting_to_default(self, guild_id: int | str, setting: dict):
         logger.debug(f"Resetting {setting} to default for guild {guild_id}.")
         logger.debug(f"Default value: {setting['default']}, name: {setting['name']}")
