@@ -136,7 +136,7 @@ class GuildCFG:
 
         self.update_guild_config(guild_id, old_channel_id, "d4_channel")
 
-        return self.get_guild_setting(guild_id, setting["name"])
+        return True
 
     def update_guild_config(self, guild_id: int | str, new_data, setting):
         logger.debug(f"Updating guild configuration for guild {guild_id}...")
