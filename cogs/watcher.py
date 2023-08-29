@@ -1,5 +1,6 @@
 """This is the module that handles watching the Blizzard CDN and posting updates to the correct places."""
 
+import os
 import time
 import httpx
 import secrets
@@ -241,7 +242,12 @@ class CDNCog(commands.Cog):
 
                     if actual_embed and channel:
                         logger.info("Sending CDN update post and tweet...")
-                        await channel.send(embed=actual_embed)  # type: ignore
+                        msg_nonce = secrets.token_urlsafe()
+                        message = await channel.send(embed=actual_embed, nonce=msg_nonce)  # type: ignore
+
+                        if channel.id == int(os.getenv("ANNOUNCEMENT_CHANNEL")):
+                            await message.publish()
+
                         response = await self.twitter.send_tweet(
                             actual_embed.to_dict(), token
                         )
