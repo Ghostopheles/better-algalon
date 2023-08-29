@@ -56,10 +56,9 @@ class CDNCog(commands.Cog):
                 )
                 self.guild_cfg.add_guild_config(guild.id)
 
-        for guild_id in self.guild_cfg.get_all_guild_configs().keys():
-            for key in self.guild_cfg.CONFIG.settings.KEYS:
-                self.guild_cfg.get_guild_setting(guild_id, key)
+        self.guild_cfg.validate_guild_configs()
 
+        for guild_id in self.guild_cfg.get_all_guild_configs().keys():
             if int(guild_id) not in [guild.id for guild in self.bot.guilds]:
                 logger.info(
                     f"No longer a part of guild {guild_id}, removing guild configuration..."
