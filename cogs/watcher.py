@@ -118,6 +118,7 @@ class CDNCog(commands.Cog):
                 logger.warning(
                     f"Guild {guild_id} has not chosen a notification channel, skipping..."
                 )
+                continue
 
             color = (
                 discord.Color.dark_blue() if game == "wow" else discord.Color.dark_red()
