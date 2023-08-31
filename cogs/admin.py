@@ -5,7 +5,7 @@ from discord.ext import bridge, commands
 
 logger = logging.getLogger("discord.admin")
 
-DEBUG_GUILDS = [int(os.getenv("DEBUG_GUILD_ID"))]
+DEBUG_GUILDS = [318246001309646849]
 
 
 class AdminCog(commands.Cog):
