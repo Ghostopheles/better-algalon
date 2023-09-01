@@ -245,15 +245,14 @@ class CDNCog(commands.Cog):
 
                         if channel.id == int(os.getenv("ANNOUNCEMENT_CHANNEL")):
                             await message.publish()
-
-                        response = await self.twitter.send_tweet(
-                            actual_embed.to_dict(), token
-                        )
-                        if response:
-                            logger.error(
-                                f"Tweet failed with: {response}.\n{actual_embed.to_dict()}"
+                            response = await self.twitter.send_tweet(
+                                actual_embed.to_dict(), token
                             )
-                            await self.notify_owner_of_exception(response)
+                            if response:
+                                logger.error(
+                                    f"Tweet failed with: {response}.\n{actual_embed.to_dict()}"
+                                )
+                                await self.notify_owner_of_exception(response)
                     elif actual_embed and not channel:
                         logger.error(f"No channel found for guild {guild}, aborting.")
                         continue
