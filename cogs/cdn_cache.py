@@ -89,6 +89,7 @@ class CDNCache:
             if (newBuild["seqn"] > 0) and newBuild["seqn"] < file_json[
                 self.CONFIG.indices.BUILDINFO
             ][branch]["seqn"]:
+                logger.warning(f"Lower sequence number found for {branch}")
                 return False
 
             for area in self.CONFIG.AREAS_TO_CHECK_FOR_UPDATES:
@@ -97,6 +98,7 @@ class CDNCache:
                         file_json[self.CONFIG.indices.BUILDINFO][branch][area]
                         != newBuild[area]
                     ):
+                        logger.debug(f"Updated info found for {branch} @ {area}")
                         return True
                     else:
                         return False
@@ -169,7 +171,7 @@ class CDNCache:
             for branch in self.CONFIG.PRODUCTS:
                 branch = branch.name
                 try:
-                    logger.info(f"Grabbing data for branch: {branch}")
+                    logger.info(f"Grabbing version for {branch}")
                     url = self.CONFIG.CDN_URL + branch + "/versions"
 
                     res = await client.get(url, timeout=20)
@@ -177,6 +179,7 @@ class CDNCache:
                     data = await self.parse_response(branch, res.text)
 
                     if data and res.status_code == 200:
+                        logger.debug(f"Version check payload: {data}")
                         logger.info(f"Comparing build data for {branch}")
                         is_new = self.compare_builds(branch, data)
 
@@ -190,11 +193,14 @@ class CDNCache:
 
                             output_data["branch"] = branch
                             new_data.append(output_data)
+                            logger.debug(f"Updated build payload: {output_data}")
 
-                        logger.info(f"Saving build data for {branch}")
-                        self.save_build_data(branch, data)
+                            logger.info(f"Saving new build data for {branch}")
+                            self.save_build_data(branch, data)
                     else:
-                        logger.warning(f"Invalid API response for branch {branch}")
+                        logger.warning(
+                            f"Invalid response {res.status_code} for branch {branch}"
+                        )
                 except httpx.ConnectError as exc:
                     logger.error(
                         f"Connection error during CDN check for {branch} using url {url or None}"  # type: ignore
