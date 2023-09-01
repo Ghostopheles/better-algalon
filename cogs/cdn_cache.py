@@ -85,6 +85,12 @@ class CDNCache:
             ):
                 newBuild["encrypted"] = True
 
+            # ignore builds with lower seqn numbers because it's probably just a caching issue
+            if (newBuild["seqn"] > 0) and newBuild["seqn"] < file_json[
+                self.CONFIG.indices.BUILDINFO
+            ][branch]["seqn"]:
+                return False
+
             for area in self.CONFIG.AREAS_TO_CHECK_FOR_UPDATES:
                 if branch in file_json[self.CONFIG.indices.BUILDINFO]:
                     if (
@@ -206,6 +212,7 @@ class CDNCache:
             data = response.split("\n")
             if len(data) < 3:
                 return False
+            seqn = data[1].replace("## seqn = ", "")
             data = data[2].split("|")
             region = data[0]
             build_config = data[1]
@@ -222,6 +229,7 @@ class CDNCache:
                 "build_text": build_text,
                 "product_config": product_config,
                 "encrypted": await self.TACT.is_encrypted(branch, product_config),
+                "seqn": int(seqn),
             }
 
             return output
