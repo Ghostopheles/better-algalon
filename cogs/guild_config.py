@@ -120,7 +120,7 @@ class GuildCFG:
                     self.reset_guild_setting_to_default(guild_id, _setting)
                 elif key == "d4_channel" and config[key] == 0:
                     channel = config["channel"]
-                    self.update_guild_config(guild_id, "d4_channel", channel)
+                    self.update_guild_config(guild_id, channel, "d4_channel")
 
     def reset_guild_setting_to_default(self, guild_id: int | str, setting: dict):
         logger.debug(f"Resetting {setting} to default for guild {guild_id}.")
