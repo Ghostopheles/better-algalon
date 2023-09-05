@@ -1,5 +1,6 @@
 """This is the module that handles watching the Blizzard CDN and posting updates to the correct places."""
 
+import os
 import time
 import httpx
 import secrets
@@ -55,10 +56,9 @@ class CDNCog(commands.Cog):
                 )
                 self.guild_cfg.add_guild_config(guild.id)
 
-        for guild_id in self.guild_cfg.get_all_guild_configs():
-            for key in self.guild_cfg.CONFIG.settings.KEYS:
-                self.guild_cfg.get_guild_setting(guild_id, key)
+        self.guild_cfg.validate_guild_configs()
 
+        for guild_id in self.guild_cfg.get_all_guild_configs().keys():
             if int(guild_id) not in [guild.id for guild in self.bot.guilds]:
                 logger.info(
                     f"No longer a part of guild {guild_id}, removing guild configuration..."
@@ -118,7 +118,7 @@ class CDNCog(commands.Cog):
                 logger.warning(
                     f"Guild {guild_id} has not chosen a notification channel, skipping..."
                 )
-                raise Exception(f"Notification channel not found for {game}.")
+                continue
 
             color = (
                 discord.Color.dark_blue() if game == "wow" else discord.Color.dark_red()
@@ -241,15 +241,18 @@ class CDNCog(commands.Cog):
 
                     if actual_embed and channel:
                         logger.info("Sending CDN update post and tweet...")
-                        await channel.send(embed=actual_embed)  # type: ignore
-                        response = await self.twitter.send_tweet(
-                            actual_embed.to_dict(), token
-                        )
-                        if response:
-                            logger.error(
-                                f"Tweet failed with: {response}.\n{actual_embed.to_dict()}"
+                        message = await channel.send(embed=actual_embed)  # type: ignore
+
+                        if channel.id == int(os.getenv("ANNOUNCEMENT_CHANNEL")):
+                            await message.publish()
+                            response = await self.twitter.send_tweet(
+                                actual_embed.to_dict(), token
                             )
-                            await self.notify_owner_of_exception(response)
+                            if response:
+                                logger.error(
+                                    f"Tweet failed with: {response}.\n{actual_embed.to_dict()}"
+                                )
+                                await self.notify_owner_of_exception(response)
                     elif actual_embed and not channel:
                         logger.error(f"No channel found for guild {guild}, aborting.")
                         continue
@@ -388,11 +391,6 @@ class CDNCog(commands.Cog):
         await ctx.interaction.response.send_message(
             error_message, ephemeral=True, delete_after=300
         )
-
-    @commands.Cog.listener("on_guild_join")
-    async def on_guild_join(self, guild: discord.Guild):
-        logger.info(f"Joined new guild {guild.id}!")
-        self.guild_cfg.add_guild_config(guild.id)
 
     # DISCORD COMMANDS
 

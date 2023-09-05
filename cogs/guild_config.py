@@ -26,7 +26,7 @@ class GuildCFG:
             self.init_guild_cfg()
 
         # remember to clear and update with new builds - contains an old key and a new value
-        self.KEYS_TO_PATCH = ["channel", "d4_channel"]
+        self.KEYS_TO_PATCH = ["d4_channel"]
 
     # GUILD CFG DEFAULTS
 
@@ -102,12 +102,25 @@ class GuildCFG:
         _setting: dict = getattr(self.CONFIG.settings, setting.upper())
 
         if not _setting["name"] in guild_config:
-            if _setting["name"] in self.KEYS_TO_PATCH:
+            return self.reset_guild_setting_to_default(guild_id, _setting)
+        elif _setting["name"] in self.KEYS_TO_PATCH:
+            if _setting["name"] == "d4_channel" and guild_config["d4_channel"] == 0:
                 return self.patch_guild_setting(guild_id, _setting)
-            else:
-                return self.reset_guild_setting_to_default(guild_id, _setting)
         else:
             return guild_config[_setting["name"]]
+
+    def validate_guild_configs(self):
+        logger.debug(f"Validating guild configurations...")
+        all_configs = self.get_all_guild_configs()
+
+        for guild_id, config in all_configs.items():
+            for key in self.CONFIG.settings.KEYS:
+                _setting: dict = getattr(self.CONFIG.settings, key.upper())
+                if key not in config:
+                    self.reset_guild_setting_to_default(guild_id, _setting)
+                elif key == "d4_channel" and config[key] == 0:
+                    channel = config["channel"]
+                    self.update_guild_config(guild_id, channel, "d4_channel")
 
     def reset_guild_setting_to_default(self, guild_id: int | str, setting: dict):
         logger.debug(f"Resetting {setting} to default for guild {guild_id}.")
@@ -123,7 +136,7 @@ class GuildCFG:
 
         self.update_guild_config(guild_id, old_channel_id, "d4_channel")
 
-        return self.get_guild_setting(guild_id, setting["name"])
+        return True
 
     def update_guild_config(self, guild_id: int | str, new_data, setting):
         logger.debug(f"Updating guild configuration for guild {guild_id}...")

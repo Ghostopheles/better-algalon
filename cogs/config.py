@@ -180,6 +180,7 @@ class CacheConfig:
         "build_text": "no-data",
         "product_config": "no-data",
         "encrypted": None,
+        "seqn": 0,
     }
 
     settings = Settings()

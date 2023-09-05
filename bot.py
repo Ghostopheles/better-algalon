@@ -113,7 +113,7 @@ class CDNBotHelpCommand(commands.HelpCommand):
 class CDNBot(bridge.Bot):
     """This is the almighty CDN bot, also known as Algalon. Inherits from `discord.ext.bridge.Bot`."""
 
-    COGS_LIST = ["watcher"]
+    COGS_LIST = ["admin", "watcher", "nux"]
 
     def __init__(self, command_prefix, help_command=None, **options):
         command_prefix = command_prefix or "!"
@@ -179,6 +179,6 @@ if __name__ == "__main__":
         status=discord.Status.online,
         activity=activity,
         auto_sync_commands=True,
-        debug_guilds=debug_guilds,  # debug_guilds,
+        debug_guilds=debug_guilds,
     )
     bot.run(token)
