@@ -236,7 +236,17 @@ class CDNCog(commands.Cog):
                     continue
 
                 for embed in embeds:
-                    channel = await guild.fetch_channel(embed["target"])
+                    try:
+                        channel = await guild.fetch_channel(embed["target"])
+                    except discord.NotFound:
+                        logger.error(f"Chosen channel not found for guild {guild}")
+                        continue
+                    except discord.Forbidden:
+                        logger.error(
+                            f"No permission to access chosen channel for guild {guild}"
+                        )
+                        continue
+
                     actual_embed = embed["embed"]  # god save me
 
                     if actual_embed and channel:
