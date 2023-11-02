@@ -1,3 +1,4 @@
+setuptools
 py-cord
 httpx
 tweepy[async]
