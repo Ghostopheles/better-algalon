@@ -253,6 +253,9 @@ class CDNCog(commands.Cog):
                         logger.info("Sending CDN update post and tweet...")
                         try:
                             message = await channel.send(embed=actual_embed)  # type: ignore
+                        except discord.NotFound:
+                            logger.error(f"Chosen channel not found for guild {guild}")
+                            continue
                         except discord.Forbidden:
                             logger.error(
                                 f"No permission to post to chosen channel for guild {guild}"
