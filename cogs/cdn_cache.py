@@ -9,6 +9,7 @@ import asyncio
 
 from .api.blizzard_tact import BlizzardTACTExplorer
 from .config import CacheConfig, FETCH_INTERVAL
+from .ribbit_async import RibbitClient
 
 logger = logging.getLogger("discord.cdn.cache")
 
@@ -87,9 +88,10 @@ class CDNCache:
                 newBuild["encrypted"] = True
 
             # ignore builds with lower seqn numbers because it's probably just a caching issue
-            if (newBuild["seqn"] > 0) and newBuild["seqn"] < file_json[
-                self.CONFIG.indices.BUILDINFO
-            ][branch]["seqn"]:
+            new_seqn, old_seqn = int(newBuild["seqn"]), int(
+                file_json[self.CONFIG.indices.BUILDINFO][branch]["seqn"]
+            )
+            if (new_seqn > 0) and new_seqn < old_seqn:
                 logger.warning(f"Lower sequence number found for {branch}")
                 return False
 
@@ -167,15 +169,13 @@ class CDNCache:
         """This is a disaster."""
         logger.info(self.CONFIG.strings.LOG_FETCH_DATA)
         self.create_cache_backup()
-        async with httpx.AsyncClient() as client:
-            coros = [
-                self.fetch_branch(branch.name, client)
-                for branch in self.CONFIG.PRODUCTS
-            ]
-            new_data = await asyncio.gather(*coros)
-            new_data = [i for i in new_data if i is not None]
+        coros = [
+            self.fetch_branch_ribbit(branch.name) for branch in self.CONFIG.PRODUCTS
+        ]
+        new_data = await asyncio.gather(*coros)
+        new_data = [i for i in new_data if i is not None]
 
-            return new_data
+        return new_data
 
     async def fetch_branch(self, branch: str, client: httpx.AsyncClient):
         try:
@@ -216,6 +216,39 @@ class CDNCache:
             )
         except Exception as exc:
             logger.error(f"Error during CDN check for {branch}", exc_info=exc)
+
+    async def fetch_branch_ribbit(self, branch: str):
+        logger.info(f"Grabbing versions for {branch}")
+        _data, seqn = await RibbitClient().fetch_versions_for_product(product=branch)
+
+        if not _data:
+            logger.error(f"No response for {branch}.")
+            return
+
+        _data = _data["us"]
+        data = _data.__dict__()
+
+        logger.info(f"Comparing build data for {branch}")
+        is_new = self.compare_builds(branch, data)
+
+        if is_new:
+            output_data = data.copy()
+
+            old_data = self.load_build_data(branch)
+
+            if old_data:
+                output_data["old"] = old_data
+
+            output_data["branch"] = branch
+            logger.debug(f"Updated build payload: {output_data}")
+
+            logger.info(f"Saving new build data for {branch}")
+            self.save_build_data(branch, data)
+
+            return output_data
+        else:
+            logger.debug(f"No new data found for {branch}")
+            return
 
     async def parse_response(self, branch: str, response: str):
         """Parses the API response and attempts to return the new data."""
