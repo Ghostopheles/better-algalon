@@ -5,6 +5,7 @@ import json
 import httpx
 import shutil
 import logging
+import asyncio
 
 from .api.blizzard_tact import BlizzardTACTExplorer
 from .config import CacheConfig, FETCH_INTERVAL
@@ -167,50 +168,54 @@ class CDNCache:
         logger.info(self.CONFIG.strings.LOG_FETCH_DATA)
         self.create_cache_backup()
         async with httpx.AsyncClient() as client:
-            new_data = []
-            for branch in self.CONFIG.PRODUCTS:
-                branch = branch.name
-                try:
-                    logger.info(f"Grabbing version for {branch}")
-                    url = self.CONFIG.CDN_URL + branch + "/versions"
-
-                    res = await client.get(url, timeout=20)
-                    logger.info(self.CONFIG.strings.LOG_PARSE_DATA)
-                    data = await self.parse_response(branch, res.text)
-
-                    if data and res.status_code == 200:
-                        logger.debug(f"Version check payload: {data}")
-                        logger.info(f"Comparing build data for {branch}")
-                        is_new = self.compare_builds(branch, data)
-
-                        if is_new:
-                            output_data = data.copy()
-
-                            old_data = self.load_build_data(branch)
-
-                            if old_data:
-                                output_data["old"] = old_data
-
-                            output_data["branch"] = branch
-                            new_data.append(output_data)
-                            logger.debug(f"Updated build payload: {output_data}")
-
-                            logger.info(f"Saving new build data for {branch}")
-                            self.save_build_data(branch, data)
-                    else:
-                        logger.warning(
-                            f"Invalid response {res.status_code} for branch {branch}"
-                        )
-                except httpx.ConnectError as exc:
-                    logger.error(
-                        f"Connection error during CDN check for {branch} using url {url or None}"  # type: ignore
-                    )
-                    continue
-                except Exception as exc:
-                    logger.error(f"Error during CDN check for {branch}", exc_info=exc)
-                    continue
+            coros = [
+                self.fetch_branch(branch.name, client)
+                for branch in self.CONFIG.PRODUCTS
+            ]
+            new_data = await asyncio.gather(*coros)
+            new_data = [i for i in new_data if i is not None]
 
             return new_data
+
+    async def fetch_branch(self, branch: str, client: httpx.AsyncClient):
+        try:
+            logger.info(f"Grabbing version for {branch}")
+            url = self.CONFIG.CDN_URL + branch + "/versions"
+
+            res = await client.get(url, timeout=20)
+            logger.info(f"Parsing CDN response for {branch}...")
+            data = await self.parse_response(branch, res.text)
+
+            if data and res.status_code == 200:
+                logger.debug(f"Version check payload: {data}")
+                logger.info(f"Comparing build data for {branch}")
+                is_new = self.compare_builds(branch, data)
+
+                if is_new:
+                    output_data = data.copy()
+
+                    old_data = self.load_build_data(branch)
+
+                    if old_data:
+                        output_data["old"] = old_data
+
+                    output_data["branch"] = branch
+                    logger.debug(f"Updated build payload: {output_data}")
+
+                    logger.info(f"Saving new build data for {branch}")
+                    self.save_build_data(branch, data)
+
+                    return output_data
+            else:
+                logger.warning(
+                    f"Invalid response {res.status_code} for branch {branch}"
+                )
+        except httpx.ConnectError as exc:
+            logger.error(
+                f"Connection error during CDN check for {branch} using url {url or None}"  # type: ignore
+            )
+        except Exception as exc:
+            logger.error(f"Error during CDN check for {branch}", exc_info=exc)
 
     async def parse_response(self, branch: str, response: str):
         """Parses the API response and attempts to return the new data."""
