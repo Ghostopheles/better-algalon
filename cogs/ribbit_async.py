@@ -133,17 +133,19 @@ class RibbitClient:
         self.writer.close()
         await self.writer.wait_closed()
 
-    async def fetch_summary(self) -> (dict, int):
+    async def fetch_summary(self) -> tuple[dict, int]:
         await self.__connect()
         sequence, data = await self.__send("v2/summary")
         return data, sequence
 
-    async def fetch_cdn_info_for_product(self, product: str) -> (dict, int):
+    async def fetch_cdn_info_for_product(self, product: str) -> tuple[dict, int]:
         await self.__connect()
         sequence, data = await self.__send(f"v2/products/{product}/cdns")
         return data, sequence
 
-    async def fetch_versions_for_product(self, product: str = "wow") -> (dict, int):
+    async def fetch_versions_for_product(
+        self, product: str = "wow"
+    ) -> tuple[dict, int]:
         await self.__connect()
         logger.info(f"Fetching versions data summary for {product}...")
         command = f"v2/products/{product}/versions"
