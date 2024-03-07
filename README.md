@@ -1,7 +1,7 @@
 # better-algalon
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) ![LastUpdate](https://img.shields.io/github/last-commit/Ghostamoose/better-algalon?style=flat-square) [![Docker](https://github.com/Ghostamoose/better-algalon/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Ghostamoose/better-algalon/actions/workflows/docker-publish.yml)
 
-v1.7 - Beryllium
+v1.8 - Niobium
 
 A bot that watches Blizzard's CDN and automatically posts new build updates to specified Discord channels.
 
@@ -51,6 +51,13 @@ A lock indicates that the given branch is encrypted and not accessible to the pu
 | fenrisvendor1 :lock: | Diablo IV Vendor |
 | fenrisvendor2 :lock: | Diablo IV Vendor 2 |
 | fenrisvendor3 :lock: | Diablo IV Vendor 3 |
+
+### Warcraft Rumble
+| Branch Name | Readable Name |
+| ----------- | ----------- |
+| gryphon | Warcraft Rumble Live |
+| gryphonb | Warcraft Rumble Beta |
+| gryphondev :lock: | Warcraft Rumble Internal |
 
 ## Commands
 
