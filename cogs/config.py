@@ -224,7 +224,7 @@ class WatcherStrings:
     EMBED_WOWTOOLS_URL = "https://wow.tools/builds/"
 
     EMBED_WAGOTOOLS_TITLE = "wago.tools"
-    EMBED_WAGOTOOLS_URL = "https://wago.tools/"
+    EMBED_WAGOTOOLS_URL = "https://wago.tools/builds"
     EMBED_WAGOTOOLS_DIFF_URL = "https://wago.tools/builds-diff?from={old}&to={new}"
 
     EMBED_DIABLO_TITLE = "Diablo 4"
