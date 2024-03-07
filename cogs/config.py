@@ -41,6 +41,7 @@ class SUPPORTED_GAMES(StrEnum):
 
     Warcraft = "wow"
     Diablo4 = "d4"
+    Gryphon = "gryphon"
 
 
 class SUPPORTED_PRODUCTS(StrEnum):
@@ -80,6 +81,10 @@ class SUPPORTED_PRODUCTS(StrEnum):
     fenrisvendor1 = "Diablo IV Vendor"
     fenrisvendor2 = "Diablo IV Vendor 2"
     fenrisvendor3 = "Diablo IV Vendor 3"
+    # Rumble
+    gryphon = "Warcraft Rumble Live"
+    gryphonb = "Warcraft Rumble Beta"
+    gryphondev = "Warcraft Rumble Internal"
 
     @classmethod
     def has_key(cls, value):
@@ -125,11 +130,12 @@ class Settings:
 
     CHANNEL = {"name": "channel", "default": __defaults.CHANNEL}
     D4_CHANNEL = {"name": "d4_channel", "default": __defaults.CHANNEL}
+    GRYPHON_CHANNEL = {"name": "gryphon_channel", "default": __defaults.CHANNEL}
     WATCHLIST = {"name": "watchlist", "default": __defaults.WATCHLIST}
     REGION = {"name": "region", "default": __defaults.REGION_NAME}
     LOCALE = {"name": "locale", "default": __defaults.LOCALE_NAME}
 
-    KEYS = ["channel", "d4_channel", "watchlist", "region", "locale"]
+    KEYS = ["channel", "d4_channel", "gryphon_channel", "watchlist", "region", "locale"]
 
 
 class ErrorStrings:
@@ -223,15 +229,21 @@ class WatcherStrings:
 
     EMBED_DIABLO_TITLE = "Diablo 4"
 
+    EMBED_GRYPHON_TITLE = "Warcraft Rumble"
+
     EMBED_NAME = "Blizzard CDN Update"
     EMBED_NAME_WOW = "Warcraft CDN Update"
     EMBED_NAME_D4 = "Diablo 4 CDN Update"
+    EMBED_NAME_GRYPHON = "Warcraft Rumble CDN Update"
 
     EMBED_ICON_URL = (
         "https://bnetcmsus-a.akamaihd.net/cms/gallery/D2TTHKAPW9BH1534981363136.png"
     )
     EMBED_ICON_URL_WOW = "https://blz-contentstack-images.akamaized.net/v3/assets/blt72f16e066f85e164/bltc3d5627fa96394bf/world-of-warcraft.webp?width=96&format=webply&quality=95"
     EMBED_ICON_URL_D4 = "https://blz-contentstack-images.akamaized.net/v3/assets/blt72f16e066f85e164/blt15336eccf10cd269/diablo-IV.webp?width=96&format=webply&quality=95"
+    EMBED_ICON_URL_GRYPHON = (
+        "https://blznav.akamaized.net/img/games/logo-war-fb3f559702bed22f.png"
+    )
 
     EMBED_UPDATE_TITLE = "Build Updates"
 
@@ -247,6 +259,12 @@ class WatcherStrings:
             "url": None,
             "name": EMBED_NAME_D4,
             "icon_url": EMBED_ICON_URL_D4,
+        },
+        "gryphon": {
+            "title": EMBED_GRYPHON_TITLE,
+            "url": None,
+            "name": EMBED_NAME_GRYPHON,
+            "icon_url": EMBED_ICON_URL_GRYPHON,
         },
     }
 
@@ -274,8 +292,10 @@ class DebugConfig:
     debug_guild_id = os.getenv("DEBUG_GUILD_ID")
     debug_channel_id = os.getenv("DEBUG_CHANNEL_ID")
     debug_channel_id_d4 = os.getenv("DEBUG_CHANNEL_ID_D4")
+    debug_channel_id_gryphon = os.getenv("DEBUG_CHANNEL_ID_GRYPHON")
 
     debug_channel_id_by_game = {
         "wow": debug_channel_id,
         "d4": debug_channel_id_d4,
+        "gryphon": debug_channel_id_gryphon,
     }

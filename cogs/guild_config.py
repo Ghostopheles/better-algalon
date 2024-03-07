@@ -221,6 +221,7 @@ class GuildCFG:
             f"Setting {game or 'wow'} notification channel for guild {guild_id} to {new_channel}..."
         )
 
+        # TODO: wtf
         if game == SUPPORTED_GAMES.Warcraft or not game:
             self.update_guild_config(
                 guild_id, new_channel, self.CONFIG.settings.CHANNEL["name"]
@@ -228,6 +229,10 @@ class GuildCFG:
         elif game == SUPPORTED_GAMES.Diablo4:
             self.update_guild_config(
                 guild_id, new_channel, self.CONFIG.settings.D4_CHANNEL["name"]
+            )
+        elif game == SUPPORTED_GAMES.Gryphon:
+            self.update_guild_config(
+                guild_id, new_channel, self.CONFIG.settings.GRYPHON_CHANNEL["name"]
             )
         else:
             return False
@@ -239,11 +244,13 @@ class GuildCFG:
     ):
         logger.info(f"Grabbing notification channel setting for guild {guild_id}...")
 
-        key = (
-            self.CONFIG.settings.CHANNEL["name"]
-            if game == SUPPORTED_GAMES.Warcraft or not game
-            else self.CONFIG.settings.D4_CHANNEL["name"]
-        )
+        # TODO: this is dumb
+        if game is None or game == SUPPORTED_GAMES.Warcraft:
+            key = self.CONFIG.settings.CHANNEL["name"]
+        elif game == SUPPORTED_GAMES.Diablo4:
+            key = self.CONFIG.settings.D4_CHANNEL["name"]
+        elif game == SUPPORTED_GAMES.Gryphon:
+            key = self.CONFIG.settings.GRYPHON_CHANNEL["name"]
 
         guild_config = self.get_guild_config(guild_id)
 
