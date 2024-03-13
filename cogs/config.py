@@ -61,6 +61,7 @@ class SUPPORTED_PRODUCTS(StrEnum):
     wow_classic_era_ptr = "Classic Era PTR"
     wowz = "Submission"
     wowlivetest = "Live Test"
+    wowlivetest2 = "Live Test Internal"
     wowdev = "Internal"
     wowdev2 = "Internal 2"
     wowdev3 = "Internal 3"
