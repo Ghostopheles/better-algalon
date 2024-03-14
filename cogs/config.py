@@ -76,6 +76,7 @@ class SUPPORTED_PRODUCTS(StrEnum):
     # Diablo 4 products
     fenris = "Diablo IV"
     fenrisb = "Diablo IV Beta"
+    fenristest = "Diablo IV PTR"
     fenrisdev = "Diablo IV Internal"
     fenrisdev2 = "Diablo IV Internal 2"
     fenrise = "Diablo IV Event"
