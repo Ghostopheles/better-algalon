@@ -163,9 +163,18 @@ class RibbitClient:
             regionData = d
             regionData["region"] = region
             regionData["branch"] = product
-            regionData["encrypted"] = await TACT.is_encrypted(
-                product, regionData["ProductConfig"]
-            )
+
+            try:
+                encrypted = await TACT.is_encrypted(
+                    product, regionData["ProductConfig"]
+                )
+            except:
+                logger.error(
+                    f"Error occurred checking encryption status for {product}."
+                )
+                encrypted = None
+
+            regionData["encrypted"] = encrypted
             output[d["Region"]] = Version(regionData, sequence)
 
         return output, sequence
