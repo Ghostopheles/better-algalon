@@ -1,13 +1,13 @@
 # better-algalon
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) ![LastUpdate](https://img.shields.io/github/last-commit/Ghostamoose/better-algalon?style=flat-square) [![Docker](https://github.com/Ghostamoose/better-algalon/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Ghostamoose/better-algalon/actions/workflows/docker-publish.yml)
 
-v1.7 - Beryllium
+v1.8 - Niobium
 
 A bot that watches Blizzard's CDN and automatically posts new build updates to specified Discord channels.
 
 Inspired by, and vaguely based on the original [Algalon bot by Ellypse](https://github.com/Ellypse/Algalon).
 
-Includes a Twitter integration to post updates to Twitter alongside Discord. This will be replaced in the future with Algalon 3.0 (lol). This bot can be found on Twitter as [@algalon_ghost](https://twitter.kivatech.io).
+Includes a Twitter integration to post updates to Twitter alongside Discord. This will be replaced in the future with Algalon 3.0 (lol). This bot can be found on Twitter as [@algalon_ghost](https://algalon.ghst.tools/).
 
 Check out the [changelog](CHANGELOG.md) to view the most recent changes.
 
@@ -27,7 +27,8 @@ A lock indicates that the given branch is encrypted and not accessible to the pu
 | wow_classic_era_beta | Classic Era Beta |
 | wow_classic_era_ptr | Classic Era PTR |
 | wowz | Submission |
-| wowlivetest | Live Test|
+| wowlivetest | Live Test |
+| wowlivetest2 :lock: | Live Test Internal |
 | wowdev :lock: | Internal |
 | wowdev2 :lock: | Internal 2 |
 | wowdev3 :lock: | Internal 3 |
@@ -45,12 +46,20 @@ A lock indicates that the given branch is encrypted and not accessible to the pu
 | ----------- | ----------- |
 | fenris | Diablo IV |
 | fenrisb | Diablo IV Beta |
+| fenristest | Diablo IV PTR |
 | fenrisdev :lock: | Diablo IV Internal |
 | fenrisdev2 :lock: | Diablo IV Internal 2 |
 | fenrise :lock: | Diablo IV Event |
 | fenrisvendor1 :lock: | Diablo IV Vendor |
 | fenrisvendor2 :lock: | Diablo IV Vendor 2 |
 | fenrisvendor3 :lock: | Diablo IV Vendor 3 |
+
+### Warcraft Rumble
+| Branch Name | Readable Name |
+| ----------- | ----------- |
+| gryphon | Warcraft Rumble Live |
+| gryphonb | Warcraft Rumble Beta |
+| gryphondev :lock: | Warcraft Rumble Internal |
 
 ## Commands
 

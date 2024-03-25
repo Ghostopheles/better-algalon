@@ -54,13 +54,12 @@ class BlizzardTACTExplorer:
         return f"http://{host}/{path}/{hash[:2]}/{hash[2:4]}/{hash}"
 
     async def is_encrypted(self, branch: str, product_config_hash: str):
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=2) as client:
             url = f"{self.__API_URL}{branch}{self.__API_ENDPOINT}"
             try:
                 response = await client.get(url)
             except httpx.ConnectTimeout as exc:
                 self.logger.error("TACT CDN info request timed out.")
-                self.logger.error(exc)
                 return None
 
             if response.status_code != 200:
@@ -80,7 +79,9 @@ class BlizzardTACTExplorer:
                 cdn_config_url = self.construct_url(host, path, product_config_hash)
 
                 try:
-                    self.logger.info("Attempting to fetch product config...")
+                    self.logger.info(
+                        f"Attempting to fetch product config for {branch}..."
+                    )
                     cdn_response = await client.get(cdn_config_url)
 
                     if cdn_response.status_code != 200:
@@ -90,7 +91,7 @@ class BlizzardTACTExplorer:
                         continue
                     else:
                         self.logger.info(
-                            "Product config found, returning encryption status..."
+                            f"{branch} product config found, returning encryption status..."
                         )
                         product_config = cdn_response.json()
 

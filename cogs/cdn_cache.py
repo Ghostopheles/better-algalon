@@ -5,9 +5,11 @@ import json
 import httpx
 import shutil
 import logging
+import asyncio
 
 from .api.blizzard_tact import BlizzardTACTExplorer
 from .config import CacheConfig, FETCH_INTERVAL
+from .ribbit_async import RibbitClient
 
 logger = logging.getLogger("discord.cdn.cache")
 
@@ -32,7 +34,7 @@ class CDNCache:
         with open(self.cdn_path, "r+") as file:
             logger.info("Patching CDN file...")
             file_json = json.load(file)
-            build_data = file_json[self.CONFIG.indices.BUILDINFO]
+            build_data = file_json["buildInfo"]
             try:
                 for branch in build_data:
                     for key, value in self.CONFIG.REQUIRED_KEYS_DEFAULTS.items():
@@ -45,7 +47,7 @@ class CDNCache:
             except KeyError as exc:
                 logger.error("KeyError while patching CDN file", exc_info=exc)
 
-            file_json[self.CONFIG.indices.BUILDINFO] = build_data
+            file_json["buildInfo"] = build_data
 
             file.seek(0)
             json.dump(file_json, file, indent=4)
@@ -55,7 +57,7 @@ class CDNCache:
         """Populates the `cdn.json` file with default values if it does not exist."""
         with open(self.cdn_path, "w") as file:
             template = {
-                self.CONFIG.indices.BUILDINFO: {},
+                "buildInfo": {},
                 self.CONFIG.indices.LAST_UPDATED_BY: self.PLATFORM,
                 self.CONFIG.indices.LAST_UPDATED_AT: time.time(),
             }
@@ -80,32 +82,28 @@ class CDNCache:
                 file_json["encrypted"] = None
 
             if (
-                file_json[self.CONFIG.indices.BUILDINFO][branch]["encrypted"] == True
+                file_json["buildInfo"][branch]["encrypted"] == True
                 and newBuild["encrypted"] == None
             ):
                 newBuild["encrypted"] = True
 
             # ignore builds with lower seqn numbers because it's probably just a caching issue
-            if (newBuild["seqn"] > 0) and newBuild["seqn"] < file_json[
-                self.CONFIG.indices.BUILDINFO
-            ][branch]["seqn"]:
+            new_seqn, old_seqn = int(newBuild["seqn"]), int(
+                file_json["buildInfo"][branch]["seqn"]
+            )
+            if (new_seqn > 0) and new_seqn < old_seqn:
                 logger.warning(f"Lower sequence number found for {branch}")
                 return False
 
             for area in self.CONFIG.AREAS_TO_CHECK_FOR_UPDATES:
-                if branch in file_json[self.CONFIG.indices.BUILDINFO]:
-                    if (
-                        file_json[self.CONFIG.indices.BUILDINFO][branch][area]
-                        != newBuild[area]
-                    ):
+                if branch in file_json["buildInfo"]:
+                    if file_json["buildInfo"][branch][area] != newBuild[area]:
                         logger.debug(f"Updated info found for {branch} @ {area}")
                         return True
                     else:
                         return False
                 else:
-                    file_json[self.CONFIG.indices.BUILDINFO][branch][area] = newBuild[
-                        area
-                    ]
+                    file_json["buildInfo"][branch][area] = newBuild[area]
                     return True
             return False
 
@@ -115,7 +113,7 @@ class CDNCache:
     def get_all_config_entries(self):
         with open(self.cdn_path, "r") as file:
             file_json = json.load(file)
-            return file_json[self.CONFIG.indices.BUILDINFO].keys()
+            return file_json["buildInfo"].keys()
 
     def create_cache_backup(self):
         logger.info("Backing up CDN cache file...")
@@ -142,7 +140,7 @@ class CDNCache:
         """Saves new build data to the `cdn.json` file."""
         with open(self.cdn_path, "r+") as file:
             file_json = json.load(file)
-            file_json[self.CONFIG.indices.BUILDINFO][branch] = data
+            file_json["buildInfo"][branch] = data
 
             file.seek(0)
             json.dump(file_json, file, indent=4)
@@ -152,97 +150,57 @@ class CDNCache:
         """Loads existing build data from the `cdn.json` file."""
         with open(self.cdn_path, "r") as file:
             file_json = json.load(file)
-            if branch in file_json[self.CONFIG.indices.BUILDINFO]:
-                return file_json[self.CONFIG.indices.BUILDINFO][branch]
+            if branch in file_json["buildInfo"]:
+                return file_json["buildInfo"][branch]
             else:
-                file_json[self.CONFIG.indices.BUILDINFO][branch] = {
-                    self.CONFIG.settings.REGION["name"]: self.CONFIG.defaults.REGION,
-                    self.CONFIG.indices.BUILD: self.CONFIG.defaults.BUILD,
-                    self.CONFIG.indices.BUILDTEXT: self.CONFIG.defaults.BUILDTEXT,
+                file_json["buildInfo"][branch] = {
+                    "region": self.CONFIG.defaults.REGION,
+                    "build": self.CONFIG.defaults.BUILD,
+                    "build_text": self.CONFIG.defaults.BUILDTEXT,
                 }
                 return False
 
     async def fetch_cdn(self):
-        """This is a disaster."""
+        """This is sort of a disaster."""
         logger.info(self.CONFIG.strings.LOG_FETCH_DATA)
         self.create_cache_backup()
-        async with httpx.AsyncClient() as client:
-            new_data = []
-            for branch in self.CONFIG.PRODUCTS:
-                branch = branch.name
-                try:
-                    logger.info(f"Grabbing version for {branch}")
-                    url = self.CONFIG.CDN_URL + branch + "/versions"
+        coros = [
+            self.fetch_branch_ribbit(branch.name) for branch in self.CONFIG.PRODUCTS
+        ]
+        new_data = await asyncio.gather(*coros)
+        new_data = [i for i in new_data if i is not None]
 
-                    res = await client.get(url, timeout=20)
-                    logger.info(self.CONFIG.strings.LOG_PARSE_DATA)
-                    data = await self.parse_response(branch, res.text)
+        return new_data
 
-                    if data and res.status_code == 200:
-                        logger.debug(f"Version check payload: {data}")
-                        logger.info(f"Comparing build data for {branch}")
-                        is_new = self.compare_builds(branch, data)
+    async def fetch_branch_ribbit(self, branch: str):
+        logger.info(f"Grabbing versions for {branch}")
+        _data, seqn = await RibbitClient().fetch_versions_for_product(product=branch)
 
-                        if is_new:
-                            output_data = data.copy()
+        if not _data:
+            logger.error(f"No response for {branch}.")
+            return
 
-                            old_data = self.load_build_data(branch)
+        _data = _data["us"]
+        data = _data.__dict__()
 
-                            if old_data:
-                                output_data["old"] = old_data
+        logger.info(f"Comparing build data for {branch}")
+        is_new = self.compare_builds(branch, data)
 
-                            output_data["branch"] = branch
-                            new_data.append(output_data)
-                            logger.debug(f"Updated build payload: {output_data}")
+        if is_new:
+            output_data = data.copy()
 
-                            logger.info(f"Saving new build data for {branch}")
-                            self.save_build_data(branch, data)
-                    else:
-                        logger.warning(
-                            f"Invalid response {res.status_code} for branch {branch}"
-                        )
-                except httpx.ConnectError as exc:
-                    logger.error(
-                        f"Connection error during CDN check for {branch} using url {url or None}"  # type: ignore
-                    )
-                    continue
-                except Exception as exc:
-                    logger.error(f"Error during CDN check for {branch}", exc_info=exc)
-                    continue
+            old_data = self.load_build_data(branch)
 
-            return new_data
+            if old_data:
+                output_data["old"] = old_data
 
-    async def parse_response(self, branch: str, response: str):
-        """Parses the API response and attempts to return the new data."""
-        try:
-            data = response.split("\n")
-            if len(data) < 3:
-                return False
-            seqn = data[1].replace("## seqn = ", "")
-            data = data[2].split("|")
-            region = data[0]
-            build_config = data[1]
-            cdn_config = data[2]
-            build_number = data[4]
-            build_text = data[5].replace(build_number, "")[:-1]
-            product_config = data[6]
+            output_data["branch"] = branch
+            logger.debug(f"Updated build payload: {output_data}")
 
-            output = {
-                self.CONFIG.settings.REGION["name"]: region,
-                "build_config": build_config,
-                "cdn_config": cdn_config,
-                "build": build_number,
-                "build_text": build_text,
-                "product_config": product_config,
-                "encrypted": await self.TACT.is_encrypted(branch, product_config),
-                "seqn": int(seqn),
-            }
+            logger.info(f"Saving new build data for {branch}")
+            self.save_build_data(branch, data)
 
-            return output
-        except KeyError or IndexError as exc:
-            logger.warning(
-                f"Encountered an error parsing API response for branch: {branch}.",
-                exc_info=exc if isinstance(exc, IndexError) else None,
-            )
-
-            return False
+            return output_data
+        else:
+            logger.debug(f"No new data found for {branch}")
+            return

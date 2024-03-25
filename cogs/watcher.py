@@ -114,15 +114,19 @@ class CDNCog(commands.Cog):
         for game, update_data in data.items():
             target_channel = self.guild_cfg.get_notification_channel(guild_id, game)
 
-            if not target_channel:
+            if not target_channel or target_channel == 0:
                 logger.warning(
                     f"Guild {guild_id} has not chosen a notification channel, skipping..."
                 )
                 continue
 
-            color = (
-                discord.Color.dark_blue() if game == "wow" else discord.Color.dark_red()
-            )
+            # TODO: fix this awful shit
+            if game == SUPPORTED_GAMES.Warcraft:
+                color = discord.Color.dark_blue()
+            elif game == SUPPORTED_GAMES.Gryphon:
+                color = discord.Color.dark_gold()
+            else:
+                color = discord.Color.dark_red()
 
             embed = discord.Embed(
                 color=color,
@@ -191,10 +195,8 @@ class CDNCog(commands.Cog):
                 logger.debug("Adding new game to embed data...")
                 embed_data[game] = []
 
-            logger.debug("Adding branch data to existing game entry")
+            logger.debug("Adding branch data to game entry")
             embed_data[game].append(branch)
-
-        logger.debug("EMBED DATA: ", embed_data)
 
         return embed_data
 
@@ -272,6 +274,10 @@ class CDNCog(commands.Cog):
                                     f"Tweet failed with: {response}.\n{actual_embed.to_dict()}"
                                 )
                                 await self.notify_owner_of_exception(response)
+                        elif channel.id == int(
+                            os.getenv("ANNOUNCEMENT_CHANNEL2")
+                        ) or channel.id == int(os.getenv("ANNOUNCEMENT_CHANNEL3")):
+                            await message.publish()
                     elif actual_embed and not channel:
                         logger.error(f"No channel found for guild {guild}, aborting.")
                         continue
@@ -313,10 +319,13 @@ class CDNCog(commands.Cog):
                 logger.info("No CDN changes found.")
 
     def get_game_from_branch(self, branch: str):
+        # TODO: this is extremely dumb
         if "wow" in branch:
             return "wow"
         elif "fenris" in branch:
             return "d4"
+        elif "gryphon" in branch:
+            return "gryphon"
         else:
             return False
 
