@@ -1,3 +1,13 @@
+# Changelog v1.8 - Niobium
+
+## Added
+
+ - `wowlivetest2`, `fenristest`, `gryphon`, `gryphonb`, `gryphondev` products can now be observed.
+
+## Fixed
+
+ - Various backend fixes and optimizations to improve uptime and performance.
+
 # Changelog v1.7 - Beryllium
 
 ## Added

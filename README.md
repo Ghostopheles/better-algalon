@@ -7,7 +7,7 @@ A bot that watches Blizzard's CDN and automatically posts new build updates to s
 
 Inspired by, and vaguely based on the original [Algalon bot by Ellypse](https://github.com/Ellypse/Algalon).
 
-Includes a Twitter integration to post updates to Twitter alongside Discord. This will be replaced in the future with Algalon 3.0 (lol). This bot can be found on Twitter as [@algalon_ghost](https://twitter.kivatech.io).
+Includes a Twitter integration to post updates to Twitter alongside Discord. This will be replaced in the future with Algalon 3.0 (lol). This bot can be found on Twitter as [@algalon_ghost](https://algalon.ghst.tools/).
 
 Check out the [changelog](CHANGELOG.md) to view the most recent changes.
 
@@ -27,7 +27,8 @@ A lock indicates that the given branch is encrypted and not accessible to the pu
 | wow_classic_era_beta | Classic Era Beta |
 | wow_classic_era_ptr | Classic Era PTR |
 | wowz | Submission |
-| wowlivetest | Live Test|
+| wowlivetest | Live Test |
+| wowlivetest2 :lock: | Live Test Internal |
 | wowdev :lock: | Internal |
 | wowdev2 :lock: | Internal 2 |
 | wowdev3 :lock: | Internal 3 |
@@ -45,6 +46,7 @@ A lock indicates that the given branch is encrypted and not accessible to the pu
 | ----------- | ----------- |
 | fenris | Diablo IV |
 | fenrisb | Diablo IV Beta |
+| fenristest | Diablo IV PTR |
 | fenrisdev :lock: | Diablo IV Internal |
 | fenrisdev2 :lock: | Diablo IV Internal 2 |
 | fenrise :lock: | Diablo IV Event |
