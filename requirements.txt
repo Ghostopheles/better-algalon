@@ -1,3 +1,3 @@
-py-cord
-httpx
-tweepy[async]
+py-cord==2.5.0
+httpx[http2]==0.27.0
+tweepy[async]==4.14.0
