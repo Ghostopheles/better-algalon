@@ -67,8 +67,9 @@ Banner: {guild.banner.url if guild.banner else 'N/A'}
     async def force_update_check(self, ctx: bridge.BridgeApplicationContext):
         """Forces a CDN check."""
         watcher = self.bot.get_cog("CDNCog")
+        await ctx.defer()
         await watcher.cdn_auto_refresh()
-        await ctx.respond("Update in progress...")
+        await ctx.respond("Updates complete.")
 
 
 def setup(bot):
