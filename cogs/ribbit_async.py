@@ -120,8 +120,7 @@ class RibbitClient:
 
     async def __receive(self):
         chunks = []
-        while True:
-            chunk = await self.reader.read(4096)
+        async for chunk in self.reader:
             if chunk:
                 chunks.append(chunk)
             else:
