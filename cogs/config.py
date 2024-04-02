@@ -8,7 +8,17 @@ from .locale import Locales
 FETCH_INTERVAL = 5
 
 
-class Region:
+class Singleton:
+    __instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls.__instance is None:
+            cls.__instance = super().__new__(cls)
+
+        return cls.__instance
+
+
+class Region(Singleton):
     def __init__(self, region_name: str, valid_locales: list):
         self.name = region_name
         self.locales = valid_locales
@@ -93,7 +103,7 @@ class SUPPORTED_PRODUCTS(StrEnum):
         return value in cls._member_names_
 
 
-class Indices:
+class Indices(Singleton):
     LAST_UPDATED_BY = "last_updated_by"
     LAST_UPDATED_AT = "last_updated_at"
     BUILDINFO = "buildInfo"
@@ -104,7 +114,7 @@ class Indices:
 ## CACHE CONFIGURATION
 
 
-class CacheStrings:
+class CacheStrings(Singleton):
     ## STRINGS
     REGION_UPDATED = "Region updated."
     REGION_LOCALE_CHANGED = "Region updated and locale reset."
@@ -116,7 +126,7 @@ class CacheStrings:
     LOG_PARSE_DATA = "Parsing CDN response..."
 
 
-class CacheDefaults:
+class CacheDefaults(Singleton):
     CHANNEL = 0000
     WATCHLIST = ["wow", "wowt", "wow_beta"]
     REGION = DEFAULT_REGION
@@ -127,7 +137,7 @@ class CacheDefaults:
     BUILDTEXT = "no-data"
 
 
-class Settings:
+class Settings(Singleton):
     __defaults = CacheDefaults()
 
     CHANNEL = {"name": "channel", "default": __defaults.CHANNEL}
@@ -140,7 +150,7 @@ class Settings:
     KEYS = ["channel", "d4_channel", "gryphon_channel", "watchlist", "region", "locale"]
 
 
-class ErrorStrings:
+class ErrorStrings(Singleton):
     REGION_SAME_AS_CURRENT = "New region is the same as the current region."
     REGION_NOT_SUPPORTED = "Region not supported."
 
@@ -160,12 +170,12 @@ class ErrorStrings:
     OK = "OK"
 
 
-class CommonURL:
+class CommonURL(Singleton):
     HTTPS = "http://"
     CDN_URL = ".patch.battle.net:1119/"  # does not include region
 
 
-class CacheConfig:
+class CacheConfig(Singleton):
     CDN_URL = "http://us.patch.battle.net:1119/"
 
     PRODUCTS = SUPPORTED_PRODUCTS
@@ -211,7 +221,7 @@ class CacheConfig:
 ## COMMON CONFIGURATION
 
 
-class CommonStrings:
+class CommonStrings(Singleton):
     EMBED_FOOTER = f"Data provided by Algalon {os.getenv('ENVIRONMENT', 'Dev')}."
     VALID_REGIONS = SUPPORTED_REGIONS_STRINGS
 
@@ -221,7 +231,7 @@ class CommonStrings:
 ## WATCHER CONFIGURATION
 
 
-class WatcherStrings:
+class WatcherStrings(Singleton):
     EMBED_WOWTOOLS_TITLE = "wow.tools builds page"
     EMBED_WOWTOOLS_URL = "https://wow.tools/builds/"
 
@@ -271,7 +281,7 @@ class WatcherStrings:
     }
 
 
-class WatcherConfig:
+class WatcherConfig(Singleton):
     strings = WatcherStrings
     indices = Indices
     cache_defaults = CacheDefaults
@@ -280,7 +290,7 @@ class WatcherConfig:
 ## BLIZZARD API CONFIGURATION
 
 
-class BlizzardAPIConfig:
+class BlizzardAPIConfig(Singleton):
     assets = {
         "token_icon": "https://wow.zamimg.com/images/wow/icons/large/wow_token01.jpg"
     }
@@ -289,7 +299,7 @@ class BlizzardAPIConfig:
 ## DEBUG CONFIGURATION
 
 
-class DebugConfig:
+class DebugConfig(Singleton):
     debug_enabled = os.getenv("DEBUG", False)
     debug_guild_id = os.getenv("DEBUG_GUILD_ID")
     debug_channel_id = os.getenv("DEBUG_CHANNEL_ID")
