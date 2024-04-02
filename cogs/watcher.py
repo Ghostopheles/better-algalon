@@ -9,6 +9,7 @@ import logging
 
 from discord.ext import bridge, commands, pages, tasks
 
+from .user_config import UserCFG
 from .guild_config import GuildCFG
 from .cdn_cache import CDNCache
 from .config import FETCH_INTERVAL, CommonStrings
@@ -30,6 +31,7 @@ class CDNCog(commands.Cog):
         self.bot = bot
         self.cdn_cache = CDNCache()
         self.guild_cfg = GuildCFG()
+        self.user_cfg = UserCFG()
         self.twitter = Twitter()
         self.last_update = 0
         self.last_update_formatted = ""
@@ -713,6 +715,54 @@ class CDNCog(commands.Cog):
         await ctx.interaction.response.send_message(
             message, ephemeral=True, delete_after=300
         )
+
+    @commands.dm_only()
+    @bridge.bridge_command(
+        name="subscribe",
+    )
+    async def user_subscribe(self, ctx: bridge.BridgeApplicationContext, branch: str):
+        """Subscribe to build updates via DM for the given branch."""
+
+        message = ""
+        user_id = ctx.author.id
+        success, result = self.user_cfg.subscribe(user_id, branch)
+
+        if not success:
+            message = f"Unable to subscribe to branch `{branch}`. Failed with error '{result}'"
+        else:
+            message = f"Successfully subscribed to branch `{branch}`!"
+
+        await ctx.interaction.response.send_message(
+            message, ephemeral=True, delete_after=300
+        )
+
+    @commands.dm_only()
+    @bridge.bridge_command(
+        name="unsubscribe",
+    )
+    async def user_unsubscribe(self, ctx: bridge.BridgeApplicationContext, branch: str):
+        """Unsubscribe from build updates via DM for the given branch."""
+
+        message = ""
+        user_id = ctx.author.id
+        success, result = self.user_cfg.unsubscribe(user_id, branch)
+
+        if not success:
+            message = f"Unable to unsubscribe from branch `{branch}`. Failed with error '{result}'"
+        else:
+            message = f"Successfully unsubscribed from branch `{branch}`!"
+
+        await ctx.interaction.response.send_message(
+            message, ephemeral=True, delete_after=300
+        )
+
+    @commands.dm_only()
+    @bridge.bridge_command(
+        name="subscribed",
+    )
+    async def user_subscribed(self, ctx: bridge.BridgeApplicationContext):
+        """View all branches you're receiving DM updates for."""
+        pass
 
 
 def setup(bot):

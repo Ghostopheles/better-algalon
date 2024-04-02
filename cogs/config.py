@@ -150,6 +150,16 @@ class Settings(Singleton):
     KEYS = ["channel", "d4_channel", "gryphon_channel", "watchlist", "region", "locale"]
 
 
+class Setting:
+    def __init__(self, name, default):
+        self.name = name
+        self.default = default
+
+
+class UserSettings(Singleton):
+    WATCHLIST = Setting("watchlist", ["wow"])
+
+
 class ErrorStrings(Singleton):
     REGION_SAME_AS_CURRENT = "New region is the same as the current region."
     REGION_NOT_SUPPORTED = "Region not supported."
@@ -184,6 +194,7 @@ class CacheConfig(Singleton):
     CACHE_FILE_NAME = "cdn.json"
 
     GUILD_CFG_FILE_NAME = "guild_cfg.json"
+    USER_CFG_FILE_NAME = "user_cfg.json"
 
     SUPPORTED_REGIONS = SUPPORTED_REGIONS
     SUPPORTED_REGIONS_STRING = SUPPORTED_REGIONS_STRINGS
