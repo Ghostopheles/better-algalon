@@ -422,14 +422,14 @@ class CDNCog(commands.Cog):
 
     # DISCORD COMMANDS
 
-    @bridge.bridge_command(name="cdndata")
+    @bridge.bridge_command(name="data")
     async def cdn_data(self, ctx: bridge.BridgeApplicationContext):
         """Returns a paginator with the currently cached CDN data."""
         logger.info("Generating paginator to display CDN data...")
         paginator = self.build_paginator_for_current_build_data()
         await paginator.respond(ctx.interaction, ephemeral=True)
 
-    @bridge.bridge_command(name="cdnbranches")
+    @bridge.bridge_command(name="branches")
     async def cdn_branches(self, ctx: bridge.BridgeApplicationContext):
         """Returns all observable branches."""
         message = f"## These are all the branches I can watch for you:\n```\n"
@@ -443,7 +443,7 @@ class CDNCog(commands.Cog):
         )
 
     @bridge.bridge_command(
-        name="cdnaddtowatchlist",
+        name="addtowatchlist",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
     )
@@ -523,7 +523,7 @@ class CDNCog(commands.Cog):
             )
 
     @bridge.bridge_command(
-        name="cdnremovefromwatchlist",
+        name="removefromwatchlist",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
     )
@@ -553,7 +553,7 @@ class CDNCog(commands.Cog):
             )
 
     @bridge.bridge_command(
-        name="cdnwatchlist",
+        name="watchlist",
         guild_only=True,
     )
     async def cdn_watchlist(self, ctx: bridge.BridgeApplicationContext):
@@ -575,7 +575,7 @@ class CDNCog(commands.Cog):
         )
 
     @bridge.bridge_command(
-        name="cdnsetchannel",
+        name="setchannel",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
     )
@@ -597,7 +597,7 @@ class CDNCog(commands.Cog):
         )
 
     @bridge.bridge_command(
-        name="cdngetchannel",
+        name="getchannel",
         guild_only=True,
     )
     async def cdn_get_channel(
@@ -621,7 +621,7 @@ class CDNCog(commands.Cog):
                 delete_after=300,
             )
 
-    @bridge.bridge_command(name="cdnlastupdate")
+    @bridge.bridge_command(name="lastupdate")
     async def cdn_last_update(self, ctx: bridge.BridgeApplicationContext):
         """Returns the last time the bot checked for an update."""
         await ctx.interaction.response.send_message(
@@ -632,7 +632,7 @@ class CDNCog(commands.Cog):
 
     @commands.is_owner()
     @bridge.bridge_command(
-        name="cdnsetregion",
+        name="setregion",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
     )
@@ -655,7 +655,7 @@ class CDNCog(commands.Cog):
 
     @commands.is_owner()
     @bridge.bridge_command(
-        name="cdngetregion",
+        name="getregion",
         guild_only=True,
     )
     async def cdn_get_region(self, ctx: bridge.BridgeApplicationContext):
@@ -671,7 +671,7 @@ class CDNCog(commands.Cog):
 
     @commands.is_owner()
     @bridge.bridge_command(
-        name="cdnsetlocale",
+        name="setlocale",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
     )
@@ -701,7 +701,7 @@ class CDNCog(commands.Cog):
 
     @commands.is_owner()
     @bridge.bridge_command(
-        name="cdngetlocale",
+        name="getlocale",
     )
     async def cdn_get_locale(self, ctx: bridge.BridgeApplicationContext):
         """Returns the current locale for your guild."""
