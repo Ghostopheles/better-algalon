@@ -23,6 +23,8 @@ START_LOOPS = True
 
 logger = logging.getLogger("discord.cdn.watcher")
 
+DELIMITER = ","
+
 
 class CDNCog(commands.Cog):
     """This is the actual Cog that gets added to the Discord bot."""
@@ -424,7 +426,7 @@ class CDNCog(commands.Cog):
 
     # DISCORD COMMANDS
 
-    @bridge.bridge_command(name="data")
+    @bridge.bridge_command(name="cdndata")
     async def cdn_data(self, ctx: bridge.BridgeApplicationContext):
         """Returns a paginator with the currently cached CDN data."""
         logger.info("Generating paginator to display CDN data...")
@@ -455,11 +457,10 @@ class CDNCog(commands.Cog):
         """Add a branch to the watchlist. Add multiple branches by separating them with a comma."""
         branch = branch.lower()
         branch = branch.replace(" ", "")
-        delimeter = ","
-        if delimeter in branch:
+        if DELIMITER in branch:
             bad_branches = []
             good_branches = []
-            branches = branch.split(delimeter)
+            branches = branch.split(DELIMITER)
             for branch in branches:
                 if self.cdn_cache.CONFIG.is_valid_branch(branch) != True:
                     bad_branches.append(
@@ -725,16 +726,32 @@ class CDNCog(commands.Cog):
 
         message = ""
         user_id = ctx.author.id
-        success, result = self.user_cfg.subscribe(user_id, branch)
 
-        if not success:
-            message = f"Unable to subscribe to branch `{branch}`. Failed with error '{result}'"
+        branch = branch.lower()
+        if DELIMITER in branch:
+            branches = branch.split(",")
+            for _branch in branches:
+                success, result = self.user_cfg.subscribe(user_id, _branch)
+                if not success:
+                    message = f"Unable to subscribe to branch `{_branch}`. Failed with error '{result}'"
+                    await ctx.interaction.response.send_message(
+                        message, ephemeral=True, delete_after=300
+                    )
+            message = "Successfully subscribed to the following branches:\n```"
+            message += f"\n".join(branches)
+            await ctx.interaction.response.send_message(
+                message, ephemeral=True, delete_after=300
+            )
         else:
-            message = f"Successfully subscribed to branch `{branch}`!"
+            success, result = self.user_cfg.subscribe(user_id, _branch)
+            if not success:
+                message = f"Unable to subscribe to branch `{branch}`. Failed with error '{result}'"
+            else:
+                message = f"Successfully subscribed to branch `{branch}`!"
 
-        await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
-        )
+            await ctx.interaction.response.send_message(
+                message, ephemeral=True, delete_after=300
+            )
 
     @commands.dm_only()
     @bridge.bridge_command(
