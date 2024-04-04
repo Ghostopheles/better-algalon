@@ -9,13 +9,13 @@ import logging
 
 from discord.ext import bridge, commands, pages, tasks
 
-from .user_config import UserCFG
+from .user_config import UserConfigFile
 from .guild_config import GuildCFG
 from .cdn_cache import CDNCache
 from .config import FETCH_INTERVAL, CommonStrings
 from .config import WatcherConfig as cfg
 from .config import DebugConfig as dbg
-from .config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
+from .config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS, WOW_TEST_BRANCHES
 from .utils import get_discord_timestamp
 from .api.twitter import Twitter
 
@@ -33,7 +33,7 @@ class CDNCog(commands.Cog):
         self.bot = bot
         self.cdn_cache = CDNCache()
         self.guild_cfg = GuildCFG()
-        self.user_cfg = UserCFG()
+        self.user_cfg = UserConfigFile()
         self.twitter = Twitter()
         self.last_update = 0
         self.last_update_formatted = ""
@@ -204,6 +204,44 @@ class CDNCog(commands.Cog):
 
         return embed_data
 
+    async def distribute_direct_messages(self, data: dict):
+        with self.user_cfg as config:
+            for game, updates in data.items():
+                for update in updates:
+                    branch = update["branch"]
+                    new_build = update["build"]
+                    subscribers = config.lookup.get_subscribers_for_branch(branch, True)
+                    if len(subscribers) == 0:
+                        continue
+
+                    message = f"{SUPPORTED_GAMES._value2member_map_[game].name} build: `{branch}` -> {update['build_text']}.**{update['build']}**"
+
+                    if (
+                        game == SUPPORTED_GAMES.Warcraft and update["encrypted"] != True
+                    ):  # determine if this build has been seen before on other public branches
+                        fresh_build = True
+                        for _branch in SUPPORTED_PRODUCTS:
+                            if _branch == branch:
+                                continue
+
+                            data = self.cdn_cache.load_build_data(_branch.name)
+                            if not data or data["encrypted"] == True:
+                                continue
+
+                            if int(new_build) > int(data["build"]):
+                                fresh_build = True
+                            else:
+                                fresh_build = False
+                                break
+
+                        if fresh_build:
+                            message = "New " + message
+
+                    for subscriber in subscribers:
+                        user = await self.bot.get_or_fetch_user(subscriber)
+                        channel = await user.create_dm()
+                        await channel.send(message)
+
     async def distribute_embed(self, first_run: bool = False):
         """This handles distributing the generated embeds to the various servers that should receive them."""
         logger.info("Building CDN update embed...")
@@ -305,6 +343,7 @@ class CDNCog(commands.Cog):
 
                     embed_data = self.preprocess_update_data(new_data)
                     embeds = self.build_embeds(embed_data, dbg.debug_guild_id)  # type: ignore
+                    await self.distribute_direct_messages(embed_data)
 
                     if not embeds:
                         logger.error("No debug embeds built, aborting.")
@@ -726,32 +765,32 @@ class CDNCog(commands.Cog):
 
         message = ""
         user_id = ctx.author.id
-
         branch = branch.lower()
-        if DELIMITER in branch:
-            branches = branch.split(",")
-            for _branch in branches:
-                success, result = self.user_cfg.subscribe(user_id, _branch)
-                if not success:
-                    message = f"Unable to subscribe to branch `{_branch}`. Failed with error '{result}'"
-                    await ctx.interaction.response.send_message(
-                        message, ephemeral=True, delete_after=300
-                    )
-            message = "Successfully subscribed to the following branches:\n```"
-            message += f"\n".join(branches)
-            await ctx.interaction.response.send_message(
-                message, ephemeral=True, delete_after=300
-            )
-        else:
-            success, result = self.user_cfg.subscribe(user_id, _branch)
-            if not success:
-                message = f"Unable to subscribe to branch `{branch}`. Failed with error '{result}'"
-            else:
-                message = f"Successfully subscribed to branch `{branch}`!"
+        with self.user_cfg as config:
+            if DELIMITER in branch:  # batch adding
+                branches = branch.split(",")
+                message = "Successfully subscribed to the following branches:\n```diff"
+                for _branch in branches:
+                    success, result = config.subscribe(user_id, _branch)
+                    if not success:
+                        message += f"\n- ERROR > {_branch}: {result}"
+                    else:
+                        message += f"\n+ {_branch} added successfully."
 
-            await ctx.interaction.response.send_message(
-                message, ephemeral=True, delete_after=300
-            )
+                message += "```"
+                await ctx.interaction.response.send_message(
+                    message, ephemeral=True, delete_after=300
+                )
+            else:  # single adding
+                success, result = config.subscribe(user_id, branch)
+                if not success:
+                    message = f"Unable to subscribe to branch `{branch}`: `{result}`"
+                else:
+                    message = f"Successfully subscribed to branch `{branch}`!"
+
+                await ctx.interaction.response.send_message(
+                    message, ephemeral=True, delete_after=300
+                )
 
     @commands.dm_only()
     @bridge.bridge_command(
@@ -762,16 +801,34 @@ class CDNCog(commands.Cog):
 
         message = ""
         user_id = ctx.author.id
-        success, result = self.user_cfg.unsubscribe(user_id, branch)
+        branch = branch.lower()
+        with self.user_cfg as config:
+            if DELIMITER in branch:  # batch removal
+                branches = branch.split(",")
+                message = "No longer watching the following branches:\n```diff"
+                for _branch in branches:
+                    success, result = config.unsubscribe(user_id, _branch)
+                    if not success:
+                        message += f"\n+ ERROR > {_branch}: {result}"
+                    else:
+                        message += f"\n- {_branch} successfully removed."
 
-        if not success:
-            message = f"Unable to unsubscribe from branch `{branch}`. Failed with error '{result}'"
-        else:
-            message = f"Successfully unsubscribed from branch `{branch}`!"
+                message += "```"
+                await ctx.interaction.response.send_message(
+                    message, ephemeral=True, delete_after=300
+                )
+            else:  # single removal
+                success, result = config.unsubscribe(user_id, branch)
+                if not success:
+                    message = (
+                        f"Unable to unsubscribe from branch `{branch}`: `{result}`"
+                    )
+                else:
+                    message = f"Successfully unsubscribed from branch `{branch}`!"
 
-        await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
-        )
+                await ctx.interaction.response.send_message(
+                    message, ephemeral=True, delete_after=300
+                )
 
     @commands.dm_only()
     @bridge.bridge_command(
@@ -779,7 +836,19 @@ class CDNCog(commands.Cog):
     )
     async def user_subscribed(self, ctx: bridge.BridgeApplicationContext):
         """View all branches you're receiving DM updates for."""
-        pass
+        user_id = ctx.author.id
+        with self.user_cfg as config:
+            watchlist = config.get_watchlist(user_id)
+
+        message = "Here's a list of all branches you're receiving DM updates for:\n```"
+        for branch in watchlist:
+            message += f"\n{branch} : {SUPPORTED_PRODUCTS[branch]}"
+
+        message += "```"
+
+        await ctx.interaction.response.send_message(
+            message, ephemeral=True, delete_after=300
+        )
 
 
 def setup(bot):

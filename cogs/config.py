@@ -103,6 +103,17 @@ class SUPPORTED_PRODUCTS(StrEnum):
         return value in cls._member_names_
 
 
+WOW_TEST_BRANCHES = {
+    SUPPORTED_PRODUCTS.wowt,
+    SUPPORTED_PRODUCTS.wowxptr,
+    SUPPORTED_PRODUCTS.wow_beta,
+    SUPPORTED_PRODUCTS.wow_classic_beta,
+    SUPPORTED_PRODUCTS.wow_classic_ptr,
+    SUPPORTED_PRODUCTS.wow_classic_era_beta,
+    SUPPORTED_PRODUCTS.wow_classic_era_ptr,
+}
+
+
 class Indices(Singleton):
     LAST_UPDATED_BY = "last_updated_by"
     LAST_UPDATED_AT = "last_updated_at"
