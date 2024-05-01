@@ -12,10 +12,10 @@ from discord.ext import bridge, commands, pages, tasks
 from .user_config import UserConfigFile
 from .guild_config import GuildCFG
 from .cdn_cache import CDNCache
-from .config import FETCH_INTERVAL, CommonStrings
+from .config import CommonStrings, LiveConfig
 from .config import WatcherConfig as cfg
 from .config import DebugConfig as dbg
-from .config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS, WOW_TEST_BRANCHES
+from .config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
 from .utils import get_discord_timestamp
 from .api.twitter import Twitter
 
@@ -24,6 +24,8 @@ START_LOOPS = True
 logger = logging.getLogger("discord.cdn.watcher")
 
 DELIMITER = ","
+FETCH_INTERVAL = LiveConfig().get_fetch_interval()
+TEST_GUILDS = [242364846362853377, 1144396478840844439, 318246001309646849]
 
 
 class CDNCog(commands.Cog):
@@ -34,6 +36,7 @@ class CDNCog(commands.Cog):
         self.cdn_cache = CDNCache()
         self.guild_cfg = GuildCFG()
         self.user_cfg = UserConfigFile()
+        self.live_cfg = LiveConfig()
         self.twitter = Twitter()
         self.last_update = 0
         self.last_update_formatted = ""
@@ -113,6 +116,8 @@ class CDNCog(commands.Cog):
 
         guild_watchlist = self.guild_cfg.get_guild_watchlist(guild_id)
 
+        product_config = self.live_cfg.get_all_products()
+
         all_embeds = []
 
         for game, update_data in data.items():
@@ -165,7 +170,7 @@ class CDNCog(commands.Cog):
                 build_text = ver[cfg.indices.BUILDTEXT]
                 build = ver[cfg.indices.BUILD]
 
-                public_name = self.cdn_cache.CONFIG.PRODUCTS[branch]
+                public_name = product_config[branch]["public_name"]
 
                 build_text = (
                     f"**{build_text}**" if build_text != build_text_old else build_text
@@ -756,9 +761,9 @@ class CDNCog(commands.Cog):
             message, ephemeral=True, delete_after=300
         )
 
-    @commands.dm_only()
     @bridge.bridge_command(
         name="subscribe",
+        guild_ids=TEST_GUILDS,
     )
     async def user_subscribe(self, ctx: bridge.BridgeApplicationContext, branch: str):
         """Subscribe to build updates via DM for the given branch."""
@@ -792,9 +797,9 @@ class CDNCog(commands.Cog):
                     message, ephemeral=True, delete_after=300
                 )
 
-    @commands.dm_only()
     @bridge.bridge_command(
         name="unsubscribe",
+        guild_ids=TEST_GUILDS,
     )
     async def user_unsubscribe(self, ctx: bridge.BridgeApplicationContext, branch: str):
         """Unsubscribe from build updates via DM for the given branch."""
@@ -830,9 +835,9 @@ class CDNCog(commands.Cog):
                     message, ephemeral=True, delete_after=300
                 )
 
-    @commands.dm_only()
     @bridge.bridge_command(
         name="subscribed",
+        guild_ids=TEST_GUILDS,
     )
     async def user_subscribed(self, ctx: bridge.BridgeApplicationContext):
         """View all branches you're receiving DM updates for."""
@@ -840,11 +845,18 @@ class CDNCog(commands.Cog):
         with self.user_cfg as config:
             watchlist = config.get_watchlist(user_id)
 
-        message = "Here's a list of all branches you're receiving DM updates for:\n```"
-        for branch in watchlist:
-            message += f"\n{branch} : {SUPPORTED_PRODUCTS[branch]}"
+        if watchlist is None or len(watchlist) == 0:
+            cmdlink = self.get_command_link("subscribe")
+            message = f"You are not currently subscribed to any branches. Subscribe to a branch using {cmdlink}."
+        else:
+            products = self.live_cfg.get_all_products()
+            message = (
+                "Here's a list of all branches you're receiving DM updates for:\n```"
+            )
+            for branch in watchlist:
+                message += f"\n{branch} : {products[branch]['public_name']}"
 
-        message += "```"
+            message += "```"
 
         await ctx.interaction.response.send_message(
             message, ephemeral=True, delete_after=300

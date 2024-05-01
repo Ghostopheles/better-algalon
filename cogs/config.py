@@ -1,5 +1,7 @@
 import os
+import json
 
+from typing import Optional
 from enum import StrEnum
 from .locale import Locales
 
@@ -103,15 +105,19 @@ class SUPPORTED_PRODUCTS(StrEnum):
         return value in cls._member_names_
 
 
-WOW_TEST_BRANCHES = {
+TEST_BRANCHES = [
     SUPPORTED_PRODUCTS.wowt,
     SUPPORTED_PRODUCTS.wowxptr,
     SUPPORTED_PRODUCTS.wow_beta,
+    SUPPORTED_PRODUCTS.wowlivetest,
     SUPPORTED_PRODUCTS.wow_classic_beta,
     SUPPORTED_PRODUCTS.wow_classic_ptr,
     SUPPORTED_PRODUCTS.wow_classic_era_beta,
     SUPPORTED_PRODUCTS.wow_classic_era_ptr,
-}
+    SUPPORTED_PRODUCTS.fenrisb,
+    SUPPORTED_PRODUCTS.fenristest,
+    SUPPORTED_PRODUCTS.gryphonb,
+]
 
 
 class Indices(Singleton):
@@ -316,6 +322,62 @@ class BlizzardAPIConfig(Singleton):
     assets = {
         "token_icon": "https://wow.zamimg.com/images/wow/icons/large/wow_token01.jpg"
     }
+
+
+## LIVE CONFIG
+
+
+class LiveConfig(Singleton):
+    cfg_path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "cache", "cfg.json"
+    )
+
+    def __init__(self):
+        if not os.path.exists(self.cfg_path):
+            with open(self.cfg_path, "w") as f:
+                cfg = self.__get_default_cfg()
+                json.dump(cfg, f, indent=4)
+
+    def __get_default_cfg(self):
+        cfg = {
+            "products": {},
+            "meta": {"fetch_interval": 5},
+        }
+        for branch in SUPPORTED_PRODUCTS:
+            cfg["products"][branch.name] = {
+                "public_name": branch.value,
+                "test_branch": branch in TEST_BRANCHES,
+            }
+        return cfg
+
+    def __open(self):
+        with open(self.cfg_path, "r") as f:
+            data = json.load(f)
+
+        return data
+
+    def get_cfg_value(self, category: str, key: str) -> Optional[str]:
+        data = self.__open()
+
+        if category in data.keys():
+            section = data[category]
+            if key in section.keys():
+                return section[key]
+
+        return
+
+    def get_all_products(self):
+        data = self.__open()
+        return data["products"]
+
+    def get_product_name(self, branch: str):
+        data = self.__open()
+        if branch in data["products"].keys():
+            return data["products"][branch]["public_name"]
+
+    def get_fetch_interval(self):
+        data = self.__open()
+        return data["meta"]["fetch_interval"]
 
 
 ## DEBUG CONFIGURATION
