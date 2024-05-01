@@ -44,7 +44,9 @@ class Version:
             self.__setattr__(key, v)
 
         build_text_split = self.build_text.split(".")[:-1]
-        self.build_text = ".".join(build_text_split)
+        if len(build_text_split) > 1:
+            self.build_text = ".".join(build_text_split)
+
         self.seqn = seqn
 
     def __dict__(self):
@@ -107,7 +109,7 @@ class RibbitClient:
         return sequence, output
 
     async def __send(self, command: str):
-        logger.info(f"Sending Ribbit command '{command}'...")
+        logger.debug(f"Sending Ribbit command '{command}'...")
         bcommand = bytes(command + self.bNEWLINE, "ascii")
 
         self.writer.write(bcommand)
@@ -155,7 +157,7 @@ class RibbitClient:
         output = {}
 
         for region in data:
-            if region != "us":
+            if region != "us" and region != "PUB-29":
                 continue
 
             d = data[region]
@@ -163,17 +165,21 @@ class RibbitClient:
             regionData["region"] = region
             regionData["branch"] = product
 
-            try:
-                encrypted = await TACT.is_encrypted(
-                    product, regionData["ProductConfig"]
-                )
-            except:
-                logger.error(
-                    f"Error occurred checking encryption status for {product}."
-                )
-                encrypted = None
+            if region != "PUB-29":
+                try:
+                    encrypted = await TACT.is_encrypted(
+                        product, regionData["ProductConfig"]
+                    )
+                except:
+                    logger.error(
+                        f"Error occurred checking encryption status for {product}."
+                    )
+                    encrypted = None
 
-            regionData["encrypted"] = encrypted
+                regionData["encrypted"] = encrypted
+            else:
+                regionData["encrypted"] = False
+
             output[d["Region"]] = Version(regionData, sequence)
 
         return output, sequence

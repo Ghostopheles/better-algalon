@@ -38,6 +38,12 @@ class GuildCFG:
             self.CONFIG.settings.D4_CHANNEL["name"]: self.CONFIG.settings.D4_CHANNEL[
                 "default"
             ],
+            self.CONFIG.settings.GRYPHON_CHANNEL[
+                "name"
+            ]: self.CONFIG.settings.GRYPHON_CHANNEL["default"],
+            self.CONFIG.settings.BNET_CHANNEL[
+                "name"
+            ]: self.CONFIG.settings.BNET_CHANNEL["default"],
             self.CONFIG.settings.WATCHLIST["name"]: self.CONFIG.settings.WATCHLIST[
                 "default"
             ],
@@ -118,9 +124,9 @@ class GuildCFG:
                 _setting: dict = getattr(self.CONFIG.settings, key.upper())
                 if key not in config:
                     self.reset_guild_setting_to_default(guild_id, _setting)
-                elif key == "d4_channel" and config[key] == 0:
+                elif "_channel" in key and config[key] == 0:
                     channel = config["channel"]
-                    self.update_guild_config(guild_id, channel, "d4_channel")
+                    self.update_guild_config(guild_id, channel, key)
 
     def reset_guild_setting_to_default(self, guild_id: int | str, setting: dict):
         logger.debug(f"Resetting {setting} to default for guild {guild_id}.")
@@ -234,6 +240,10 @@ class GuildCFG:
             self.update_guild_config(
                 guild_id, new_channel, self.CONFIG.settings.GRYPHON_CHANNEL["name"]
             )
+        elif game == SUPPORTED_GAMES.BattleNet:
+            self.update_guild_config(
+                guild_id, new_channel, self.CONFIG.settings.BNET_CHANNEL["name"]
+            )
         else:
             return False
 
@@ -251,6 +261,8 @@ class GuildCFG:
             key = self.CONFIG.settings.D4_CHANNEL["name"]
         elif game == SUPPORTED_GAMES.Gryphon:
             key = self.CONFIG.settings.GRYPHON_CHANNEL["name"]
+        elif game == SUPPORTED_GAMES.BattleNet:
+            key = self.CONFIG.settings.BNET_CHANNEL["name"]
 
         guild_config = self.get_guild_config(guild_id)
 

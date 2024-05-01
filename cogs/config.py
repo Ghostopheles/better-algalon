@@ -54,6 +54,7 @@ class SUPPORTED_GAMES(StrEnum):
     Warcraft = "wow"
     Diablo4 = "d4"
     Gryphon = "gryphon"
+    BattleNet = "bnet"
 
 
 class SUPPORTED_PRODUCTS(StrEnum):
@@ -99,6 +100,8 @@ class SUPPORTED_PRODUCTS(StrEnum):
     gryphon = "Warcraft Rumble Live"
     gryphonb = "Warcraft Rumble Beta"
     gryphondev = "Warcraft Rumble Internal"
+    # Bnet
+    catalogs = "Catalogs"
 
     @classmethod
     def has_key(cls, value):
@@ -160,11 +163,20 @@ class Settings(Singleton):
     CHANNEL = {"name": "channel", "default": __defaults.CHANNEL}
     D4_CHANNEL = {"name": "d4_channel", "default": __defaults.CHANNEL}
     GRYPHON_CHANNEL = {"name": "gryphon_channel", "default": __defaults.CHANNEL}
+    BNET_CHANNEL = {"name": "bnet_channel", "default": __defaults.CHANNEL}
     WATCHLIST = {"name": "watchlist", "default": __defaults.WATCHLIST}
     REGION = {"name": "region", "default": __defaults.REGION_NAME}
     LOCALE = {"name": "locale", "default": __defaults.LOCALE_NAME}
 
-    KEYS = ["channel", "d4_channel", "gryphon_channel", "watchlist", "region", "locale"]
+    KEYS = [
+        "channel",
+        "d4_channel",
+        "gryphon_channel",
+        "bnet_channel",
+        "watchlist",
+        "region",
+        "locale",
+    ]
 
 
 class Setting:
@@ -271,10 +283,13 @@ class WatcherStrings(Singleton):
 
     EMBED_GRYPHON_TITLE = "Warcraft Rumble"
 
+    EMBED_BNET_TITLE = "Battle.net"
+
     EMBED_NAME = "Blizzard CDN Update"
     EMBED_NAME_WOW = "Warcraft CDN Update"
     EMBED_NAME_D4 = "Diablo 4 CDN Update"
     EMBED_NAME_GRYPHON = "Warcraft Rumble CDN Update"
+    EMBED_NAME_BNET = "Battle.net CDN Update"
 
     EMBED_ICON_URL = (
         "https://bnetcmsus-a.akamaihd.net/cms/gallery/D2TTHKAPW9BH1534981363136.png"
@@ -284,6 +299,7 @@ class WatcherStrings(Singleton):
     EMBED_ICON_URL_GRYPHON = (
         "https://blznav.akamaized.net/img/games/logo-war-fb3f559702bed22f.png"
     )
+    EMBED_ICON_URL_BNET = "https://blz-contentstack-images.akamaized.net/v3/assets/blt13393558c8f39060/blt99d316461099db22/644fe236d3c3ea26f40ed388/desktop-app.png"
 
     EMBED_UPDATE_TITLE = "Build Updates"
 
@@ -305,6 +321,12 @@ class WatcherStrings(Singleton):
             "url": None,
             "name": EMBED_NAME_GRYPHON,
             "icon_url": EMBED_ICON_URL_GRYPHON,
+        },
+        "bnet": {
+            "title": EMBED_BNET_TITLE,
+            "url": None,
+            "name": EMBED_NAME_BNET,
+            "icon_url": EMBED_ICON_URL_BNET,
         },
     }
 
@@ -389,9 +411,11 @@ class DebugConfig(Singleton):
     debug_channel_id = os.getenv("DEBUG_CHANNEL_ID")
     debug_channel_id_d4 = os.getenv("DEBUG_CHANNEL_ID_D4")
     debug_channel_id_gryphon = os.getenv("DEBUG_CHANNEL_ID_GRYPHON")
+    debug_channel_id_bnet = os.getenv("DEBUG_CHANNEL_ID_BNET")
 
     debug_channel_id_by_game = {
         "wow": debug_channel_id,
         "d4": debug_channel_id_d4,
         "gryphon": debug_channel_id_gryphon,
+        "bnet": debug_channel_id_bnet,
     }

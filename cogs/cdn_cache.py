@@ -102,8 +102,6 @@ class CDNCache:
                     if file_json["buildInfo"][branch][area] != newBuild[area]:
                         logger.debug(f"Updated info found for {branch} @ {area}")
                         return True
-                    else:
-                        return False
                 else:
                     file_json["buildInfo"][branch][area] = newBuild[area]
                     return True
@@ -182,7 +180,9 @@ class CDNCache:
             logger.error(f"No response for {branch}.")
             return
 
-        _data = _data["us"]
+        region = "PUB-29" if branch == "catalogs" else "us"
+
+        _data = _data[region]
         data = _data.__dict__()
 
         logger.info(f"Comparing build data for {branch}")

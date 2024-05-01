@@ -26,6 +26,12 @@ logger = logging.getLogger("discord.cdn.watcher")
 DELIMITER = ","
 FETCH_INTERVAL = LiveConfig().get_fetch_interval()
 TEST_GUILDS = [242364846362853377, 1144396478840844439, 318246001309646849]
+ANNOUNCEMENT_CHANNELS = [
+    int(os.getenv("ANNOUNCEMENT_CHANNEL")),
+    int(os.getenv("ANNOUNCEMENT_CHANNEL2")),
+    int(os.getenv("ANNOUNCEMENT_CHANNEL3")),
+    int(os.getenv("ANNOUNCEMENT_CHANNEL4")),
+]
 
 
 class CDNCog(commands.Cog):
@@ -134,8 +140,10 @@ class CDNCog(commands.Cog):
                 color = discord.Color.dark_blue()
             elif game == SUPPORTED_GAMES.Gryphon:
                 color = discord.Color.dark_gold()
-            else:
+            elif game == SUPPORTED_GAMES.Diablo4:
                 color = discord.Color.dark_red()
+            else:
+                color = discord.Color.dark_blue()
 
             embed = discord.Embed(
                 color=color,
@@ -219,7 +227,15 @@ class CDNCog(commands.Cog):
                     if len(subscribers) == 0:
                         continue
 
-                    message = f"{SUPPORTED_GAMES._value2member_map_[game].name} build: `{branch}` -> {update['build_text']}.**{update['build']}**"
+                    new_build_text = update["build_text"]
+                    if new_build_text != update["old"]["build_text"]:
+                        new_build_text = f"**{new_build_text}**"
+
+                    new_build_id = update["build"]
+                    if new_build_id != update["old"]["build"]:
+                        new_build_id = f"**{new_build_id}**"
+
+                    message = f"{SUPPORTED_GAMES._value2member_map_[game].name} build: `{branch}` -> {new_build_text}.{new_build_id}"
 
                     if (
                         game == SUPPORTED_GAMES.Warcraft and update["encrypted"] != True
@@ -244,6 +260,12 @@ class CDNCog(commands.Cog):
 
                     for subscriber in subscribers:
                         user = await self.bot.get_or_fetch_user(subscriber)
+
+                        if dbg.debug_enabled and subscriber != int(
+                            os.getenv("OWNER_ID")
+                        ):
+                            continue
+
                         channel = await user.create_dm()
                         await channel.send(message)
 
@@ -264,6 +286,7 @@ class CDNCog(commands.Cog):
             logger.info("New CDN data found! Creating posts...")
 
             embed_data = self.preprocess_update_data(new_data)
+            await self.distribute_direct_messages(embed_data)
 
             for guild in self.bot.guilds:
                 try:
@@ -321,9 +344,7 @@ class CDNCog(commands.Cog):
                                     f"Tweet failed with: {response}.\n{actual_embed.to_dict()}"
                                 )
                                 await self.notify_owner_of_exception(response)
-                        elif channel.id == int(
-                            os.getenv("ANNOUNCEMENT_CHANNEL2")
-                        ) or channel.id == int(os.getenv("ANNOUNCEMENT_CHANNEL3")):
+                        elif channel.id in ANNOUNCEMENT_CHANNELS:
                             await message.publish()
                     elif actual_embed and not channel:
                         logger.error(f"No channel found for guild {guild}, aborting.")
@@ -374,6 +395,8 @@ class CDNCog(commands.Cog):
             return "d4"
         elif "gryphon" in branch:
             return "gryphon"
+        elif branch == "catalogs":
+            return "bnet"
         else:
             return False
 
