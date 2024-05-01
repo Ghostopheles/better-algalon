@@ -20,8 +20,8 @@ A lock indicates that the given branch is encrypted and not accessible to the pu
 | wowt | Retail PTR |
 | wowxptr | Retail PTR 2 |
 | wow_beta | Beta |
-| wow_classic | WotLK Classic |
-| wow_classic_ptr | WotLK Classic PTR |
+| wow_classic | Cata Classic |
+| wow_classic_ptr | Cata Classic PTR |
 | wow_classic_beta | Classic Beta |
 | wow_classic_era | Classic Era |
 | wow_classic_era_beta | Classic Era Beta |
