@@ -2,8 +2,9 @@
 
 ## Added
 
-- Algalon is now able to DM users when a build update appears. These DMs are purposefully slimmed down to allow them to actually be readable via mobile push notifications.
+- Algalon is now able to DM users when a build update appears. These DMs are purposefully slimmed down to allow them to be readable on mobile push notifications.
 - Added a live config file that can be used to update certain configuration values without needing to rebuild and redeploy the bot. Namely, product names can now be updated live.
+- Added support for Battlenet `catalogs`.
 
 ## Removed
 
