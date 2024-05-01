@@ -1,3 +1,19 @@
+# Changelog v1.9 - Yttrium
+
+## Added
+
+- Algalon is now able to DM users when a build update appears. These DMs are purposefully slimmed down to allow them to actually be readable via mobile push notifications.
+- Added a live config file that can be used to update certain configuration values without needing to rebuild and redeploy the bot. Namely, product names can now be updated live.
+
+## Removed
+
+- The `cdn` prefix on all of the slash commands has been deleted.
+
+## Fixed
+
+- Update checking is now significantly faster.
+- Global config objects are now handled more efficiently.
+
 # Changelog v1.8 - Niobium
 
 ## Added
