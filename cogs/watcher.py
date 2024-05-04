@@ -7,6 +7,7 @@ import secrets
 import discord
 import logging
 
+from typing import Optional
 from discord.ext import bridge, commands, pages, tasks
 
 from .user_config import UserConfigFile
@@ -25,13 +26,20 @@ logger = logging.getLogger("discord.cdn.watcher")
 
 DELIMITER = ","
 FETCH_INTERVAL = LiveConfig().get_fetch_interval()
-TEST_GUILDS = [242364846362853377, 1144396478840844439, 318246001309646849]
+
+if dbg.debug_enabled:
+    TEST_GUILDS = [318246001309646849]
+else:
+    TEST_GUILDS = [242364846362853377, 1144396478840844439, 318246001309646849]
+
 ANNOUNCEMENT_CHANNELS = [
     int(os.getenv("ANNOUNCEMENT_CHANNEL")),
     int(os.getenv("ANNOUNCEMENT_CHANNEL2")),
     int(os.getenv("ANNOUNCEMENT_CHANNEL3")),
     int(os.getenv("ANNOUNCEMENT_CHANNEL4")),
 ]
+
+DELETE_AFTER = 120
 
 
 class CDNCog(commands.Cog):
@@ -104,13 +112,7 @@ class CDNCog(commands.Cog):
         """This is supposed to notify the owner of an error, but doesn't always work."""
         owner = await self.bot.fetch_user(self.bot.owner_id)  # type: ignore
         channel = await owner.create_dm()
-
-        if isinstance(error, Exception):
-            message = (
-                f"I've encountered an error! Help!\n```py\n{error.args}\n{error}\n```\n"
-            )
-        else:
-            message = f"I've encountered an error! Help!\n```py\n{error}\n```\n"
+        message = f"I've encountered an error! Help!\n```py\n{error}\n```\n"
 
         if ctx:
             message += f"CALLER: {ctx.author}\nGUILD: {ctx.guild.name} | {ctx.guild_id}"  # type: ignore
@@ -135,26 +137,19 @@ class CDNCog(commands.Cog):
                 )
                 continue
 
-            # TODO: fix this awful shit
-            if game == SUPPORTED_GAMES.Warcraft:
-                color = discord.Color.dark_blue()
-            elif game == SUPPORTED_GAMES.Gryphon:
-                color = discord.Color.dark_gold()
-            elif game == SUPPORTED_GAMES.Diablo4:
-                color = discord.Color.dark_red()
-            else:
-                color = discord.Color.dark_blue()
+            config = cfg.strings.EMBED_GAME_CONFIG[game]
+            color = config["color"]
 
             embed = discord.Embed(
                 color=color,
-                title=cfg.strings.EMBED_GAME_STRINGS[game]["title"],
+                title=config["title"],
                 description=f"{get_discord_timestamp()} **|** {get_discord_timestamp(relative=True)}",
-                url=cfg.strings.EMBED_GAME_STRINGS[game]["url"],
+                url=config["url"],
             )
 
             embed.set_author(
-                name=cfg.strings.EMBED_GAME_STRINGS[game]["name"],
-                icon_url=cfg.strings.EMBED_GAME_STRINGS[game]["icon_url"],
+                name=config["name"],
+                icon_url=config["icon_url"],
             )
 
             embed.set_footer(text=CommonStrings.EMBED_FOOTER)
@@ -203,10 +198,12 @@ class CDNCog(commands.Cog):
     def preprocess_update_data(self, data: list):
         embed_data = {}
         for branch in data:
-            game = self.get_game_from_branch(branch["branch"])
+            game = cfg.get_game_from_branch(branch["branch"])
             if not game:
                 logger.warning(f"Game could not be determined for {branch['branch']}")
                 continue
+
+            game = game.value
 
             if game not in embed_data:
                 logger.debug("Adding new game to embed data...")
@@ -387,19 +384,6 @@ class CDNCog(commands.Cog):
             else:
                 logger.info("No CDN changes found.")
 
-    def get_game_from_branch(self, branch: str):
-        # TODO: this is extremely dumb
-        if "wow" in branch:
-            return "wow"
-        elif "fenris" in branch:
-            return "d4"
-        elif "gryphon" in branch:
-            return "gryphon"
-        elif branch == "catalogs":
-            return "bnet"
-        else:
-            return False
-
     def build_paginator_for_current_build_data(self):
         buttons = [
             pages.PaginatorButton(
@@ -475,32 +459,35 @@ class CDNCog(commands.Cog):
 
     @commands.Cog.listener(name="on_command_error")
     @commands.Cog.listener(name="on_application_command_error")
-    async def handle_command_error(
-        self, ctx: discord.ApplicationContext, exception: discord.DiscordException
-    ):
-        error_message = "I have encountered an error handling your command. The Titans have been notified."
-
-        logger.error(
-            f"Logging application command error in guild {ctx.guild_id}.",
-            exc_info=exception,
-        )
-
-        await self.bot.notify_owner_of_command_exception(ctx, exception)  # type: ignore
+    async def handle_command_error(self, ctx: discord.ApplicationContext, exception):
+        if isinstance(exception, commands.CommandOnCooldown):
+            timestamp = get_discord_timestamp(
+                round(time.time() + exception.retry_after), relative=True
+            )
+            message = f"This command is on cooldown. Try again {timestamp}"
+        else:
+            message = "I have encountered an error handling your command. The Titans have been notified."
+            logger.error(
+                f"Logging application command error in guild {ctx.guild_id}.",
+                exc_info=exception,
+            )
+            await self.bot.notify_owner_of_command_exception(ctx, exception)  # type: ignore
 
         await ctx.interaction.response.send_message(
-            error_message, ephemeral=True, delete_after=300
+            message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
     # DISCORD COMMANDS
 
-    @bridge.bridge_command(name="cdndata")
+    @discord.slash_command(name="cdndata")
     async def cdn_data(self, ctx: bridge.BridgeApplicationContext):
         """Returns a paginator with the currently cached CDN data."""
         logger.info("Generating paginator to display CDN data...")
         paginator = self.build_paginator_for_current_build_data()
         await paginator.respond(ctx.interaction, ephemeral=True)
 
-    @bridge.bridge_command(name="branches")
+    @discord.slash_command(name="branches")
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def cdn_branches(self, ctx: bridge.BridgeApplicationContext):
         """Returns all observable branches."""
         message = f"## These are all the branches I can watch for you:\n```\n"
@@ -510,14 +497,18 @@ class CDNCog(commands.Cog):
         message += "```"
 
         await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
+            message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
-    @bridge.bridge_command(
+    @discord.slash_command(
         name="addtowatchlist",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
+        input_type=str,
+        min_length=3,
+        max_length=500,
     )
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def cdn_add_to_watchlist(
         self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
@@ -559,7 +550,7 @@ class CDNCog(commands.Cog):
                     message += "```"
 
                 await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=300
+                    message, ephemeral=True, delete_after=DELETE_AFTER
                 )
                 return False
             else:
@@ -567,7 +558,7 @@ class CDNCog(commands.Cog):
                 message += "\n".join(good_branches)
                 message += "```"
                 await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=300
+                    message, ephemeral=True, delete_after=DELETE_AFTER
                 )
                 return True
         else:
@@ -582,21 +573,25 @@ class CDNCog(commands.Cog):
                 message += help_string
 
                 await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=300
+                    message, ephemeral=True, delete_after=DELETE_AFTER
                 )
                 return False
 
             await ctx.interaction.response.send_message(
                 f"`{branch}` successfully added to watchlist.",
                 ephemeral=True,
-                delete_after=300,
+                delete_after=DELETE_AFTER,
             )
 
-    @bridge.bridge_command(
+    @discord.slash_command(
         name="removefromwatchlist",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
+        input_type=str,
+        min_length=3,
+        max_length=500,
     )
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def cdn_remove_from_watchlist(
         self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
@@ -612,20 +607,21 @@ class CDNCog(commands.Cog):
             message += help_string
 
             await ctx.interaction.response.send_message(
-                message, ephemeral=True, delete_after=300
+                message, ephemeral=True, delete_after=DELETE_AFTER
             )
             return False
         else:
             await ctx.interaction.response.send_message(
                 f"`{branch}` successfully removed from watchlist.",
                 ephemeral=True,
-                delete_after=300,
+                delete_after=DELETE_AFTER,
             )
 
-    @bridge.bridge_command(
+    @discord.slash_command(
         name="watchlist",
         guild_only=True,
     )
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def cdn_watchlist(self, ctx: bridge.BridgeApplicationContext):
         """Returns the watchlist for your guild."""
         message = (
@@ -641,71 +637,80 @@ class CDNCog(commands.Cog):
         message += "```"
 
         await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
+            message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
-    @bridge.bridge_command(
+    @discord.slash_command(
         name="setchannel",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
     )
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def cdn_set_channel(
-        self, ctx: bridge.BridgeApplicationContext, game: SUPPORTED_GAMES | None = None
+        self,
+        ctx: bridge.BridgeApplicationContext,
+        game: Optional[SUPPORTED_GAMES] = SUPPORTED_GAMES.Warcraft,
     ):
         """Sets the current channel as the notification channel for the given game. Defaults to Warcraft."""
         channel = ctx.channel_id
         guild = ctx.guild_id
-
-        game = game or SUPPORTED_GAMES.Warcraft
 
         self.guild_cfg.set_notification_channel(guild, channel, game)  # type: ignore
 
         await ctx.interaction.response.send_message(
             f"{game.name} notification channel set!",
             ephemeral=True,
-            delete_after=300,
+            delete_after=DELETE_AFTER,
         )
 
-    @bridge.bridge_command(
+    @discord.slash_command(
         name="getchannel",
         guild_only=True,
     )
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def cdn_get_channel(
-        self, ctx: bridge.BridgeApplicationContext, game: SUPPORTED_GAMES | None = None
+        self,
+        ctx: bridge.BridgeApplicationContext,
+        game: Optional[SUPPORTED_GAMES] = SUPPORTED_GAMES.Warcraft,
     ):
         """Returns the current notification channel for the given game. Defaults to Warcraft."""
         guild = ctx.guild_id
-        game = game or SUPPORTED_GAMES.Warcraft
         channel = self.guild_cfg.get_notification_channel(guild, game)  # type: ignore
 
         if channel:
             await ctx.interaction.response.send_message(
                 f"This server's {game.name} notification channel is set to <#{channel}>",
                 ephemeral=True,
-                delete_after=300,
+                delete_after=DELETE_AFTER,
             )
         else:
+            cmdlink = self.get_command_link("setchannel")
             await ctx.interaction.response.send_message(
-                f"This server does not have a notification channel set, try `/cdnsetchannel` to set your notification channel!",
+                f"This server does not have a notification channel set, try {cmdlink} to set your notification channel!",
                 ephemeral=True,
-                delete_after=300,
+                delete_after=DELETE_AFTER,
             )
 
-    @bridge.bridge_command(name="lastupdate")
+    @discord.slash_command(name="lastupdate")
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def cdn_last_update(self, ctx: bridge.BridgeApplicationContext):
         """Returns the last time the bot checked for an update."""
         await ctx.interaction.response.send_message(
             f"Last update: {self.last_update_formatted}.",
             ephemeral=True,
-            delete_after=300,
+            delete_after=DELETE_AFTER,
         )
 
     @commands.is_owner()
-    @bridge.bridge_command(
+    @discord.slash_command(
         name="setregion",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
+        input_type=str,
+        min_length=3,
+        max_length=500,
     )
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def cdn_set_region(self, ctx: bridge.BridgeApplicationContext, region: str):
         """Sets the region for your guild."""
 
@@ -720,14 +725,15 @@ class CDNCog(commands.Cog):
             message += valid_regions
 
         await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
+            message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
     @commands.is_owner()
-    @bridge.bridge_command(
+    @discord.slash_command(
         name="getregion",
         guild_only=True,
     )
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def cdn_get_region(self, ctx: bridge.BridgeApplicationContext):
         """Returns the current region for your guild."""
 
@@ -736,15 +742,16 @@ class CDNCog(commands.Cog):
         message = f"This guild's region is: `{region}`."
 
         await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
+            message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
     @commands.is_owner()
-    @bridge.bridge_command(
+    @discord.slash_command(
         name="setlocale",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
     )
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def cdn_set_locale(self, ctx: bridge.BridgeApplicationContext, locale: str):
         """Sets the locale for your guild."""
 
@@ -766,11 +773,12 @@ class CDNCog(commands.Cog):
             message += help_string
 
         await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
+            message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
     @commands.is_owner()
-    @bridge.bridge_command(name="getlocale", guild_only=True)
+    @discord.slash_command(name="getlocale", guild_only=True)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def cdn_get_locale(self, ctx: bridge.BridgeApplicationContext):
         """Returns the current locale for your guild."""
 
@@ -779,13 +787,14 @@ class CDNCog(commands.Cog):
         message = f"This guild's locale is: `{locale}`."
 
         await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
+            message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
-    @bridge.bridge_command(
+    @discord.slash_command(
         name="subscribe",
         guild_ids=TEST_GUILDS,
     )
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def user_subscribe(self, ctx: bridge.BridgeApplicationContext, branch: str):
         """Subscribe to build updates via DM for the given branch."""
 
@@ -805,7 +814,7 @@ class CDNCog(commands.Cog):
 
                 message += "```"
                 await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=300
+                    message, ephemeral=True, delete_after=DELETE_AFTER
                 )
             else:  # single adding
                 success, result = config.subscribe(user_id, branch)
@@ -815,13 +824,14 @@ class CDNCog(commands.Cog):
                     message = f"Successfully subscribed to branch `{branch}`!"
 
                 await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=300
+                    message, ephemeral=True, delete_after=DELETE_AFTER
                 )
 
-    @bridge.bridge_command(
+    @discord.slash_command(
         name="unsubscribe",
         guild_ids=TEST_GUILDS,
     )
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def user_unsubscribe(self, ctx: bridge.BridgeApplicationContext, branch: str):
         """Unsubscribe from build updates via DM for the given branch."""
 
@@ -841,7 +851,7 @@ class CDNCog(commands.Cog):
 
                 message += "```"
                 await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=300
+                    message, ephemeral=True, delete_after=DELETE_AFTER
                 )
             else:  # single removal
                 success, result = config.unsubscribe(user_id, branch)
@@ -853,13 +863,14 @@ class CDNCog(commands.Cog):
                     message = f"Successfully unsubscribed from branch `{branch}`!"
 
                 await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=300
+                    message, ephemeral=True, delete_after=DELETE_AFTER
                 )
 
-    @bridge.bridge_command(
+    @discord.slash_command(
         name="subscribed",
         guild_ids=TEST_GUILDS,
     )
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def user_subscribed(self, ctx: bridge.BridgeApplicationContext):
         """View all branches you're receiving DM updates for."""
         user_id = ctx.author.id
@@ -880,9 +891,9 @@ class CDNCog(commands.Cog):
             message += "```"
 
         await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
+            message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
 
-def setup(bot):
+def setup(bot: discord.Bot):
     bot.add_cog(CDNCog(bot))
