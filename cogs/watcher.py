@@ -40,6 +40,7 @@ ANNOUNCEMENT_CHANNELS = [
 ]
 
 DELETE_AFTER = 120
+COOLDOWN = 5
 
 
 class CDNCog(commands.Cog):
@@ -101,8 +102,10 @@ class CDNCog(commands.Cog):
                 if slash and slash.name == command:
                     return slash.mention
             elif isinstance(cmd, discord.SlashCommand):
-                if cmd.name == command:
+                if cmd.name == command and cmd.id is not None:
                     return cmd.mention
+
+        return f"`/{command}`"
 
     async def notify_owner_of_exception(
         self,
@@ -487,7 +490,7 @@ class CDNCog(commands.Cog):
         await paginator.respond(ctx.interaction, ephemeral=True)
 
     @discord.slash_command(name="branches")
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_branches(self, ctx: bridge.BridgeApplicationContext):
         """Returns all observable branches."""
         message = f"## These are all the branches I can watch for you:\n```\n"
@@ -508,7 +511,7 @@ class CDNCog(commands.Cog):
         min_length=3,
         max_length=500,
     )
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_add_to_watchlist(
         self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
@@ -591,7 +594,7 @@ class CDNCog(commands.Cog):
         min_length=3,
         max_length=500,
     )
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_remove_from_watchlist(
         self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
@@ -621,7 +624,7 @@ class CDNCog(commands.Cog):
         name="watchlist",
         guild_only=True,
     )
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_watchlist(self, ctx: bridge.BridgeApplicationContext):
         """Returns the watchlist for your guild."""
         message = (
@@ -667,7 +670,7 @@ class CDNCog(commands.Cog):
         name="getchannel",
         guild_only=True,
     )
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_get_channel(
         self,
         ctx: bridge.BridgeApplicationContext,
@@ -692,7 +695,7 @@ class CDNCog(commands.Cog):
             )
 
     @discord.slash_command(name="lastupdate")
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_last_update(self, ctx: bridge.BridgeApplicationContext):
         """Returns the last time the bot checked for an update."""
         await ctx.interaction.response.send_message(
@@ -710,7 +713,7 @@ class CDNCog(commands.Cog):
         min_length=3,
         max_length=500,
     )
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_set_region(self, ctx: bridge.BridgeApplicationContext, region: str):
         """Sets the region for your guild."""
 
@@ -733,7 +736,7 @@ class CDNCog(commands.Cog):
         name="getregion",
         guild_only=True,
     )
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_get_region(self, ctx: bridge.BridgeApplicationContext):
         """Returns the current region for your guild."""
 
@@ -751,7 +754,7 @@ class CDNCog(commands.Cog):
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
     )
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_set_locale(self, ctx: bridge.BridgeApplicationContext, locale: str):
         """Sets the locale for your guild."""
 
@@ -778,7 +781,7 @@ class CDNCog(commands.Cog):
 
     @commands.is_owner()
     @discord.slash_command(name="getlocale", guild_only=True)
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_get_locale(self, ctx: bridge.BridgeApplicationContext):
         """Returns the current locale for your guild."""
 
@@ -794,7 +797,7 @@ class CDNCog(commands.Cog):
         name="subscribe",
         guild_ids=TEST_GUILDS,
     )
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def user_subscribe(self, ctx: bridge.BridgeApplicationContext, branch: str):
         """Subscribe to build updates via DM for the given branch."""
 
@@ -831,7 +834,7 @@ class CDNCog(commands.Cog):
         name="unsubscribe",
         guild_ids=TEST_GUILDS,
     )
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def user_unsubscribe(self, ctx: bridge.BridgeApplicationContext, branch: str):
         """Unsubscribe from build updates via DM for the given branch."""
 
@@ -870,7 +873,7 @@ class CDNCog(commands.Cog):
         name="subscribed",
         guild_ids=TEST_GUILDS,
     )
-    @commands.cooldown(1, 10, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def user_subscribed(self, ctx: bridge.BridgeApplicationContext):
         """View all branches you're receiving DM updates for."""
         user_id = ctx.author.id

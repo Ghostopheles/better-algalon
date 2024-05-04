@@ -152,7 +152,8 @@ class GuildCFG:
 
     # WATCHLIST IO
 
-    def add_to_guild_watchlist(self, guild_id: int | str, branch: SUPPORTED_PRODUCTS):
+    def add_to_guild_watchlist(self, guild_id: int | str, branch: str):
+        branch = SUPPORTED_PRODUCTS[branch].name
         logger.info(f'Adding "{branch}" to watchlist for guild {guild_id}...')
 
         guild_config = self.get_guild_config(guild_id)
@@ -168,15 +169,14 @@ class GuildCFG:
                 watchlist.append(branch)
 
             self.update_guild_config(
-                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST.name
+                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST
             )
             return True, self.CONFIG.errors.OK
         else:
             return False, self.CONFIG.errors.ARG_BRANCH_NOT_VALID
 
-    def remove_from_guild_watchlist(
-        self, guild_id: int | str, branch: SUPPORTED_PRODUCTS
-    ):
+    def remove_from_guild_watchlist(self, guild_id: int | str, branch: str):
+        branch = SUPPORTED_PRODUCTS[branch].name
         logger.info(f'Removing "{branch}" from watchlist for guild {guild_id}...')
         guild_config = self.get_guild_config(guild_id)
 
@@ -193,7 +193,7 @@ class GuildCFG:
                 watchlist.remove(branch)
 
             self.update_guild_config(
-                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST.name
+                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST
             )
             return True, self.CONFIG.errors.OK
         else:
