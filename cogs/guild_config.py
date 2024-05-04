@@ -3,7 +3,7 @@ import sys
 import json
 import logging
 
-from .config import CacheConfig
+from .config import CacheConfig, Setting
 from .config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
 
 
@@ -32,23 +32,13 @@ class GuildCFG:
 
     def get_default_guild_cfg(self):
         return {
-            self.CONFIG.settings.CHANNEL["name"]: self.CONFIG.settings.CHANNEL[
-                "default"
-            ],
-            self.CONFIG.settings.D4_CHANNEL["name"]: self.CONFIG.settings.D4_CHANNEL[
-                "default"
-            ],
-            self.CONFIG.settings.GRYPHON_CHANNEL[
-                "name"
-            ]: self.CONFIG.settings.GRYPHON_CHANNEL["default"],
-            self.CONFIG.settings.BNET_CHANNEL[
-                "name"
-            ]: self.CONFIG.settings.BNET_CHANNEL["default"],
-            self.CONFIG.settings.WATCHLIST["name"]: self.CONFIG.settings.WATCHLIST[
-                "default"
-            ],
-            self.CONFIG.settings.REGION["name"]: self.CONFIG.settings.REGION["default"],
-            self.CONFIG.settings.LOCALE["name"]: self.CONFIG.settings.LOCALE["default"],
+            self.CONFIG.settings.CHANNEL.name: self.CONFIG.settings.CHANNEL.default,
+            self.CONFIG.settings.D4_CHANNEL.name: self.CONFIG.settings.D4_CHANNEL.default,
+            self.CONFIG.settings.GRYPHON_CHANNEL.name: self.CONFIG.settings.GRYPHON_CHANNEL.default,
+            self.CONFIG.settings.BNET_CHANNEL.name: self.CONFIG.settings.BNET_CHANNEL.default,
+            self.CONFIG.settings.WATCHLIST.name: self.CONFIG.settings.WATCHLIST.default,
+            self.CONFIG.settings.REGION.name: self.CONFIG.settings.REGION.default,
+            self.CONFIG.settings.LOCALE.name: self.CONFIG.settings.LOCALE.default,
         }
 
     def init_guild_cfg(self, guild_id: int | str = 0):
@@ -105,15 +95,15 @@ class GuildCFG:
     def get_guild_setting(self, guild_id: int | str, setting: str):
         logger.debug(f"Fetching {setting} for guild {guild_id}...")
         guild_config = self.get_guild_config(guild_id)
-        _setting: dict = getattr(self.CONFIG.settings, setting.upper())
+        _setting: Setting = getattr(self.CONFIG.settings, setting.upper())
 
-        if not _setting["name"] in guild_config:
+        if not _setting.name in guild_config:
             return self.reset_guild_setting_to_default(guild_id, _setting)
-        elif _setting["name"] in self.KEYS_TO_PATCH:
-            if _setting["name"] == "d4_channel" and guild_config["d4_channel"] == 0:
+        elif _setting.name in self.KEYS_TO_PATCH:
+            if _setting.name == "d4_channel" and guild_config["d4_channel"] == 0:
                 return self.patch_guild_setting(guild_id, _setting)
         else:
-            return guild_config[_setting["name"]]
+            return guild_config[_setting.name]
 
     def validate_guild_configs(self):
         logger.debug(f"Validating guild configurations...")
@@ -121,38 +111,38 @@ class GuildCFG:
 
         for guild_id, config in all_configs.items():
             for key in self.CONFIG.settings.KEYS:
-                _setting: dict = getattr(self.CONFIG.settings, key.upper())
+                _setting: Setting = getattr(self.CONFIG.settings, key.upper())
                 if key not in config:
                     self.reset_guild_setting_to_default(guild_id, _setting)
                 elif "_channel" in key and config[key] == 0:
                     channel = config["channel"]
                     self.update_guild_config(guild_id, channel, key)
 
-    def reset_guild_setting_to_default(self, guild_id: int | str, setting: dict):
+    def reset_guild_setting_to_default(self, guild_id: int | str, setting: Setting):
         logger.debug(f"Resetting {setting} to default for guild {guild_id}.")
-        logger.debug(f"Default value: {setting['default']}, name: {setting['name']}")
-        self.update_guild_config(guild_id, setting["default"], setting["name"])
-        return self.get_guild_setting(guild_id, setting["name"])
+        logger.debug(f"Default value: {setting.default}, name: {setting.name}")
+        self.update_guild_config(guild_id, setting.default, setting.name)
+        return self.get_guild_setting(guild_id, setting.name)
 
-    def patch_guild_setting(self, guild_id: int | str, setting: dict):
-        logger.debug(f"Patching {setting} for guild {guild_id}.")
+    def patch_guild_setting(self, guild_id: int | str, setting: Setting):
+        logger.debug(f"Patching '{setting.name}' for guild {guild_id}.")
 
         g_config = self.get_guild_config(guild_id)
         old_channel_id = g_config["channel"]
 
-        self.update_guild_config(guild_id, old_channel_id, "d4_channel")
+        self.update_guild_config(guild_id, old_channel_id, setting.name)
 
         return True
 
-    def update_guild_config(self, guild_id: int | str, new_data, setting):
+    def update_guild_config(self, guild_id: int | str, new_data, setting: Setting):
         logger.debug(f"Updating guild configuration for guild {guild_id}...")
         logger.debug(
-            f"Guild config update payload - new data: {new_data}, setting: {setting}."
+            f"Guild config update payload - new data: {new_data}, setting: {setting.name}."
         )
 
         with open(self.guild_cfg_path, "r+") as file:
             file_json = json.load(file)
-            file_json[str(guild_id)][setting] = new_data
+            file_json[str(guild_id)][setting.name] = new_data
 
             file.seek(0)
             json.dump(file_json, file, indent=4)
@@ -167,7 +157,7 @@ class GuildCFG:
 
         guild_config = self.get_guild_config(guild_id)
 
-        watchlist = guild_config[self.CONFIG.settings.WATCHLIST["name"]]
+        watchlist = guild_config[self.CONFIG.settings.WATCHLIST.name]
 
         if branch in watchlist:
             return False, self.CONFIG.errors.BRANCH_ALREADY_IN_WATCHLIST
@@ -178,7 +168,7 @@ class GuildCFG:
                 watchlist.append(branch)
 
             self.update_guild_config(
-                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST["name"]
+                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST.name
             )
             return True, self.CONFIG.errors.OK
         else:
@@ -190,7 +180,7 @@ class GuildCFG:
         logger.info(f'Removing "{branch}" from watchlist for guild {guild_id}...')
         guild_config = self.get_guild_config(guild_id)
 
-        watchlist = guild_config[self.CONFIG.settings.WATCHLIST["name"]]
+        watchlist = guild_config[self.CONFIG.settings.WATCHLIST.name]
 
         if not self.CONFIG.PRODUCTS.has_key(branch):
             return False, self.CONFIG.errors.ARG_BRANCH_NOT_VALID
@@ -203,7 +193,7 @@ class GuildCFG:
                 watchlist.remove(branch)
 
             self.update_guild_config(
-                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST["name"]
+                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST.name
             )
             return True, self.CONFIG.errors.OK
         else:
@@ -216,55 +206,41 @@ class GuildCFG:
         logger.info(f"Grabbing guild watchlist for guild {guild_id}...")
         guild_config = self.get_guild_config(guild_id)
 
-        return guild_config[self.CONFIG.settings.WATCHLIST["name"]]
+        return guild_config[self.CONFIG.settings.WATCHLIST.name]
 
     # CHANNEL IO
 
+    def get_cfg_for_game(self, game: SUPPORTED_GAMES):
+        return self.CONFIG.get_setting_for_game(game)
+
     def set_notification_channel(
-        self, guild_id: int | str, new_channel: int, game: SUPPORTED_GAMES | None = None
+        self, guild_id: int | str, new_channel: int, game: SUPPORTED_GAMES
     ) -> bool:
-        logger.info(
-            f"Setting {game or 'wow'} notification channel for guild {guild_id} to {new_channel}..."
+        if not isinstance(game, SUPPORTED_GAMES) and not SUPPORTED_GAMES.has_key(game):
+            logger.info(
+                f"Attempt to set notification channel for non-existent game in guild {guild_id}"
+            )
+            return False
+
+        logger.debug(
+            f"Setting {game.name} notification channel for guild {guild_id} to channel {new_channel}..."
         )
 
-        # TODO: wtf
-        if game == SUPPORTED_GAMES.Warcraft or not game:
-            self.update_guild_config(
-                guild_id, new_channel, self.CONFIG.settings.CHANNEL["name"]
-            )
-        elif game == SUPPORTED_GAMES.Diablo4:
-            self.update_guild_config(
-                guild_id, new_channel, self.CONFIG.settings.D4_CHANNEL["name"]
-            )
-        elif game == SUPPORTED_GAMES.Gryphon:
-            self.update_guild_config(
-                guild_id, new_channel, self.CONFIG.settings.GRYPHON_CHANNEL["name"]
-            )
-        elif game == SUPPORTED_GAMES.BattleNet:
-            self.update_guild_config(
-                guild_id, new_channel, self.CONFIG.settings.BNET_CHANNEL["name"]
-            )
-        else:
-            return False
+        key = self.get_cfg_for_game(game)
+        self.update_guild_config(guild_id, new_channel, key)
 
         return True
 
-    def get_notification_channel(
-        self, guild_id: int | str, game: SUPPORTED_GAMES | None = None
-    ):
-        logger.info(f"Grabbing notification channel setting for guild {guild_id}...")
+    def get_notification_channel(self, guild_id: int | str, game: SUPPORTED_GAMES):
+        if not isinstance(game, SUPPORTED_GAMES) and not SUPPORTED_GAMES.has_key(game):
+            logger.info(
+                f"Attempt to get notification channel for non-existent game in guild {guild_id}"
+            )
+            return False
 
-        # TODO: this is dumb
-        if game is None or game == SUPPORTED_GAMES.Warcraft:
-            key = self.CONFIG.settings.CHANNEL["name"]
-        elif game == SUPPORTED_GAMES.Diablo4:
-            key = self.CONFIG.settings.D4_CHANNEL["name"]
-        elif game == SUPPORTED_GAMES.Gryphon:
-            key = self.CONFIG.settings.GRYPHON_CHANNEL["name"]
-        elif game == SUPPORTED_GAMES.BattleNet:
-            key = self.CONFIG.settings.BNET_CHANNEL["name"]
-
+        logger.debug(f"Grabbing notification channel setting for guild {guild_id}...")
         guild_config = self.get_guild_config(guild_id)
+        key = self.get_cfg_for_game(game).name
 
         return guild_config[key]
 

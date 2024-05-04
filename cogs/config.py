@@ -1,6 +1,8 @@
 import os
 import json
 
+from discord import Color
+from dataclasses import dataclass
 from typing import Optional
 from enum import StrEnum
 from .locale import Locales
@@ -55,6 +57,10 @@ class SUPPORTED_GAMES(StrEnum):
     Diablo4 = "d4"
     Gryphon = "gryphon"
     BattleNet = "bnet"
+
+    @classmethod
+    def has_key(cls, value):
+        return value in cls._member_names_
 
 
 class SUPPORTED_PRODUCTS(StrEnum):
@@ -122,6 +128,53 @@ TEST_BRANCHES = [
     SUPPORTED_PRODUCTS.gryphonb,
 ]
 
+WOW_BRANCHES = [
+    SUPPORTED_PRODUCTS.wow,
+    SUPPORTED_PRODUCTS.wowt,
+    SUPPORTED_PRODUCTS.wow_beta,
+    SUPPORTED_PRODUCTS.wowxptr,
+    SUPPORTED_PRODUCTS.wow_classic,
+    SUPPORTED_PRODUCTS.wow_classic_beta,
+    SUPPORTED_PRODUCTS.wow_classic_ptr,
+    SUPPORTED_PRODUCTS.wow_classic_era,
+    SUPPORTED_PRODUCTS.wow_classic_era_beta,
+    SUPPORTED_PRODUCTS.wow_classic_era_ptr,
+    SUPPORTED_PRODUCTS.wowz,
+    SUPPORTED_PRODUCTS.wowlivetest,
+    SUPPORTED_PRODUCTS.wowlivetest2,
+    SUPPORTED_PRODUCTS.wowdev,
+    SUPPORTED_PRODUCTS.wowdev2,
+    SUPPORTED_PRODUCTS.wowdev3,
+    SUPPORTED_PRODUCTS.wowv,
+    SUPPORTED_PRODUCTS.wowv2,
+    SUPPORTED_PRODUCTS.wowv3,
+    SUPPORTED_PRODUCTS.wowv4,
+    SUPPORTED_PRODUCTS.wowe1,
+    SUPPORTED_PRODUCTS.wowe2,
+    SUPPORTED_PRODUCTS.wowe3,
+    SUPPORTED_PRODUCTS.wowdemo,
+]
+
+DIABLO_BRANCHES = [
+    SUPPORTED_PRODUCTS.fenris,
+    SUPPORTED_PRODUCTS.fenrisb,
+    SUPPORTED_PRODUCTS.fenristest,
+    SUPPORTED_PRODUCTS.fenrisdev,
+    SUPPORTED_PRODUCTS.fenrisdev2,
+    SUPPORTED_PRODUCTS.fenrise,
+    SUPPORTED_PRODUCTS.fenrisvendor1,
+    SUPPORTED_PRODUCTS.fenrisvendor2,
+    SUPPORTED_PRODUCTS.fenrisvendor3,
+]
+
+RUMBLE_BRANCHES = [
+    SUPPORTED_PRODUCTS.gryphon,
+    SUPPORTED_PRODUCTS.gryphonb,
+    SUPPORTED_PRODUCTS.gryphondev,
+]
+
+BNET_BRANCHES = [SUPPORTED_PRODUCTS.catalogs]
+
 
 class Indices(Singleton):
     LAST_UPDATED_BY = "last_updated_by"
@@ -153,40 +206,40 @@ class CacheDefaults(Singleton):
     REGION_NAME = REGION.name
     LOCALE = REGION.locales[0]
     LOCALE_NAME = LOCALE.value
-    BUILD = "0.0.0"
+    BUILD = "no-data"
     BUILDTEXT = "no-data"
+
+
+@dataclass
+class Setting:
+    name: str
+    default: str
 
 
 class Settings(Singleton):
     __defaults = CacheDefaults()
 
-    CHANNEL = {"name": "channel", "default": __defaults.CHANNEL}
-    D4_CHANNEL = {"name": "d4_channel", "default": __defaults.CHANNEL}
-    GRYPHON_CHANNEL = {"name": "gryphon_channel", "default": __defaults.CHANNEL}
-    BNET_CHANNEL = {"name": "bnet_channel", "default": __defaults.CHANNEL}
-    WATCHLIST = {"name": "watchlist", "default": __defaults.WATCHLIST}
-    REGION = {"name": "region", "default": __defaults.REGION_NAME}
-    LOCALE = {"name": "locale", "default": __defaults.LOCALE_NAME}
+    CHANNEL = Setting("channel", __defaults.CHANNEL)
+    D4_CHANNEL = Setting("d4_channel", __defaults.CHANNEL)
+    GRYPHON_CHANNEL = Setting("gryphon_channel", __defaults.CHANNEL)
+    BNET_CHANNEL = Setting("bnet_channel", __defaults.CHANNEL)
+    WATCHLIST = Setting("watchlist", __defaults.WATCHLIST)
+    REGION = Setting("region", __defaults.REGION_NAME)
+    LOCALE = Setting("locale", __defaults.LOCALE_NAME)
 
     KEYS = [
-        "channel",
-        "d4_channel",
-        "gryphon_channel",
-        "bnet_channel",
-        "watchlist",
-        "region",
-        "locale",
+        CHANNEL.name,
+        D4_CHANNEL.name,
+        GRYPHON_CHANNEL.name,
+        BNET_CHANNEL.name,
+        WATCHLIST.name,
+        REGION.name,
+        LOCALE.name,
     ]
 
 
-class Setting:
-    def __init__(self, name, default):
-        self.name = name
-        self.default = default
-
-
 class UserSettings(Singleton):
-    WATCHLIST = Setting("watchlist", ["wow"])
+    WATCHLIST = Setting("watchlist", [])
 
 
 class ErrorStrings(Singleton):
@@ -248,10 +301,20 @@ class CacheConfig(Singleton):
     errors = ErrorStrings()
     urls = CommonURL()
 
+    SETTING_BY_GAME = {
+        SUPPORTED_GAMES.Warcraft: settings.CHANNEL,
+        SUPPORTED_GAMES.Diablo4: settings.D4_CHANNEL,
+        SUPPORTED_GAMES.Gryphon: settings.GRYPHON_CHANNEL,
+        SUPPORTED_GAMES.BattleNet: settings.BNET_CHANNEL,
+    }
+
     def __init__(self):
         self.CDN_URL = (
-            self.urls.HTTPS + self.settings.REGION["default"] + self.urls.CDN_URL
+            self.urls.HTTPS + self.settings.REGION.default + self.urls.CDN_URL
         )
+
+    def get_setting_for_game(self, game: SUPPORTED_GAMES):
+        return self.SETTING_BY_GAME[game]
 
     @staticmethod
     def is_valid_branch(branch) -> bool:
@@ -303,30 +366,34 @@ class WatcherStrings(Singleton):
 
     EMBED_UPDATE_TITLE = "Build Updates"
 
-    EMBED_GAME_STRINGS = {
+    EMBED_GAME_CONFIG = {
         "wow": {
             "title": EMBED_WAGOTOOLS_TITLE,
             "url": EMBED_WAGOTOOLS_URL,
             "name": EMBED_NAME_WOW,
             "icon_url": EMBED_ICON_URL_WOW,
+            "color": Color.dark_blue(),
         },
         "d4": {
             "title": EMBED_DIABLO_TITLE,
             "url": None,
             "name": EMBED_NAME_D4,
             "icon_url": EMBED_ICON_URL_D4,
+            "color": Color.dark_red(),
         },
         "gryphon": {
             "title": EMBED_GRYPHON_TITLE,
             "url": None,
             "name": EMBED_NAME_GRYPHON,
             "icon_url": EMBED_ICON_URL_GRYPHON,
+            "color": Color.dark_gold(),
         },
         "bnet": {
             "title": EMBED_BNET_TITLE,
             "url": None,
             "name": EMBED_NAME_BNET,
             "icon_url": EMBED_ICON_URL_BNET,
+            "color": Color.dark_blue(),
         },
     }
 
@@ -335,6 +402,18 @@ class WatcherConfig(Singleton):
     strings = WatcherStrings
     indices = Indices
     cache_defaults = CacheDefaults
+
+    @staticmethod
+    def get_game_from_branch(branch: str) -> SUPPORTED_GAMES:
+        product = SUPPORTED_PRODUCTS[branch]
+        if product in WOW_BRANCHES:
+            return SUPPORTED_GAMES.Warcraft
+        elif product in DIABLO_BRANCHES:
+            return SUPPORTED_GAMES.Diablo4
+        elif product in RUMBLE_BRANCHES:
+            return SUPPORTED_GAMES.Gryphon
+        elif product in BNET_BRANCHES:
+            return SUPPORTED_GAMES.BattleNet
 
 
 ## BLIZZARD API CONFIGURATION
