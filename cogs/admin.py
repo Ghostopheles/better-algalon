@@ -1,7 +1,10 @@
 import os
 import logging
 
-from discord.ext import bridge, commands
+from time import time
+from discord.ext import bridge, commands, tasks
+
+from .config import LiveConfig
 
 logger = logging.getLogger("discord.admin")
 
@@ -12,8 +15,32 @@ class AdminCog(commands.Cog):
     def __init__(self, bot: bridge.Bot):
         self.bot = bot
 
+    @tasks.loop(minutes=3)
+    async def check_loop_health(self):
+        watcher_cog = self.bot.get_cog("cogs.watcher")
+        last_update = watcher_cog.last_update
+
+        if last_update == 0 and self.check_loop_health.current_loop != 0:
+            return
+
+        now = time()
+        buffer = 45  # seconds
+
+        fetch_interval = LiveConfig().get_fetch_interval()
+        mins_since_last_update = ((now - last_update) + buffer) * 60
+
+        if mins_since_last_update > fetch_interval:
+            message = f"Algalon CDN refresh loop stopped\nLast update: {watcher_cog.last_update_formatted}"
+            await self.bot.send_message_to_owner(message)
+
+            with open("../health", "wb") as f:
+                f.write(b"deadge")
+        else:
+            if os.path.exists("../health"):
+                os.remove("../health")
+
     @commands.is_owner()
-    @bridge.bridge_command(name="reload", guild_ids=DEBUG_GUILDS)
+    @bridge.bridge_command(name="reload", guild_ids=DEBUG_GUILDS, guild_only=True)
     async def reload_cog(self, ctx: bridge.BridgeApplicationContext, cog_name: str):
         """Reloads a currently loaded cog."""
 
