@@ -41,12 +41,6 @@ class AdminCog(commands.Cog):
             message = f"Algalon CDN refresh loop stopped\nLast update: {watcher_cog.last_update_formatted}"
             await self.bot.send_message_to_owner(message)
 
-            with open("../health", "wb") as f:
-                f.write(b"deadge")
-        else:
-            if os.path.exists("../health"):
-                os.remove("../health")
-
     @commands.is_owner()
     @bridge.bridge_command(name="reload", guild_ids=[HOME_GUILD], guild_only=True)
     async def reload_cog(self, ctx: bridge.BridgeApplicationContext, cog_name: str):
