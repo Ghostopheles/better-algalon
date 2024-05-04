@@ -770,9 +770,7 @@ class CDNCog(commands.Cog):
         )
 
     @commands.is_owner()
-    @bridge.bridge_command(
-        name="getlocale",
-    )
+    @bridge.bridge_command(name="getlocale", guild_only=True)
     async def cdn_get_locale(self, ctx: bridge.BridgeApplicationContext):
         """Returns the current locale for your guild."""
 
