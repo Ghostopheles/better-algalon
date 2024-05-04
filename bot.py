@@ -14,7 +14,7 @@ try:
 except ImportError:
     pass
 
-OWNER_ID = os.getenv("OWNER_ID")
+OWNER_ID = int(os.getenv("OWNER_ID"))
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 
