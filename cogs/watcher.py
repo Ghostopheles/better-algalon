@@ -537,7 +537,7 @@ class CDNCog(commands.Cog):
                 message += "\n".join(bad_branches)
 
                 help_string = self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES
-                cmdlink = self.get_command_link("cdnbranches")
+                cmdlink = self.get_command_link("branches")
                 help_string = help_string.format(cmdlink=cmdlink)
 
                 message += f"```\n\n{help_string}"
@@ -567,7 +567,7 @@ class CDNCog(commands.Cog):
                 message = f"{error}\n\n"
 
                 help_string = self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES
-                cmdlink = self.get_command_link("cdnbranches")
+                cmdlink = self.get_command_link("branches")
                 help_string = help_string.format(cmdlink=cmdlink)
 
                 message += help_string
@@ -601,7 +601,7 @@ class CDNCog(commands.Cog):
             message = f"{error}\n\n"
 
             help_string = self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES
-            cmdlink = self.get_command_link("cdnbranches")
+            cmdlink = self.get_command_link("branches")
             help_string = help_string.format(cmdlink=cmdlink)
 
             message += help_string
