@@ -22,6 +22,7 @@ HOME_GUILD = 318246001309646849
 class AdminCog(commands.Cog):
     def __init__(self, bot: bridge.Bot):
         self.bot = bot
+        self.check_loop_health.start()
 
     @tasks.loop(minutes=6)
     async def check_loop_health(self):
