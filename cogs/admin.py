@@ -16,12 +16,14 @@ DEBUG_GUILDS = [
     1144396478840844439,
 ]
 
+HOME_GUILD = 318246001309646849
+
 
 class AdminCog(commands.Cog):
     def __init__(self, bot: bridge.Bot):
         self.bot = bot
 
-    @tasks.loop(minutes=3)
+    @tasks.loop(minutes=6)
     async def check_loop_health(self):
         watcher_cog = self.bot.get_cog("cogs.watcher")
         last_update = watcher_cog.last_update
@@ -46,7 +48,7 @@ class AdminCog(commands.Cog):
                 os.remove("../health")
 
     @commands.is_owner()
-    @bridge.bridge_command(name="reload", guild_ids=DEBUG_GUILDS, guild_only=True)
+    @bridge.bridge_command(name="reload", guild_ids=[HOME_GUILD], guild_only=True)
     async def reload_cog(self, ctx: bridge.BridgeApplicationContext, cog_name: str):
         """Reloads a currently loaded cog."""
 
@@ -75,7 +77,7 @@ class AdminCog(commands.Cog):
         )
 
     @commands.is_owner()
-    @bridge.bridge_command(name="guilds", guild_ids=DEBUG_GUILDS, guild_only=True)
+    @bridge.bridge_command(name="guilds", guild_ids=[HOME_GUILD], guild_only=True)
     async def get_all_guilds(self, ctx: bridge.BridgeApplicationContext):
         """Dumps details for all guilds Algalon is a part of."""
         message = "```\n"
@@ -96,7 +98,7 @@ Banner: {guild.banner.url if guild.banner else 'N/A'}
         )
 
     @commands.is_owner()
-    @bridge.bridge_command(name="forceupdate", guild_ids=DEBUG_GUILDS, guild_only=True)
+    @bridge.bridge_command(name="forceupdate", guild_ids=[HOME_GUILD], guild_only=True)
     async def force_update_check(self, ctx: bridge.BridgeApplicationContext):
         """Forces a CDN check."""
         watcher = self.bot.get_cog("CDNCog")

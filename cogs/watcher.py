@@ -468,6 +468,8 @@ class CDNCog(commands.Cog):
                 round(time.time() + exception.retry_after), relative=True
             )
             message = f"This command is on cooldown. Try again {timestamp}"
+        elif isinstance(exception, commands.NotOwner):
+            message = f"You do not have permission to use this command."
         else:
             message = "I have encountered an error handling your command. The Titans have been notified."
             logger.error(
@@ -482,14 +484,14 @@ class CDNCog(commands.Cog):
 
     # DISCORD COMMANDS
 
-    @discord.slash_command(name="cdndata")
+    @bridge.bridge_command(name="cdndata")
     async def cdn_data(self, ctx: bridge.BridgeApplicationContext):
         """Returns a paginator with the currently cached CDN data."""
         logger.info("Generating paginator to display CDN data...")
         paginator = self.build_paginator_for_current_build_data()
         await paginator.respond(ctx.interaction, ephemeral=True)
 
-    @discord.slash_command(name="branches")
+    @bridge.bridge_command(name="branches")
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_branches(self, ctx: bridge.BridgeApplicationContext):
         """Returns all observable branches."""
@@ -503,7 +505,7 @@ class CDNCog(commands.Cog):
             message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
-    @discord.slash_command(
+    @bridge.bridge_command(
         name="addtowatchlist",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
@@ -586,7 +588,7 @@ class CDNCog(commands.Cog):
                 delete_after=DELETE_AFTER,
             )
 
-    @discord.slash_command(
+    @bridge.bridge_command(
         name="removefromwatchlist",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
@@ -620,7 +622,7 @@ class CDNCog(commands.Cog):
                 delete_after=DELETE_AFTER,
             )
 
-    @discord.slash_command(
+    @bridge.bridge_command(
         name="watchlist",
         guild_only=True,
     )
@@ -643,7 +645,7 @@ class CDNCog(commands.Cog):
             message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
-    @discord.slash_command(
+    @bridge.bridge_command(
         name="setchannel",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
@@ -666,7 +668,7 @@ class CDNCog(commands.Cog):
             delete_after=DELETE_AFTER,
         )
 
-    @discord.slash_command(
+    @bridge.bridge_command(
         name="getchannel",
         guild_only=True,
     )
@@ -694,7 +696,7 @@ class CDNCog(commands.Cog):
                 delete_after=DELETE_AFTER,
             )
 
-    @discord.slash_command(name="lastupdate")
+    @bridge.bridge_command(name="lastupdate")
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_last_update(self, ctx: bridge.BridgeApplicationContext):
         """Returns the last time the bot checked for an update."""
@@ -704,96 +706,7 @@ class CDNCog(commands.Cog):
             delete_after=DELETE_AFTER,
         )
 
-    @commands.is_owner()
-    @discord.slash_command(
-        name="setregion",
-        default_member_permissions=discord.Permissions(administrator=True),
-        guild_only=True,
-        input_type=str,
-        min_length=3,
-        max_length=500,
-    )
-    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
-    async def cdn_set_region(self, ctx: bridge.BridgeApplicationContext, region: str):
-        """Sets the region for your guild."""
-
-        success, message = self.guild_cfg.set_region(ctx.guild_id, region)  # type: ignore
-
-        if not success:
-            valid_regions = "\n\nSupported Regions:```\n"
-            for region in self.guild_cfg.CONFIG.SUPPORTED_REGIONS_STRING:
-                valid_regions += f"{region}\n"
-            valid_regions += "```"
-
-            message += valid_regions
-
-        await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=DELETE_AFTER
-        )
-
-    @commands.is_owner()
-    @discord.slash_command(
-        name="getregion",
-        guild_only=True,
-    )
-    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
-    async def cdn_get_region(self, ctx: bridge.BridgeApplicationContext):
-        """Returns the current region for your guild."""
-
-        region = self.guild_cfg.get_region(ctx.guild_id)  # type: ignore
-
-        message = f"This guild's region is: `{region}`."
-
-        await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=DELETE_AFTER
-        )
-
-    @commands.is_owner()
-    @discord.slash_command(
-        name="setlocale",
-        default_member_permissions=discord.Permissions(administrator=True),
-        guild_only=True,
-    )
-    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
-    async def cdn_set_locale(self, ctx: bridge.BridgeApplicationContext, locale: str):
-        """Sets the locale for your guild."""
-
-        success, message = self.guild_cfg.set_locale(ctx.guild_id, locale)  # type: ignore
-
-        if not success:
-            current_region = self.guild_cfg.get_region(ctx.guild_id)  # type: ignore
-            supported_locales = self.guild_cfg.get_region_supported_locales(
-                current_region
-            )
-            if not supported_locales:
-                return
-
-            help_string = f"\n\nSupported Locales for `{current_region}`: ```\n"
-            for locale in supported_locales:
-                help_string += f"{locale.value}\n"  # type: ignore
-            help_string += "```"
-
-            message += help_string
-
-        await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=DELETE_AFTER
-        )
-
-    @commands.is_owner()
-    @discord.slash_command(name="getlocale", guild_only=True)
-    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
-    async def cdn_get_locale(self, ctx: bridge.BridgeApplicationContext):
-        """Returns the current locale for your guild."""
-
-        locale = self.guild_cfg.get_locale(ctx.guild_id)  # type: ignore
-
-        message = f"This guild's locale is: `{locale}`."
-
-        await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=DELETE_AFTER
-        )
-
-    @discord.slash_command(
+    @bridge.bridge_command(
         name="subscribe",
         guild_ids=TEST_GUILDS,
     )
@@ -830,7 +743,7 @@ class CDNCog(commands.Cog):
                     message, ephemeral=True, delete_after=DELETE_AFTER
                 )
 
-    @discord.slash_command(
+    @bridge.bridge_command(
         name="unsubscribe",
         guild_ids=TEST_GUILDS,
     )
@@ -869,7 +782,7 @@ class CDNCog(commands.Cog):
                     message, ephemeral=True, delete_after=DELETE_AFTER
                 )
 
-    @discord.slash_command(
+    @bridge.bridge_command(
         name="subscribed",
         guild_ids=TEST_GUILDS,
     )
