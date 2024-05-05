@@ -308,11 +308,6 @@ class CacheConfig(Singleton):
         SUPPORTED_GAMES.BattleNet: settings.BNET_CHANNEL,
     }
 
-    def __init__(self):
-        self.CDN_URL = (
-            self.urls.HTTPS + self.settings.REGION.default + self.urls.CDN_URL
-        )
-
     def get_setting_for_game(self, game: SUPPORTED_GAMES):
         return self.SETTING_BY_GAME[game]
 
