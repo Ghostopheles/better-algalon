@@ -60,7 +60,12 @@ class SUPPORTED_GAMES(StrEnum):
 
     @classmethod
     def has_key(cls, value):
-        return value in cls._member_names_
+        return value in cls._value2member_map_.keys()
+
+    @classmethod
+    def get_game(cls, value):
+        if cls.has_key(value):
+            return cls._value2member_map_[value]
 
 
 class SUPPORTED_PRODUCTS(StrEnum):

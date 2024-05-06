@@ -216,9 +216,12 @@ class GuildCFG:
     def set_notification_channel(
         self, guild_id: int | str, new_channel: int, game: SUPPORTED_GAMES
     ) -> bool:
-        if not isinstance(game, SUPPORTED_GAMES) and not SUPPORTED_GAMES.has_key(game):
-            logger.info(
-                f"Attempt to set notification channel for non-existent game in guild {guild_id}"
+        if not isinstance(game, SUPPORTED_GAMES):
+            game = SUPPORTED_GAMES.get_game(game)
+
+        if not game:
+            logger.error(
+                f"Attempt to set notifcation channel for non-existent game '{game}' in guild {guild_id}"
             )
             return False
 
@@ -232,9 +235,12 @@ class GuildCFG:
         return True
 
     def get_notification_channel(self, guild_id: int | str, game: SUPPORTED_GAMES):
-        if not isinstance(game, SUPPORTED_GAMES) and not SUPPORTED_GAMES.has_key(game):
-            logger.info(
-                f"Attempt to get notification channel for non-existent game in guild {guild_id}"
+        if not isinstance(game, SUPPORTED_GAMES):
+            game = SUPPORTED_GAMES.get_game(game)
+
+        if not game:
+            logger.error(
+                f"Attempt to get notifcation channel for non-existent game '{game}' in guild {guild_id}"
             )
             return False
 
