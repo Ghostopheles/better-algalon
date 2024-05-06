@@ -485,7 +485,7 @@ class LiveConfig(Singleton):
 
 
 class DebugConfig(Singleton):
-    debug_enabled = bool(os.getenv("DEBUG", False))
+    debug_enabled = os.getenv("DEBUG")
     debug_guild_id = os.getenv("DEBUG_GUILD_ID")
     debug_channel_id = os.getenv("DEBUG_CHANNEL_ID")
     debug_channel_id_d4 = os.getenv("DEBUG_CHANNEL_ID_D4")
