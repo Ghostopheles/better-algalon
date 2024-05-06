@@ -260,10 +260,8 @@ class CDNCog(commands.Cog):
 
                     for subscriber in subscribers:
                         user = await self.bot.get_or_fetch_user(subscriber)
-
-                        if dbg.debug_enabled and subscriber != int(
-                            os.getenv("OWNER_ID")
-                        ):
+                        is_owner = await self.bot.is_owner(user)
+                        if dbg.debug_enabled and not is_owner:
                             continue
 
                         channel = await user.create_dm()
