@@ -217,7 +217,7 @@ class CDNCog(commands.Cog):
 
         return embed_data
 
-    async def distribute_direct_messages(self, data: dict):
+    async def distribute_direct_messages(self, data: dict, owner_only: bool = False):
         with self.user_cfg as config:
             for game, updates in data.items():
                 for update in updates:
@@ -261,7 +261,7 @@ class CDNCog(commands.Cog):
                     for subscriber in subscribers:
                         user = await self.bot.get_or_fetch_user(subscriber)
                         is_owner = await self.bot.is_owner(user)
-                        if dbg.debug_enabled and not is_owner:
+                        if owner_only and not is_owner:
                             continue
 
                         channel = await user.create_dm()
@@ -367,7 +367,7 @@ class CDNCog(commands.Cog):
 
                     embed_data = self.preprocess_update_data(new_data)
                     embeds = self.build_embeds(embed_data, dbg.debug_guild_id)  # type: ignore
-                    await self.distribute_direct_messages(embed_data)
+                    await self.distribute_direct_messages(embed_data, True)
 
                     if not embeds:
                         logger.error("No debug embeds built, aborting.")
