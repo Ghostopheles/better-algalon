@@ -22,25 +22,6 @@ HOME_GUILD = 318246001309646849
 class AdminCog(commands.Cog):
     def __init__(self, bot: bridge.Bot):
         self.bot = bot
-        self.check_loop_health.start()
-
-    @tasks.loop(minutes=6)
-    async def check_loop_health(self):
-        watcher_cog = self.bot.get_cog("cogs.watcher")
-        last_update = watcher_cog.last_update
-
-        if last_update == 0 and self.check_loop_health.current_loop != 0:
-            return
-
-        now = time()
-        buffer = 45  # seconds
-
-        fetch_interval = LiveConfig().get_fetch_interval()
-        mins_since_last_update = ((now - last_update) + buffer) * 60
-
-        if mins_since_last_update > fetch_interval:
-            message = f"Algalon CDN refresh loop stopped\nLast update: {watcher_cog.last_update_formatted}"
-            await self.bot.send_message_to_owner(message)
 
     @commands.is_owner()
     @bridge.bridge_command(name="reload", guild_ids=[HOME_GUILD], guild_only=True)
