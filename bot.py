@@ -64,7 +64,7 @@ class CDNBot(bridge.Bot):
                 self.load_extension(f"cogs.{cog}")
                 logger.info(f"{cog} cog loaded!")
             except Exception as exc:
-                logger.error(f"Error loading cog {cog}")
+                logger.error(f"Error loading cog '{cog}'")
                 logger.error(exc)
 
     async def on_ready(self):
@@ -74,9 +74,6 @@ class CDNBot(bridge.Bot):
     async def notify_owner_of_command_exception(
         self, ctx: discord.ApplicationContext, exc: discord.DiscordException
     ):
-        owner = await self.get_or_fetch_user(self.owner_id)  # type: ignore
-        dm_channel = await owner.create_dm()  # type: ignore
-
         message = f"An error occurred in command `{ctx.command}`:\n```py\n{exc.__class__.__name__}\n"
         message += f"Args:\n"
         message += "\n".join(arg for arg in exc.args)
@@ -84,7 +81,7 @@ class CDNBot(bridge.Bot):
         message += f"GUILD: {ctx.guild} ({ctx.guild.id})\n```"  # type: ignore
         message += "See logs for traceback."
 
-        await dm_channel.send(message)
+        await self.send_message_to_owner(message)
 
     async def send_message_to_owner(self, message: str):
         owner = await self.get_or_fetch_user(self.owner_id)  # type: ignore
