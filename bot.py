@@ -8,7 +8,6 @@ import logging
 import platform
 import logging.config
 
-
 from discord.ext import bridge, commands
 
 if platform.machine() != "armv71":
@@ -48,79 +47,16 @@ logger.info(f"Using PyCord version {discord.__version__}")
 cogs.log_start()
 
 
-# This subclasses the default help command to provide our bot with a prettier help command.
-class CDNBotHelpCommand(commands.HelpCommand):
-    def get_command_signature(self, command):
-        return "%s%s %s" % (
-            self.context.clean_prefix,
-            command.qualified_name,
-            command.signature,
-        )
-
-    async def send_bot_help(self, mapping):
-        embed = discord.Embed(title="Help", color=discord.Color.blue())
-
-        for cog, commands in mapping.items():
-            filtered = await self.filter_commands(commands, sort=True)
-
-            if command_signatures := [self.get_command_signature(c) for c in filtered]:
-                cog_name = getattr(cog, "qualified_name", "No Category")
-                embed.add_field(
-                    name=cog_name, value="\n".join(command_signatures), inline=False
-                )
-
-        await self.get_destination().send(embed=embed)
-
-    async def send_command_help(self, command):
-        embed = discord.Embed(
-            title=self.get_command_signature(command), color=discord.Color.random()
-        )
-
-        if command.help:
-            embed.description = command.help
-        if alias := command.aliases:
-            embed.add_field(name="Aliases", value=", ".join(alias), inline=False)
-
-        await self.get_destination().send(embed=embed)
-
-    async def send_help_embed(self, title, description, commands):
-        embed = discord.Embed(
-            title=title, description=description or "No help found..."
-        )
-
-        if filtered_commands := await self.filter_commands(commands):
-            for command in filtered_commands:
-                embed.add_field(
-                    name=self.get_command_signature(command),
-                    value=command.help or "No help found...",
-                )
-
-        await self.get_destination().send(embed=embed)
-
-    async def send_group_help(self, group):
-        title = self.get_command_signature(group)
-        await self.send_help_embed(title, group.help, group.commands)
-
-    async def send_cog_help(self, cog):
-        title = cog.qualified_name or "No"
-        await self.send_help_embed(
-            f"{title} Category", cog.description, cog.get_commands()
-        )
-
-
 # The almighty Algalon himself
 class CDNBot(bridge.Bot):
     """This is the almighty CDN bot, also known as Algalon. Inherits from `discord.ext.bridge.Bot`."""
 
     COGS_LIST = ["watcher", "nux", "admin"]
 
-    def __init__(self, command_prefix, help_command=None, **options):
+    def __init__(self, command_prefix, **options):
         command_prefix = command_prefix or "!"
-        help_command = help_command or commands.DefaultHelpCommand()
 
-        super().__init__(
-            command_prefix=command_prefix, help_command=help_command, **options  # type: ignore
-        )
+        super().__init__(command_prefix=command_prefix, **options)  # type: ignore
 
         for cog in self.COGS_LIST:
             logger.info(f"Loading {cog} cog...")
@@ -171,7 +107,6 @@ if __name__ == "__main__":
 
     bot = CDNBot(
         command_prefix="!",
-        help_command=CDNBotHelpCommand(),
         description="Algalon 2.0",
         intents=discord.Intents.default(),
         owner_id=OWNER_ID,
