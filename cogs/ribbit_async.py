@@ -148,7 +148,6 @@ class RibbitClient:
         self, product: str = "wow"
     ) -> tuple[dict, int]:
         await self.__connect()
-        logger.info(f"Fetching versions data summary for {product}...")
         command = f"v2/products/{product}/versions"
         sequence, data = await self.__send(command)
         if not data:
@@ -172,7 +171,8 @@ class RibbitClient:
                     )
                 except:
                     logger.error(
-                        f"Error occurred checking encryption status for {product}."
+                        f"Error occurred checking encryption status for {product}.",
+                        exc_info=True,
                     )
                     encrypted = None
 
@@ -185,7 +185,7 @@ class RibbitClient:
         return output, sequence
 
     def shutdown(self):
-        logger.info("Shutting down...")
+        logger.info("Shutting down Ribbit client...")
         self.__close()
 
 
