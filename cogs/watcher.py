@@ -72,7 +72,7 @@ class CDNCog(commands.Cog):
         if last_update == 0 and self.check_loop_health.current_loop == 0:
             return
 
-        now = time()
+        now = time.time()
         buffer = 45  # seconds
 
         fetch_interval = self.live_cfg.get_fetch_interval()
