@@ -57,7 +57,7 @@ class CDNCog(commands.Cog):
         self.last_update_formatted = ""
 
         if dbg.debug_enabled:
-            logger.debug("<- Starting bot in DEBUG mode ->")
+            logger.info("<- Starting bot in DEBUG mode ->")
 
         if START_LOOPS:
             self.cdn_auto_refresh.add_exception_type(httpx.ConnectTimeout)
@@ -90,7 +90,7 @@ class CDNCog(commands.Cog):
 
         for guild in self.bot.guilds:
             if not self.guild_cfg.does_guild_config_exist(guild.id):
-                logger.info(
+                logger.debug(
                     f"Adding missing guild configuration for guild {guild.id}..."
                 )
                 self.guild_cfg.add_guild_config(guild.id)
@@ -104,12 +104,15 @@ class CDNCog(commands.Cog):
                 )
                 self.guild_cfg.remove_guild_config(guild_id)
 
+        logger.info("Guild configuration integrity check complete")
         logger.info("Running cache configuration check...")
 
         for product in self.cdn_cache.CONFIG.PRODUCTS:
             if product.name not in self.cdn_cache.get_all_config_entries():
                 logger.info(f"New product detected. Adding default entry for {product}")
                 self.cdn_cache.set_default_entry(product.name)
+
+        logger.info("Cache configuration check complete")
 
     def get_command_link(self, command: str):
         all_cmds = self.get_commands()
@@ -284,9 +287,8 @@ class CDNCog(commands.Cog):
                         channel = await user.create_dm()
                         await channel.send(message)
 
-    async def distribute_embed(self, first_run: bool = False):
+    async def distribute_embeds(self, first_run: bool = False):
         """This handles distributing the generated embeds to the various servers that should receive them."""
-        logger.info("Building CDN update embed...")
         new_data = await self.cdn_cache.fetch_cdn()
 
         token = secrets.token_urlsafe()
@@ -294,11 +296,13 @@ class CDNCog(commands.Cog):
         if new_data and not dbg.debug_enabled and not first_run:
             # Send live notification to all appropriate guilds
             if type(new_data) == Exception:
-                logger.error(new_data)
+                logger.error(
+                    "Encountered an error while distributing embeds", exc_info=True
+                )
                 await self.notify_owner_of_exception(new_data)
                 return False
 
-            logger.info("New CDN data found! Creating posts...")
+            logger.info("New CDN version(s) found! Creating posts...")
 
             embed_data = self.preprocess_update_data(new_data)
             await self.distribute_direct_messages(embed_data)
@@ -309,7 +313,7 @@ class CDNCog(commands.Cog):
                 except Exception as exc:
                     logger.error(
                         f"Error distributing embed(s) for guild {guild.id}.",
-                        exc_info=exc,
+                        exc_info=True,
                     )
                     await self.notify_owner_of_exception(
                         f"Error distributing embed(s) for guild {guild.id}.\n{exc}"
@@ -317,8 +321,8 @@ class CDNCog(commands.Cog):
                     continue
 
                 if not embeds:
-                    logger.error(
-                        f"Embeds could not be built for guild {guild.id}, aborting."
+                    logger.warning(
+                        f"Embeds could not be built for guild {guild.id}, skipping..."
                     )
                     continue
 
@@ -326,10 +330,10 @@ class CDNCog(commands.Cog):
                     try:
                         channel = await guild.fetch_channel(embed["target"])
                     except discord.NotFound:
-                        logger.error(f"Chosen channel not found for guild {guild}")
+                        logger.warning(f"Chosen channel not found for guild {guild}")
                         continue
                     except discord.Forbidden:
-                        logger.error(
+                        logger.warning(
                             f"No permission to access chosen channel for guild {guild}"
                         )
                         continue
@@ -341,10 +345,12 @@ class CDNCog(commands.Cog):
                         try:
                             message = await channel.send(embed=actual_embed)  # type: ignore
                         except discord.NotFound:
-                            logger.error(f"Chosen channel not found for guild {guild}")
+                            logger.warning(
+                                f"Chosen channel not found for guild {guild}"
+                            )
                             continue
                         except discord.Forbidden:
-                            logger.error(
+                            logger.warning(
                                 f"No permission to post to chosen channel for guild {guild}"
                             )
                             continue
@@ -355,17 +361,17 @@ class CDNCog(commands.Cog):
                                 actual_embed.to_dict(), token
                             )
                             if response:
-                                logger.error(
+                                logger.critical(
                                     f"Tweet failed with: {response}.\n{actual_embed.to_dict()}"
                                 )
                                 await self.notify_owner_of_exception(response)
                         elif channel.id in ANNOUNCEMENT_CHANNELS:
                             await message.publish()
                     elif actual_embed and not channel:
-                        logger.error(f"No channel found for guild {guild}, aborting.")
+                        logger.warning(f"No channel found for guild {guild}, aborting.")
                         continue
                     elif not embed:
-                        logger.error(f"No embed built for guild {guild}, aborting.")
+                        logger.warning(f"No embed built for guild {guild}, aborting.")
                         continue
             return True
         else:
@@ -460,12 +466,10 @@ class CDNCog(commands.Cog):
         """Forever problematic loop that handles auto-checking for CDN updates."""
         await self.bot.wait_until_ready()
 
-        logger.info("Checking for CDN updates...")
-
         try:
-            await self.distribute_embed(self.cdn_auto_refresh.current_loop == 0)
+            await self.distribute_embeds(self.cdn_auto_refresh.current_loop == 0)
         except Exception as exc:
-            logger.error("Error occurred when distributing embeds.", exc_info=exc)
+            logger.critical("Error occurred when distributing embeds", exc_info=True)
 
             await self.notify_owner_of_exception(exc)
             return
@@ -489,7 +493,7 @@ class CDNCog(commands.Cog):
             message = "I have encountered an error handling your command. The Titans have been notified."
             logger.error(
                 f"Logging application command error in guild {ctx.guild_id}.",
-                exc_info=exception,
+                exc_info=True,
             )
             await self.bot.notify_owner_of_command_exception(ctx, exception)  # type: ignore
 
@@ -502,7 +506,7 @@ class CDNCog(commands.Cog):
     @bridge.bridge_command(name="cdndata")
     async def cdn_data(self, ctx: bridge.BridgeApplicationContext):
         """Returns a paginator with the currently cached CDN data."""
-        logger.info("Generating paginator to display CDN data...")
+        logger.debug("Generating paginator to display CDN data...")
         paginator = self.build_paginator_for_current_build_data()
         await paginator.respond(ctx.interaction, ephemeral=True)
 
