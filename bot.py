@@ -10,7 +10,7 @@ import logging.config
 
 from discord.ext import bridge
 
-if platform.machine() != "armv71":
+if platform.machine() != "armv7l":
     from dotenv import load_dotenv
 
     load_dotenv()
