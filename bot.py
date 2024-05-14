@@ -1,18 +1,23 @@
 import os
 import sys
 import cogs
-import logging
+import yaml
+import atexit
 import discord
+import logging
+import platform
+import logging.config
+
 
 from discord.ext import bridge, commands
-from logging.handlers import TimedRotatingFileHandler
 
-try:
+if platform.machine() != "armv71":
     from dotenv import load_dotenv
 
     load_dotenv()
-except ImportError:
-    pass
+
+    if not os.getenv("DEBUG"):
+        sys.exit(0)
 
 OWNER_ID = int(os.getenv("OWNER_ID"))
 
@@ -24,23 +29,17 @@ LOG_FILE = os.path.join(LOG_DIR, f"bot_{cogs.get_timestamp()}.log")
 if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
 
+log_cfg_path = os.path.join(DIR, "log_config.yaml")
+with open(log_cfg_path) as f:
+    log_cfg = yaml.safe_load(f)
+logging.config.dictConfig(log_cfg)
+
+queue_handler = logging.getHandlerByName("queue_handler")
+if queue_handler is not None:
+    queue_handler.listener.start()
+    atexit.register(queue_handler.listener.stop)
+
 logger = logging.getLogger("discord")
-logger.setLevel(logging.DEBUG)
-log_format = logging.Formatter("[%(asctime)s]:[%(levelname)s:%(name)s]: %(message)s")
-
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(log_format)
-console_handler.setLevel(logging.DEBUG)
-
-logger.addHandler(console_handler)  # adds console handler to our logger
-
-file_handler = TimedRotatingFileHandler(
-    filename=LOG_FILE, encoding="utf-8", when="midnight", backupCount=30
-)
-file_handler.setFormatter(log_format)
-file_handler.setLevel(logging.DEBUG)
-
-logger.addHandler(file_handler)  # adds filehandler to our logger
 
 logger.info(
     f"Using Python version {sys.version}",

@@ -1,0 +1,41 @@
+version: 1
+disable_existing_loggers: false
+formatters:
+  simple:
+    format: '[%(levelname)s|%(module)s|L%(lineno)d] %(asctime)s: %(message)s'
+    datefmt: '%Y-%m-%dT%H:%M:%S%z'
+  json:
+    (): 'log_formatter.JSONLogFormatter'
+    fmt_keys:
+      level: levelname
+      message: message
+      timestamp: timestamp
+      logger: name
+      module: module
+      function: funcName
+      line: lineno
+handlers:
+  stdout:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: json
+    stream: ext://sys.stdout
+  file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: json
+    filename: logs/algalon.log.jsonl
+    maxBytes: 100000
+    backupCount: 3
+  queue_handler:
+    class: 'logging.handlers.QueueHandler'
+    handlers:
+      - stdout
+      - file
+    respect_handler_level: true
+loggers:
+  root:
+    level: DEBUG
+    handlers:
+      - stdout
+      - file
