@@ -63,9 +63,8 @@ class CDNBot(bridge.Bot):
             try:
                 self.load_extension(f"cogs.{cog}")
                 logger.info(f"{cog} cog loaded!")
-            except Exception as exc:
-                logger.error(f"Error loading cog '{cog}'")
-                logger.error(exc)
+            except Exception:
+                logger.error(f"Error loading cog '{cog}'", exc_info=True)
 
     async def on_ready(self):
         """This `async` function runs once when the bot is connected to Discord and ready to execute commands."""
