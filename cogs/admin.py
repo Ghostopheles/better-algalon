@@ -1,11 +1,22 @@
 import os
 import logging
+import discord
 
-from discord.ext import bridge, commands
+from time import time
+from discord.ext import bridge, commands, tasks
+
+from .config import LiveConfig
 
 logger = logging.getLogger("discord.admin")
 
-DEBUG_GUILDS = [318246001309646849]
+DEBUG_GUILDS = [
+    242364846362853377,
+    1101764045964578896,
+    318246001309646849,
+    1144396478840844439,
+]
+
+HOME_GUILD = 318246001309646849
 
 
 class AdminCog(commands.Cog):
@@ -13,7 +24,7 @@ class AdminCog(commands.Cog):
         self.bot = bot
 
     @commands.is_owner()
-    @bridge.bridge_command(name="reload", guild_ids=DEBUG_GUILDS)
+    @bridge.bridge_command(name="reload", guild_ids=[HOME_GUILD], guild_only=True)
     async def reload_cog(self, ctx: bridge.BridgeApplicationContext, cog_name: str):
         """Reloads a currently loaded cog."""
 
@@ -42,7 +53,7 @@ class AdminCog(commands.Cog):
         )
 
     @commands.is_owner()
-    @bridge.bridge_command(name="guilds", guild_ids=DEBUG_GUILDS, guild_only=True)
+    @bridge.bridge_command(name="guilds", guild_ids=[HOME_GUILD], guild_only=True)
     async def get_all_guilds(self, ctx: bridge.BridgeApplicationContext):
         """Dumps details for all guilds Algalon is a part of."""
         message = "```\n"
@@ -63,12 +74,38 @@ Banner: {guild.banner.url if guild.banner else 'N/A'}
         )
 
     @commands.is_owner()
-    @bridge.bridge_command(name="forceupdate", guild_ids=DEBUG_GUILDS, guild_only=True)
+    @bridge.bridge_command(name="forceupdate", guild_ids=[HOME_GUILD], guild_only=True)
     async def force_update_check(self, ctx: bridge.BridgeApplicationContext):
         """Forces a CDN check."""
         watcher = self.bot.get_cog("CDNCog")
+        await ctx.defer()
         await watcher.cdn_auto_refresh()
-        await ctx.respond("Update in progress...")
+        await ctx.respond("Updates complete.")
+
+    @bridge.bridge_command(
+        name="alien",
+        guild_ids=DEBUG_GUILDS,
+    )
+    async def alien(self, ctx: bridge.BridgeApplicationContext):
+        """secre"""
+        await ctx.respond("behind you")
+
+    @commands.is_owner()
+    @commands.message_command(
+        name="Perceive",
+        guild_ids=DEBUG_GUILDS,
+    )
+    async def Perceive(
+        self, ctx: bridge.BridgeApplicationContext, message: discord.Message
+    ):
+        diffs = 1141816184405229608
+        fatcathuh = 1140450046748397691
+        emoji = self.bot.get_emoji(fatcathuh)
+        if emoji is None:
+            emoji = self.bot.get_emoji(diffs)
+
+        await message.add_reaction(emoji)
+        await ctx.respond("gottem", ephemeral=True, delete_after=5)
 
 
 def setup(bot):

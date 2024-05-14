@@ -2,13 +2,12 @@ import os
 import sys
 import time
 import json
-import httpx
 import shutil
 import logging
 import asyncio
 
 from .api.blizzard_tact import BlizzardTACTExplorer
-from .config import CacheConfig, FETCH_INTERVAL
+from .config import LiveConfig, CacheConfig
 from .ribbit_async import RibbitClient
 
 logger = logging.getLogger("discord.cdn.cache")
@@ -18,11 +17,14 @@ class CDNCache:
     SELF_PATH = os.path.dirname(os.path.realpath(__file__))
     PLATFORM = sys.platform
     CONFIG = CacheConfig()
+    LIVE_CONFIG = LiveConfig()
     TACT = BlizzardTACTExplorer()
 
     def __init__(self):
         self.cache_path = os.path.join(self.SELF_PATH, self.CONFIG.CACHE_FOLDER_NAME)
         self.cdn_path = os.path.join(self.cache_path, self.CONFIG.CACHE_FILE_NAME)
+
+        self.fetch_interval = self.LIVE_CONFIG.get_fetch_interval()
 
         if not os.path.exists(self.cache_path):
             os.mkdir(self.cache_path)
@@ -74,7 +76,7 @@ class CDNCache:
 
             if file_json[self.CONFIG.indices.LAST_UPDATED_BY] != self.PLATFORM and (
                 time.time() - file_json[self.CONFIG.indices.LAST_UPDATED_AT]
-            ) < (FETCH_INTERVAL * 60):
+            ) < (self.fetch_interval * 60):
                 logger.info("Skipping build comparison, data is outdated")
                 return False
 
@@ -100,8 +102,6 @@ class CDNCache:
                     if file_json["buildInfo"][branch][area] != newBuild[area]:
                         logger.debug(f"Updated info found for {branch} @ {area}")
                         return True
-                    else:
-                        return False
                 else:
                     file_json["buildInfo"][branch][area] = newBuild[area]
                     return True
@@ -180,7 +180,9 @@ class CDNCache:
             logger.error(f"No response for {branch}.")
             return
 
-        _data = _data["us"]
+        region = "PUB-29" if branch == "catalogs" else "us"
+
+        _data = _data[region]
         data = _data.__dict__()
 
         logger.info(f"Comparing build data for {branch}")

@@ -14,7 +14,7 @@ try:
 except ImportError:
     pass
 
-OWNER_ID = os.getenv("OWNER_ID")
+OWNER_ID = int(os.getenv("OWNER_ID"))
 
 DIR = os.path.dirname(os.path.realpath(__file__))
 
@@ -113,7 +113,7 @@ class CDNBotHelpCommand(commands.HelpCommand):
 class CDNBot(bridge.Bot):
     """This is the almighty CDN bot, also known as Algalon. Inherits from `discord.ext.bridge.Bot`."""
 
-    COGS_LIST = ["admin", "watcher", "nux"]
+    COGS_LIST = ["watcher", "nux", "admin"]
 
     def __init__(self, command_prefix, help_command=None, **options):
         command_prefix = command_prefix or "!"

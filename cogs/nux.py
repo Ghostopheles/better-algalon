@@ -25,11 +25,11 @@ class GuildNUX(commands.Cog):
         if not channel:
             return
 
-        cmd_link_set_channel = self.watcher.get_command_link("cdnsetchannel")
-        cmd_link_get_watchlist = self.watcher.get_command_link("cdnwatchlist")
-        cmd_link_add_to_watchlist = self.watcher.get_command_link("cdnaddtowatchlist")
+        cmd_link_set_channel = self.watcher.get_command_link("setchannel")
+        cmd_link_get_watchlist = self.watcher.get_command_link("watchlist")
+        cmd_link_add_to_watchlist = self.watcher.get_command_link("addtowatchlist")
         cmd_link_rm_from_watchlist = self.watcher.get_command_link(
-            "cdnremovefromwatchlist"
+            "removefromwatchlist"
         )
         cmd_link_data = self.watcher.get_command_link("cdndata")
 

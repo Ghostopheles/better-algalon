@@ -7,11 +7,13 @@ import secrets
 import discord
 import logging
 
+from typing import Optional
 from discord.ext import bridge, commands, pages, tasks
 
+from .user_config import UserConfigFile
 from .guild_config import GuildCFG
 from .cdn_cache import CDNCache
-from .config import FETCH_INTERVAL, CommonStrings
+from .config import CommonStrings, LiveConfig
 from .config import WatcherConfig as cfg
 from .config import DebugConfig as dbg
 from .config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
@@ -22,6 +24,24 @@ START_LOOPS = True
 
 logger = logging.getLogger("discord.cdn.watcher")
 
+DELIMITER = ","
+FETCH_INTERVAL = LiveConfig().get_fetch_interval()
+
+if dbg.debug_enabled:
+    TEST_GUILDS = [318246001309646849]
+else:
+    TEST_GUILDS = [242364846362853377, 1144396478840844439, 318246001309646849]
+
+ANNOUNCEMENT_CHANNELS = [
+    int(os.getenv("ANNOUNCEMENT_CHANNEL")),
+    int(os.getenv("ANNOUNCEMENT_CHANNEL2")),
+    int(os.getenv("ANNOUNCEMENT_CHANNEL3")),
+    int(os.getenv("ANNOUNCEMENT_CHANNEL4")),
+]
+
+DELETE_AFTER = 120
+COOLDOWN = 5
+
 
 class CDNCog(commands.Cog):
     """This is the actual Cog that gets added to the Discord bot."""
@@ -30,6 +50,8 @@ class CDNCog(commands.Cog):
         self.bot = bot
         self.cdn_cache = CDNCache()
         self.guild_cfg = GuildCFG()
+        self.user_cfg = UserConfigFile()
+        self.live_cfg = LiveConfig()
         self.twitter = Twitter()
         self.last_update = 0
         self.last_update_formatted = ""
@@ -40,8 +62,25 @@ class CDNCog(commands.Cog):
         if START_LOOPS:
             self.cdn_auto_refresh.add_exception_type(httpx.ConnectTimeout)
             self.cdn_auto_refresh.start()
-
             self.integrity_check.start()
+            self.check_loop_health.start()
+
+    @tasks.loop(minutes=6)
+    async def check_loop_health(self):
+        last_update = self.last_update
+
+        if last_update == 0 and self.check_loop_health.current_loop == 0:
+            return
+
+        now = time()
+        buffer = 45  # seconds
+
+        fetch_interval = self.live_cfg.get_fetch_interval()
+        mins_since_last_update = ((now - last_update) + buffer) * 60
+
+        if mins_since_last_update > fetch_interval:
+            message = f"Algalon CDN refresh loop stopped\nLast update: {self.last_update_formatted}"
+            await self.bot.send_message_to_owner(message)
 
     @tasks.loop(hours=24)
     async def integrity_check(self):
@@ -80,8 +119,10 @@ class CDNCog(commands.Cog):
                 if slash and slash.name == command:
                     return slash.mention
             elif isinstance(cmd, discord.SlashCommand):
-                if cmd.name == command:
+                if cmd.name == command and cmd.id is not None:
                     return cmd.mention
+
+        return f"`/{command}`"
 
     async def notify_owner_of_exception(
         self,
@@ -91,13 +132,7 @@ class CDNCog(commands.Cog):
         """This is supposed to notify the owner of an error, but doesn't always work."""
         owner = await self.bot.fetch_user(self.bot.owner_id)  # type: ignore
         channel = await owner.create_dm()
-
-        if isinstance(error, Exception):
-            message = (
-                f"I've encountered an error! Help!\n```py\n{error.args}\n{error}\n```\n"
-            )
-        else:
-            message = f"I've encountered an error! Help!\n```py\n{error}\n```\n"
+        message = f"I've encountered an error! Help!\n```py\n{error}\n```\n"
 
         if ctx:
             message += f"CALLER: {ctx.author}\nGUILD: {ctx.guild.name} | {ctx.guild_id}"  # type: ignore
@@ -108,6 +143,8 @@ class CDNCog(commands.Cog):
         """This builds notification embeds with the given data."""
 
         guild_watchlist = self.guild_cfg.get_guild_watchlist(guild_id)
+
+        product_config = self.live_cfg.get_all_products()
 
         all_embeds = []
 
@@ -120,24 +157,19 @@ class CDNCog(commands.Cog):
                 )
                 continue
 
-            # TODO: fix this awful shit
-            if game == SUPPORTED_GAMES.Warcraft:
-                color = discord.Color.dark_blue()
-            elif game == SUPPORTED_GAMES.Gryphon:
-                color = discord.Color.dark_gold()
-            else:
-                color = discord.Color.dark_red()
+            config = cfg.strings.EMBED_GAME_CONFIG[game]
+            color = config["color"]
 
             embed = discord.Embed(
                 color=color,
-                title=cfg.strings.EMBED_GAME_STRINGS[game]["title"],
+                title=config["title"],
                 description=f"{get_discord_timestamp()} **|** {get_discord_timestamp(relative=True)}",
-                url=cfg.strings.EMBED_GAME_STRINGS[game]["url"],
+                url=config["url"],
             )
 
             embed.set_author(
-                name=cfg.strings.EMBED_GAME_STRINGS[game]["name"],
-                icon_url=cfg.strings.EMBED_GAME_STRINGS[game]["icon_url"],
+                name=config["name"],
+                icon_url=config["icon_url"],
             )
 
             embed.set_footer(text=CommonStrings.EMBED_FOOTER)
@@ -161,7 +193,7 @@ class CDNCog(commands.Cog):
                 build_text = ver[cfg.indices.BUILDTEXT]
                 build = ver[cfg.indices.BUILD]
 
-                public_name = self.cdn_cache.CONFIG.PRODUCTS[branch]
+                public_name = product_config[branch]["public_name"]
 
                 build_text = (
                     f"**{build_text}**" if build_text != build_text_old else build_text
@@ -186,10 +218,12 @@ class CDNCog(commands.Cog):
     def preprocess_update_data(self, data: list):
         embed_data = {}
         for branch in data:
-            game = self.get_game_from_branch(branch["branch"])
+            game = cfg.get_game_from_branch(branch["branch"])
             if not game:
                 logger.warning(f"Game could not be determined for {branch['branch']}")
                 continue
+
+            game = game.value
 
             if game not in embed_data:
                 logger.debug("Adding new game to embed data...")
@@ -199,6 +233,56 @@ class CDNCog(commands.Cog):
             embed_data[game].append(branch)
 
         return embed_data
+
+    async def distribute_direct_messages(self, data: dict, owner_only: bool = False):
+        with self.user_cfg as config:
+            for game, updates in data.items():
+                for update in updates:
+                    branch = update["branch"]
+                    new_build = update["build"]
+                    subscribers = config.lookup.get_subscribers_for_branch(branch, True)
+                    if len(subscribers) == 0:
+                        continue
+
+                    new_build_text = update["build_text"]
+                    if new_build_text != update["old"]["build_text"]:
+                        new_build_text = f"**{new_build_text}**"
+
+                    new_build_id = update["build"]
+                    if new_build_id != update["old"]["build"]:
+                        new_build_id = f"**{new_build_id}**"
+
+                    message = f"{SUPPORTED_GAMES._value2member_map_[game].name} build: `{branch}` -> {new_build_text}.{new_build_id}"
+
+                    if (
+                        game == SUPPORTED_GAMES.Warcraft and update["encrypted"] != True
+                    ):  # determine if this build has been seen before on other public branches
+                        fresh_build = True
+                        for _branch in SUPPORTED_PRODUCTS:
+                            if _branch == branch:
+                                continue
+
+                            data = self.cdn_cache.load_build_data(_branch.name)
+                            if not data or data["encrypted"] == True:
+                                continue
+
+                            if int(new_build) > int(data["build"]):
+                                fresh_build = True
+                            else:
+                                fresh_build = False
+                                break
+
+                        if fresh_build:
+                            message = "New " + message
+
+                    for subscriber in subscribers:
+                        user = await self.bot.get_or_fetch_user(subscriber)
+                        is_owner = await self.bot.is_owner(user)
+                        if owner_only and not is_owner:
+                            continue
+
+                        channel = await user.create_dm()
+                        await channel.send(message)
 
     async def distribute_embed(self, first_run: bool = False):
         """This handles distributing the generated embeds to the various servers that should receive them."""
@@ -217,6 +301,7 @@ class CDNCog(commands.Cog):
             logger.info("New CDN data found! Creating posts...")
 
             embed_data = self.preprocess_update_data(new_data)
+            await self.distribute_direct_messages(embed_data)
 
             for guild in self.bot.guilds:
                 try:
@@ -274,9 +359,7 @@ class CDNCog(commands.Cog):
                                     f"Tweet failed with: {response}.\n{actual_embed.to_dict()}"
                                 )
                                 await self.notify_owner_of_exception(response)
-                        elif channel.id == int(
-                            os.getenv("ANNOUNCEMENT_CHANNEL2")
-                        ) or channel.id == int(os.getenv("ANNOUNCEMENT_CHANNEL3")):
+                        elif channel.id in ANNOUNCEMENT_CHANNELS:
                             await message.publish()
                     elif actual_embed and not channel:
                         logger.error(f"No channel found for guild {guild}, aborting.")
@@ -301,6 +384,7 @@ class CDNCog(commands.Cog):
 
                     embed_data = self.preprocess_update_data(new_data)
                     embeds = self.build_embeds(embed_data, dbg.debug_guild_id)  # type: ignore
+                    await self.distribute_direct_messages(embed_data, True)
 
                     if not embeds:
                         logger.error("No debug embeds built, aborting.")
@@ -317,17 +401,6 @@ class CDNCog(commands.Cog):
                             continue
             else:
                 logger.info("No CDN changes found.")
-
-    def get_game_from_branch(self, branch: str):
-        # TODO: this is extremely dumb
-        if "wow" in branch:
-            return "wow"
-        elif "fenris" in branch:
-            return "d4"
-        elif "gryphon" in branch:
-            return "gryphon"
-        else:
-            return False
 
     def build_paginator_for_current_build_data(self):
         buttons = [
@@ -404,20 +477,24 @@ class CDNCog(commands.Cog):
 
     @commands.Cog.listener(name="on_command_error")
     @commands.Cog.listener(name="on_application_command_error")
-    async def handle_command_error(
-        self, ctx: discord.ApplicationContext, exception: discord.DiscordException
-    ):
-        error_message = "I have encountered an error handling your command. The Titans have been notified."
-
-        logger.error(
-            f"Logging application command error in guild {ctx.guild_id}.",
-            exc_info=exception,
-        )
-
-        await self.bot.notify_owner_of_command_exception(ctx, exception)  # type: ignore
+    async def handle_command_error(self, ctx: discord.ApplicationContext, exception):
+        if isinstance(exception, commands.CommandOnCooldown):
+            timestamp = get_discord_timestamp(
+                round(time.time() + exception.retry_after), relative=True
+            )
+            message = f"This command is on cooldown. Try again {timestamp}"
+        elif isinstance(exception, commands.NotOwner):
+            message = f"You do not have permission to use this command."
+        else:
+            message = "I have encountered an error handling your command. The Titans have been notified."
+            logger.error(
+                f"Logging application command error in guild {ctx.guild_id}.",
+                exc_info=exception,
+            )
+            await self.bot.notify_owner_of_command_exception(ctx, exception)  # type: ignore
 
         await ctx.interaction.response.send_message(
-            error_message, ephemeral=True, delete_after=300
+            message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
     # DISCORD COMMANDS
@@ -429,7 +506,8 @@ class CDNCog(commands.Cog):
         paginator = self.build_paginator_for_current_build_data()
         await paginator.respond(ctx.interaction, ephemeral=True)
 
-    @bridge.bridge_command(name="cdnbranches")
+    @bridge.bridge_command(name="branches")
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_branches(self, ctx: bridge.BridgeApplicationContext):
         """Returns all observable branches."""
         message = f"## These are all the branches I can watch for you:\n```\n"
@@ -439,25 +517,28 @@ class CDNCog(commands.Cog):
         message += "```"
 
         await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
+            message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
     @bridge.bridge_command(
-        name="cdnaddtowatchlist",
+        name="addtowatchlist",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
+        input_type=str,
+        min_length=3,
+        max_length=500,
     )
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_add_to_watchlist(
         self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
         """Add a branch to the watchlist. Add multiple branches by separating them with a comma."""
         branch = branch.lower()
         branch = branch.replace(" ", "")
-        delimeter = ","
-        if delimeter in branch:
+        if DELIMITER in branch:
             bad_branches = []
             good_branches = []
-            branches = branch.split(delimeter)
+            branches = branch.split(DELIMITER)
             for branch in branches:
                 if self.cdn_cache.CONFIG.is_valid_branch(branch) != True:
                     bad_branches.append(
@@ -476,7 +557,7 @@ class CDNCog(commands.Cog):
                 message += "\n".join(bad_branches)
 
                 help_string = self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES
-                cmdlink = self.get_command_link("cdnbranches")
+                cmdlink = self.get_command_link("branches")
                 help_string = help_string.format(cmdlink=cmdlink)
 
                 message += f"```\n\n{help_string}"
@@ -489,7 +570,7 @@ class CDNCog(commands.Cog):
                     message += "```"
 
                 await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=300
+                    message, ephemeral=True, delete_after=DELETE_AFTER
                 )
                 return False
             else:
@@ -497,7 +578,7 @@ class CDNCog(commands.Cog):
                 message += "\n".join(good_branches)
                 message += "```"
                 await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=300
+                    message, ephemeral=True, delete_after=DELETE_AFTER
                 )
                 return True
         else:
@@ -506,27 +587,31 @@ class CDNCog(commands.Cog):
                 message = f"{error}\n\n"
 
                 help_string = self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES
-                cmdlink = self.get_command_link("cdnbranches")
+                cmdlink = self.get_command_link("branches")
                 help_string = help_string.format(cmdlink=cmdlink)
 
                 message += help_string
 
                 await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=300
+                    message, ephemeral=True, delete_after=DELETE_AFTER
                 )
                 return False
 
             await ctx.interaction.response.send_message(
                 f"`{branch}` successfully added to watchlist.",
                 ephemeral=True,
-                delete_after=300,
+                delete_after=DELETE_AFTER,
             )
 
     @bridge.bridge_command(
-        name="cdnremovefromwatchlist",
+        name="removefromwatchlist",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
+        input_type=str,
+        min_length=3,
+        max_length=500,
     )
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_remove_from_watchlist(
         self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
@@ -536,26 +621,27 @@ class CDNCog(commands.Cog):
             message = f"{error}\n\n"
 
             help_string = self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES
-            cmdlink = self.get_command_link("cdnbranches")
+            cmdlink = self.get_command_link("branches")
             help_string = help_string.format(cmdlink=cmdlink)
 
             message += help_string
 
             await ctx.interaction.response.send_message(
-                message, ephemeral=True, delete_after=300
+                message, ephemeral=True, delete_after=DELETE_AFTER
             )
             return False
         else:
             await ctx.interaction.response.send_message(
                 f"`{branch}` successfully removed from watchlist.",
                 ephemeral=True,
-                delete_after=300,
+                delete_after=DELETE_AFTER,
             )
 
     @bridge.bridge_command(
-        name="cdnwatchlist",
+        name="watchlist",
         guild_only=True,
     )
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_watchlist(self, ctx: bridge.BridgeApplicationContext):
         """Returns the watchlist for your guild."""
         message = (
@@ -571,149 +657,174 @@ class CDNCog(commands.Cog):
         message += "```"
 
         await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
+            message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
     @bridge.bridge_command(
-        name="cdnsetchannel",
+        name="setchannel",
         default_member_permissions=discord.Permissions(administrator=True),
         guild_only=True,
     )
+    @commands.cooldown(1, 5, commands.BucketType.user)
     async def cdn_set_channel(
-        self, ctx: bridge.BridgeApplicationContext, game: SUPPORTED_GAMES | None = None
+        self,
+        ctx: bridge.BridgeApplicationContext,
+        game: Optional[SUPPORTED_GAMES] = SUPPORTED_GAMES.Warcraft,
     ):
         """Sets the current channel as the notification channel for the given game. Defaults to Warcraft."""
         channel = ctx.channel_id
         guild = ctx.guild_id
-
-        game = game or SUPPORTED_GAMES.Warcraft
 
         self.guild_cfg.set_notification_channel(guild, channel, game)  # type: ignore
 
         await ctx.interaction.response.send_message(
             f"{game.name} notification channel set!",
             ephemeral=True,
-            delete_after=300,
+            delete_after=DELETE_AFTER,
         )
 
     @bridge.bridge_command(
-        name="cdngetchannel",
+        name="getchannel",
         guild_only=True,
     )
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_get_channel(
-        self, ctx: bridge.BridgeApplicationContext, game: SUPPORTED_GAMES | None = None
+        self,
+        ctx: bridge.BridgeApplicationContext,
+        game: Optional[SUPPORTED_GAMES] = SUPPORTED_GAMES.Warcraft,
     ):
         """Returns the current notification channel for the given game. Defaults to Warcraft."""
         guild = ctx.guild_id
-        game = game or SUPPORTED_GAMES.Warcraft
         channel = self.guild_cfg.get_notification_channel(guild, game)  # type: ignore
 
         if channel:
             await ctx.interaction.response.send_message(
                 f"This server's {game.name} notification channel is set to <#{channel}>",
                 ephemeral=True,
-                delete_after=300,
+                delete_after=DELETE_AFTER,
             )
         else:
+            cmdlink = self.get_command_link("setchannel")
             await ctx.interaction.response.send_message(
-                f"This server does not have a notification channel set, try `/cdnsetchannel` to set your notification channel!",
+                f"This server does not have a notification channel set, try {cmdlink} to set your notification channel!",
                 ephemeral=True,
-                delete_after=300,
+                delete_after=DELETE_AFTER,
             )
 
-    @bridge.bridge_command(name="cdnlastupdate")
+    @bridge.bridge_command(name="lastupdate")
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_last_update(self, ctx: bridge.BridgeApplicationContext):
         """Returns the last time the bot checked for an update."""
         await ctx.interaction.response.send_message(
             f"Last update: {self.last_update_formatted}.",
             ephemeral=True,
-            delete_after=300,
+            delete_after=DELETE_AFTER,
         )
 
-    @commands.is_owner()
     @bridge.bridge_command(
-        name="cdnsetregion",
-        default_member_permissions=discord.Permissions(administrator=True),
-        guild_only=True,
+        name="subscribe",
+        guild_ids=TEST_GUILDS,
     )
-    async def cdn_set_region(self, ctx: bridge.BridgeApplicationContext, region: str):
-        """Sets the region for your guild."""
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
+    async def user_subscribe(self, ctx: bridge.BridgeApplicationContext, branch: str):
+        """Subscribe to build updates via DM for the given branch."""
 
-        success, message = self.guild_cfg.set_region(ctx.guild_id, region)  # type: ignore
+        message = ""
+        user_id = ctx.author.id
+        branch = branch.lower()
+        with self.user_cfg as config:
+            if DELIMITER in branch:  # batch adding
+                branches = branch.split(",")
+                message = "Successfully subscribed to the following branches:\n```diff"
+                for _branch in branches:
+                    success, result = config.subscribe(user_id, _branch)
+                    if not success:
+                        message += f"\n- ERROR > {_branch}: {result}"
+                    else:
+                        message += f"\n+ {_branch} added successfully."
 
-        if not success:
-            valid_regions = "\n\nSupported Regions:```\n"
-            for region in self.guild_cfg.CONFIG.SUPPORTED_REGIONS_STRING:
-                valid_regions += f"{region}\n"
-            valid_regions += "```"
+                message += "```"
+                await ctx.interaction.response.send_message(
+                    message, ephemeral=True, delete_after=DELETE_AFTER
+                )
+            else:  # single adding
+                success, result = config.subscribe(user_id, branch)
+                if not success:
+                    message = f"Unable to subscribe to branch `{branch}`: `{result}`"
+                else:
+                    message = f"Successfully subscribed to branch `{branch}`!"
 
-            message += valid_regions
+                await ctx.interaction.response.send_message(
+                    message, ephemeral=True, delete_after=DELETE_AFTER
+                )
 
-        await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
-        )
-
-    @commands.is_owner()
     @bridge.bridge_command(
-        name="cdngetregion",
-        guild_only=True,
+        name="unsubscribe",
+        guild_ids=TEST_GUILDS,
     )
-    async def cdn_get_region(self, ctx: bridge.BridgeApplicationContext):
-        """Returns the current region for your guild."""
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
+    async def user_unsubscribe(self, ctx: bridge.BridgeApplicationContext, branch: str):
+        """Unsubscribe from build updates via DM for the given branch."""
 
-        region = self.guild_cfg.get_region(ctx.guild_id)  # type: ignore
+        message = ""
+        user_id = ctx.author.id
+        branch = branch.lower()
+        with self.user_cfg as config:
+            if DELIMITER in branch:  # batch removal
+                branches = branch.split(",")
+                message = "No longer watching the following branches:\n```diff"
+                for _branch in branches:
+                    success, result = config.unsubscribe(user_id, _branch)
+                    if not success:
+                        message += f"\n+ ERROR > {_branch}: {result}"
+                    else:
+                        message += f"\n- {_branch} successfully removed."
 
-        message = f"This guild's region is: `{region}`."
+                message += "```"
+                await ctx.interaction.response.send_message(
+                    message, ephemeral=True, delete_after=DELETE_AFTER
+                )
+            else:  # single removal
+                success, result = config.unsubscribe(user_id, branch)
+                if not success:
+                    message = (
+                        f"Unable to unsubscribe from branch `{branch}`: `{result}`"
+                    )
+                else:
+                    message = f"Successfully unsubscribed from branch `{branch}`!"
 
-        await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
-        )
+                await ctx.interaction.response.send_message(
+                    message, ephemeral=True, delete_after=DELETE_AFTER
+                )
 
-    @commands.is_owner()
     @bridge.bridge_command(
-        name="cdnsetlocale",
-        default_member_permissions=discord.Permissions(administrator=True),
-        guild_only=True,
+        name="subscribed",
+        guild_ids=TEST_GUILDS,
     )
-    async def cdn_set_locale(self, ctx: bridge.BridgeApplicationContext, locale: str):
-        """Sets the locale for your guild."""
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
+    async def user_subscribed(self, ctx: bridge.BridgeApplicationContext):
+        """View all branches you're receiving DM updates for."""
+        user_id = ctx.author.id
+        with self.user_cfg as config:
+            watchlist = config.get_watchlist(user_id)
 
-        success, message = self.guild_cfg.set_locale(ctx.guild_id, locale)  # type: ignore
-
-        if not success:
-            current_region = self.guild_cfg.get_region(ctx.guild_id)  # type: ignore
-            supported_locales = self.guild_cfg.get_region_supported_locales(
-                current_region
+        if watchlist is None or len(watchlist) == 0:
+            cmdlink = self.get_command_link("subscribe")
+            message = f"You are not currently subscribed to any branches. Subscribe to a branch using {cmdlink}."
+        else:
+            products = self.live_cfg.get_all_products()
+            message = (
+                "Here's a list of all branches you're receiving DM updates for:\n```"
             )
-            if not supported_locales:
-                return
+            for branch in watchlist:
+                message += f"\n{branch} : {products[branch]['public_name']}"
 
-            help_string = f"\n\nSupported Locales for `{current_region}`: ```\n"
-            for locale in supported_locales:
-                help_string += f"{locale.value}\n"  # type: ignore
-            help_string += "```"
-
-            message += help_string
+            message += "```"
 
         await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
-        )
-
-    @commands.is_owner()
-    @bridge.bridge_command(
-        name="cdngetlocale",
-    )
-    async def cdn_get_locale(self, ctx: bridge.BridgeApplicationContext):
-        """Returns the current locale for your guild."""
-
-        locale = self.guild_cfg.get_locale(ctx.guild_id)  # type: ignore
-
-        message = f"This guild's locale is: `{locale}`."
-
-        await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
+            message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
 
-def setup(bot):
+def setup(bot: discord.Bot):
     bot.add_cog(CDNCog(bot))

@@ -59,7 +59,7 @@ class BlizzardTACTExplorer:
             try:
                 response = await client.get(url)
             except httpx.ConnectTimeout as exc:
-                self.logger.error("TACT CDN info request timed out.")
+                self.logger.error(f"TACT CDN info request for {branch} timed out.")
                 return None
 
             if response.status_code != 200:

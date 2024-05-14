@@ -1,5 +1,9 @@
 import os
+import json
 
+from discord import Color
+from dataclasses import dataclass
+from typing import Optional
 from enum import StrEnum
 from .locale import Locales
 
@@ -8,7 +12,17 @@ from .locale import Locales
 FETCH_INTERVAL = 5
 
 
-class Region:
+class Singleton:
+    __instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls.__instance is None:
+            cls.__instance = super().__new__(cls)
+
+        return cls.__instance
+
+
+class Region(Singleton):
     def __init__(self, region_name: str, valid_locales: list):
         self.name = region_name
         self.locales = valid_locales
@@ -42,6 +56,16 @@ class SUPPORTED_GAMES(StrEnum):
     Warcraft = "wow"
     Diablo4 = "d4"
     Gryphon = "gryphon"
+    BattleNet = "bnet"
+
+    @classmethod
+    def has_key(cls, value):
+        return value in cls._value2member_map_.keys()
+
+    @classmethod
+    def get_game(cls, value):
+        if cls.has_key(value):
+            return cls._value2member_map_[value]
 
 
 class SUPPORTED_PRODUCTS(StrEnum):
@@ -87,13 +111,77 @@ class SUPPORTED_PRODUCTS(StrEnum):
     gryphon = "Warcraft Rumble Live"
     gryphonb = "Warcraft Rumble Beta"
     gryphondev = "Warcraft Rumble Internal"
+    # Bnet
+    catalogs = "Catalogs"
 
     @classmethod
     def has_key(cls, value):
         return value in cls._member_names_
 
 
-class Indices:
+TEST_BRANCHES = [
+    SUPPORTED_PRODUCTS.wowt,
+    SUPPORTED_PRODUCTS.wowxptr,
+    SUPPORTED_PRODUCTS.wow_beta,
+    SUPPORTED_PRODUCTS.wowlivetest,
+    SUPPORTED_PRODUCTS.wow_classic_beta,
+    SUPPORTED_PRODUCTS.wow_classic_ptr,
+    SUPPORTED_PRODUCTS.wow_classic_era_beta,
+    SUPPORTED_PRODUCTS.wow_classic_era_ptr,
+    SUPPORTED_PRODUCTS.fenrisb,
+    SUPPORTED_PRODUCTS.fenristest,
+    SUPPORTED_PRODUCTS.gryphonb,
+]
+
+WOW_BRANCHES = [
+    SUPPORTED_PRODUCTS.wow,
+    SUPPORTED_PRODUCTS.wowt,
+    SUPPORTED_PRODUCTS.wow_beta,
+    SUPPORTED_PRODUCTS.wowxptr,
+    SUPPORTED_PRODUCTS.wow_classic,
+    SUPPORTED_PRODUCTS.wow_classic_beta,
+    SUPPORTED_PRODUCTS.wow_classic_ptr,
+    SUPPORTED_PRODUCTS.wow_classic_era,
+    SUPPORTED_PRODUCTS.wow_classic_era_beta,
+    SUPPORTED_PRODUCTS.wow_classic_era_ptr,
+    SUPPORTED_PRODUCTS.wowz,
+    SUPPORTED_PRODUCTS.wowlivetest,
+    SUPPORTED_PRODUCTS.wowlivetest2,
+    SUPPORTED_PRODUCTS.wowdev,
+    SUPPORTED_PRODUCTS.wowdev2,
+    SUPPORTED_PRODUCTS.wowdev3,
+    SUPPORTED_PRODUCTS.wowv,
+    SUPPORTED_PRODUCTS.wowv2,
+    SUPPORTED_PRODUCTS.wowv3,
+    SUPPORTED_PRODUCTS.wowv4,
+    SUPPORTED_PRODUCTS.wowe1,
+    SUPPORTED_PRODUCTS.wowe2,
+    SUPPORTED_PRODUCTS.wowe3,
+    SUPPORTED_PRODUCTS.wowdemo,
+]
+
+DIABLO_BRANCHES = [
+    SUPPORTED_PRODUCTS.fenris,
+    SUPPORTED_PRODUCTS.fenrisb,
+    SUPPORTED_PRODUCTS.fenristest,
+    SUPPORTED_PRODUCTS.fenrisdev,
+    SUPPORTED_PRODUCTS.fenrisdev2,
+    SUPPORTED_PRODUCTS.fenrise,
+    SUPPORTED_PRODUCTS.fenrisvendor1,
+    SUPPORTED_PRODUCTS.fenrisvendor2,
+    SUPPORTED_PRODUCTS.fenrisvendor3,
+]
+
+RUMBLE_BRANCHES = [
+    SUPPORTED_PRODUCTS.gryphon,
+    SUPPORTED_PRODUCTS.gryphonb,
+    SUPPORTED_PRODUCTS.gryphondev,
+]
+
+BNET_BRANCHES = [SUPPORTED_PRODUCTS.catalogs]
+
+
+class Indices(Singleton):
     LAST_UPDATED_BY = "last_updated_by"
     LAST_UPDATED_AT = "last_updated_at"
     BUILDINFO = "buildInfo"
@@ -104,7 +192,7 @@ class Indices:
 ## CACHE CONFIGURATION
 
 
-class CacheStrings:
+class CacheStrings(Singleton):
     ## STRINGS
     REGION_UPDATED = "Region updated."
     REGION_LOCALE_CHANGED = "Region updated and locale reset."
@@ -116,31 +204,50 @@ class CacheStrings:
     LOG_PARSE_DATA = "Parsing CDN response..."
 
 
-class CacheDefaults:
+class CacheDefaults(Singleton):
     CHANNEL = 0000
     WATCHLIST = ["wow", "wowt", "wow_beta"]
     REGION = DEFAULT_REGION
     REGION_NAME = REGION.name
     LOCALE = REGION.locales[0]
     LOCALE_NAME = LOCALE.value
-    BUILD = "0.0.0"
+    BUILD = "no-data"
     BUILDTEXT = "no-data"
 
 
-class Settings:
+@dataclass
+class Setting:
+    name: str
+    default: str
+
+
+class Settings(Singleton):
     __defaults = CacheDefaults()
 
-    CHANNEL = {"name": "channel", "default": __defaults.CHANNEL}
-    D4_CHANNEL = {"name": "d4_channel", "default": __defaults.CHANNEL}
-    GRYPHON_CHANNEL = {"name": "gryphon_channel", "default": __defaults.CHANNEL}
-    WATCHLIST = {"name": "watchlist", "default": __defaults.WATCHLIST}
-    REGION = {"name": "region", "default": __defaults.REGION_NAME}
-    LOCALE = {"name": "locale", "default": __defaults.LOCALE_NAME}
+    CHANNEL = Setting("channel", __defaults.CHANNEL)
+    D4_CHANNEL = Setting("d4_channel", __defaults.CHANNEL)
+    GRYPHON_CHANNEL = Setting("gryphon_channel", __defaults.CHANNEL)
+    BNET_CHANNEL = Setting("bnet_channel", __defaults.CHANNEL)
+    WATCHLIST = Setting("watchlist", __defaults.WATCHLIST)
+    REGION = Setting("region", __defaults.REGION_NAME)
+    LOCALE = Setting("locale", __defaults.LOCALE_NAME)
 
-    KEYS = ["channel", "d4_channel", "gryphon_channel", "watchlist", "region", "locale"]
+    KEYS = [
+        CHANNEL.name,
+        D4_CHANNEL.name,
+        GRYPHON_CHANNEL.name,
+        BNET_CHANNEL.name,
+        WATCHLIST.name,
+        REGION.name,
+        LOCALE.name,
+    ]
 
 
-class ErrorStrings:
+class UserSettings(Singleton):
+    WATCHLIST = Setting("watchlist", [])
+
+
+class ErrorStrings(Singleton):
     REGION_SAME_AS_CURRENT = "New region is the same as the current region."
     REGION_NOT_SUPPORTED = "Region not supported."
 
@@ -160,12 +267,12 @@ class ErrorStrings:
     OK = "OK"
 
 
-class CommonURL:
+class CommonURL(Singleton):
     HTTPS = "http://"
     CDN_URL = ".patch.battle.net:1119/"  # does not include region
 
 
-class CacheConfig:
+class CacheConfig(Singleton):
     CDN_URL = "http://us.patch.battle.net:1119/"
 
     PRODUCTS = SUPPORTED_PRODUCTS
@@ -174,6 +281,7 @@ class CacheConfig:
     CACHE_FILE_NAME = "cdn.json"
 
     GUILD_CFG_FILE_NAME = "guild_cfg.json"
+    USER_CFG_FILE_NAME = "user_cfg.json"
 
     SUPPORTED_REGIONS = SUPPORTED_REGIONS
     SUPPORTED_REGIONS_STRING = SUPPORTED_REGIONS_STRINGS
@@ -198,10 +306,15 @@ class CacheConfig:
     errors = ErrorStrings()
     urls = CommonURL()
 
-    def __init__(self):
-        self.CDN_URL = (
-            self.urls.HTTPS + self.settings.REGION["default"] + self.urls.CDN_URL
-        )
+    SETTING_BY_GAME = {
+        SUPPORTED_GAMES.Warcraft: settings.CHANNEL,
+        SUPPORTED_GAMES.Diablo4: settings.D4_CHANNEL,
+        SUPPORTED_GAMES.Gryphon: settings.GRYPHON_CHANNEL,
+        SUPPORTED_GAMES.BattleNet: settings.BNET_CHANNEL,
+    }
+
+    def get_setting_for_game(self, game: SUPPORTED_GAMES):
+        return self.SETTING_BY_GAME[game]
 
     @staticmethod
     def is_valid_branch(branch) -> bool:
@@ -211,7 +324,7 @@ class CacheConfig:
 ## COMMON CONFIGURATION
 
 
-class CommonStrings:
+class CommonStrings(Singleton):
     EMBED_FOOTER = f"Data provided by Algalon {os.getenv('ENVIRONMENT', 'Dev')}."
     VALID_REGIONS = SUPPORTED_REGIONS_STRINGS
 
@@ -221,7 +334,7 @@ class CommonStrings:
 ## WATCHER CONFIGURATION
 
 
-class WatcherStrings:
+class WatcherStrings(Singleton):
     EMBED_WOWTOOLS_TITLE = "wow.tools builds page"
     EMBED_WOWTOOLS_URL = "https://wow.tools/builds/"
 
@@ -233,10 +346,13 @@ class WatcherStrings:
 
     EMBED_GRYPHON_TITLE = "Warcraft Rumble"
 
+    EMBED_BNET_TITLE = "Battle.net"
+
     EMBED_NAME = "Blizzard CDN Update"
     EMBED_NAME_WOW = "Warcraft CDN Update"
     EMBED_NAME_D4 = "Diablo 4 CDN Update"
     EMBED_NAME_GRYPHON = "Warcraft Rumble CDN Update"
+    EMBED_NAME_BNET = "Battle.net CDN Update"
 
     EMBED_ICON_URL = (
         "https://bnetcmsus-a.akamaihd.net/cms/gallery/D2TTHKAPW9BH1534981363136.png"
@@ -246,58 +362,139 @@ class WatcherStrings:
     EMBED_ICON_URL_GRYPHON = (
         "https://blznav.akamaized.net/img/games/logo-war-fb3f559702bed22f.png"
     )
+    EMBED_ICON_URL_BNET = "https://blz-contentstack-images.akamaized.net/v3/assets/blt13393558c8f39060/blt99d316461099db22/644fe236d3c3ea26f40ed388/desktop-app.png"
 
     EMBED_UPDATE_TITLE = "Build Updates"
 
-    EMBED_GAME_STRINGS = {
+    EMBED_GAME_CONFIG = {
         "wow": {
             "title": EMBED_WAGOTOOLS_TITLE,
             "url": EMBED_WAGOTOOLS_URL,
             "name": EMBED_NAME_WOW,
             "icon_url": EMBED_ICON_URL_WOW,
+            "color": Color.dark_blue(),
         },
         "d4": {
             "title": EMBED_DIABLO_TITLE,
             "url": None,
             "name": EMBED_NAME_D4,
             "icon_url": EMBED_ICON_URL_D4,
+            "color": Color.dark_red(),
         },
         "gryphon": {
             "title": EMBED_GRYPHON_TITLE,
             "url": None,
             "name": EMBED_NAME_GRYPHON,
             "icon_url": EMBED_ICON_URL_GRYPHON,
+            "color": Color.dark_gold(),
+        },
+        "bnet": {
+            "title": EMBED_BNET_TITLE,
+            "url": None,
+            "name": EMBED_NAME_BNET,
+            "icon_url": EMBED_ICON_URL_BNET,
+            "color": Color.dark_blue(),
         },
     }
 
 
-class WatcherConfig:
+class WatcherConfig(Singleton):
     strings = WatcherStrings
     indices = Indices
     cache_defaults = CacheDefaults
+
+    @staticmethod
+    def get_game_from_branch(branch: str) -> SUPPORTED_GAMES:
+        product = SUPPORTED_PRODUCTS[branch]
+        if product in WOW_BRANCHES:
+            return SUPPORTED_GAMES.Warcraft
+        elif product in DIABLO_BRANCHES:
+            return SUPPORTED_GAMES.Diablo4
+        elif product in RUMBLE_BRANCHES:
+            return SUPPORTED_GAMES.Gryphon
+        elif product in BNET_BRANCHES:
+            return SUPPORTED_GAMES.BattleNet
 
 
 ## BLIZZARD API CONFIGURATION
 
 
-class BlizzardAPIConfig:
+class BlizzardAPIConfig(Singleton):
     assets = {
         "token_icon": "https://wow.zamimg.com/images/wow/icons/large/wow_token01.jpg"
     }
 
 
+## LIVE CONFIG
+
+
+class LiveConfig(Singleton):
+    cfg_path = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "cache", "cfg.json"
+    )
+
+    def __init__(self):
+        if not os.path.exists(self.cfg_path):
+            with open(self.cfg_path, "w") as f:
+                cfg = self.__get_default_cfg()
+                json.dump(cfg, f, indent=4)
+
+    def __get_default_cfg(self):
+        cfg = {
+            "products": {},
+            "meta": {"fetch_interval": 5},
+        }
+        for branch in SUPPORTED_PRODUCTS:
+            cfg["products"][branch.name] = {
+                "public_name": branch.value,
+                "test_branch": branch in TEST_BRANCHES,
+            }
+        return cfg
+
+    def __open(self):
+        with open(self.cfg_path, "r") as f:
+            data = json.load(f)
+
+        return data
+
+    def get_cfg_value(self, category: str, key: str) -> Optional[str]:
+        data = self.__open()
+
+        if category in data.keys():
+            section = data[category]
+            if key in section.keys():
+                return section[key]
+
+        return
+
+    def get_all_products(self):
+        data = self.__open()
+        return data["products"]
+
+    def get_product_name(self, branch: str):
+        data = self.__open()
+        if branch in data["products"].keys():
+            return data["products"][branch]["public_name"]
+
+    def get_fetch_interval(self):
+        data = self.__open()
+        return data["meta"]["fetch_interval"]
+
+
 ## DEBUG CONFIGURATION
 
 
-class DebugConfig:
-    debug_enabled = os.getenv("DEBUG", False)
+class DebugConfig(Singleton):
+    debug_enabled = os.getenv("DEBUG")
     debug_guild_id = os.getenv("DEBUG_GUILD_ID")
     debug_channel_id = os.getenv("DEBUG_CHANNEL_ID")
     debug_channel_id_d4 = os.getenv("DEBUG_CHANNEL_ID_D4")
     debug_channel_id_gryphon = os.getenv("DEBUG_CHANNEL_ID_GRYPHON")
+    debug_channel_id_bnet = os.getenv("DEBUG_CHANNEL_ID_BNET")
 
     debug_channel_id_by_game = {
         "wow": debug_channel_id,
         "d4": debug_channel_id_d4,
         "gryphon": debug_channel_id_gryphon,
+        "bnet": debug_channel_id_bnet,
     }

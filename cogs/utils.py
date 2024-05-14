@@ -17,9 +17,13 @@ def log_separator():
     logger.info("-----------------------------------------------------")
 
 
-def get_discord_timestamp(relative=False):
+def get_discord_timestamp(current_time=None, relative=False):
     """Returns a formatted timestamp for use in Discord embeds or messages."""
-    current_time = int(time.time())
+    if current_time is None:
+        current_time = time.time()
+
+    current_time = int(current_time)
+
     if relative:
         return f"<t:{current_time}:R>"
     else:

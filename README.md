@@ -1,7 +1,7 @@
 # better-algalon
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) ![LastUpdate](https://img.shields.io/github/last-commit/Ghostamoose/better-algalon?style=flat-square) [![Docker](https://github.com/Ghostamoose/better-algalon/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Ghostamoose/better-algalon/actions/workflows/docker-publish.yml)
 
-v1.8 - Niobium
+v1.9 - Yttrium
 
 A bot that watches Blizzard's CDN and automatically posts new build updates to specified Discord channels.
 
@@ -61,6 +61,11 @@ A lock indicates that the given branch is encrypted and not accessible to the pu
 | gryphonb | Warcraft Rumble Beta |
 | gryphondev :lock: | Warcraft Rumble Internal |
 
+### Battle.net
+| Branch Name | Readable Name |
+| ----------- | ----------- |
+| catalogs | Catalogs |
+
 ## Commands
 
 Algalon provides a number of commands to control your guild's (server) watchlist.
@@ -71,21 +76,29 @@ Algalon provides a number of commands to control your guild's (server) watchlist
 
 `/cdndata`: Returns a paginator containing the currently cached CDN data.
 
-`/cdnlastupdate`: Returns a timestamp displaying when Algalon last checked for CDN updates.
+`/lastupdate`: Returns a timestamp displaying when Algalon last checked for CDN updates.
 
-`/cdnbranches`: Returns a formatted list of all observable branches.
+`/branches`: Returns a formatted list of all observable branches.
 
 #### Watchlist Controls
 
-`/cdnaddtowatchlist`*: Adds a specific branch to your guild's watchlist. Specify multiple branches at once by separating them with a comma.
+`/addtowatchlist`*: Adds a specific branch to your guild's watchlist. Specify multiple branches at once by separating them with a comma.
 
-`/cdnremovefromwatchlist`*: Removes a specific branch to your guild's watchlist.
+`/removefromwatchlist`*: Removes a specific branch to your guild's watchlist.
 
-`/cdnwatchlist`: Returns your guild's current watchlist.
+`/watchlist`: Returns your guild's current watchlist.
 
 #### Notification Channel Controls
 
-`/cdnsetchannel`*: Sets the channel in which it's invoked as the notification channel for your guild. Optionally, specify a game to set the notification channel for that game. Defaults to Warcraft.
+`/setchannel`*: Sets the channel in which it's invoked as the notification channel for your guild. Optionally, specify a game to set the notification channel for that game. Defaults to Warcraft.
 
-`/cdngetchannel`: Returns the current notification channel for your guild. Optionally, specify a game to get the notification channel for that game. Defaults to Warcraft.
+`/getchannel`: Returns the current notification channel for your guild. Optionally, specify a game to get the notification channel for that game. Defaults to Warcraft.
+
+#### User DM Updates
+
+`/subscribe`: Subscribes the user to DM updates for the given branches. Supports comma-delimited input.
+
+`/unsubscribe`: Unsubscribes the user from DM updates for the given branches. Supports comma-delimited input.
+
+`/subscribed`: Returns all the branches you're currently subscribed to.
 
