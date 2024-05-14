@@ -44,9 +44,10 @@ class BlizzardTACTExplorer:
                 all_data[region] = output
 
             return all_data
-        except Exception as exc:
-            self.logger.error(f"Encountered an error parsing API response.")
-            self.logger.error(exc)
+        except Exception:
+            self.logger.error(
+                f"Encountered an error parsing API response", exc_info=True
+            )
 
             return False
 
@@ -59,7 +60,7 @@ class BlizzardTACTExplorer:
             try:
                 response = await client.get(url)
             except httpx.ConnectTimeout as exc:
-                self.logger.error(f"TACT CDN info request for {branch} timed out.")
+                self.logger.warning(f"TACT CDN info request for {branch} timed out")
                 return None
 
             if response.status_code != 200:
@@ -71,7 +72,9 @@ class BlizzardTACTExplorer:
 
             while not product_config:  # loop over all possible hosts until one works
                 if not data["us"]["hosts"]:  # type: ignore
-                    self.logger.error("Blizzard TACT hosts are broken. Help.")
+                    self.logger.warning(
+                        f"No working CDN hosts found for branch '{branch}'"
+                    )
                     return None
 
                 host = data["us"]["hosts"].pop(0)  # type: ignore
@@ -79,24 +82,23 @@ class BlizzardTACTExplorer:
                 cdn_config_url = self.construct_url(host, path, product_config_hash)
 
                 try:
-                    self.logger.info(
+                    self.logger.debug(
                         f"Attempting to fetch product config for {branch}..."
                     )
                     cdn_response = await client.get(cdn_config_url)
 
                     if cdn_response.status_code != 200:
-                        self.logger.debug(
+                        self.logger.warning(
                             "Blizzard TACT host returned non 200 status code. Skipping..."
                         )
                         continue
                     else:
-                        self.logger.info(
+                        self.logger.debug(
                             f"{branch} product config found, returning encryption status..."
                         )
                         product_config = cdn_response.json()
 
-                except httpx.ConnectTimeout as exc:
-                    self.logger.error("TACT API request timed out.")
-                    self.logger.error(exc)
+                except httpx.ConnectTimeout:
+                    self.logger.warning(f"CDN request for branch '{branch}' timed out")
 
             return "decryption_key_name" in product_config["all"]["config"]
