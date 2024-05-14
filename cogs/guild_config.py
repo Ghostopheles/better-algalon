@@ -7,7 +7,7 @@ from .config import CacheConfig, Setting
 from .config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
 
 
-logger = logging.getLogger("discord.cdn.guild-cfg")
+logger = logging.getLogger("discord.guild-cfg")
 
 
 class GuildCFG:
@@ -66,7 +66,7 @@ class GuildCFG:
             file.truncate()
 
     def remove_guild_config(self, guild_id: int | str):
-        logger.info("Adding new guild to configuration file...")
+        logger.info("Removing guild from configuration file...")
         with open(self.guild_cfg_path, "r+") as file:
             file_json = json.load(file)
             del file_json[str(guild_id)]
@@ -154,7 +154,7 @@ class GuildCFG:
 
     def add_to_guild_watchlist(self, guild_id: int | str, branch: str):
         branch = SUPPORTED_PRODUCTS[branch].name
-        logger.info(f'Adding "{branch}" to watchlist for guild {guild_id}...')
+        logger.debug(f'Adding "{branch}" to watchlist for guild {guild_id}...')
 
         guild_config = self.get_guild_config(guild_id)
 
@@ -177,7 +177,7 @@ class GuildCFG:
 
     def remove_from_guild_watchlist(self, guild_id: int | str, branch: str):
         branch = SUPPORTED_PRODUCTS[branch].name
-        logger.info(f'Removing "{branch}" from watchlist for guild {guild_id}...')
+        logger.debug(f'Removing "{branch}" from watchlist for guild {guild_id}...')
         guild_config = self.get_guild_config(guild_id)
 
         watchlist = guild_config[self.CONFIG.settings.WATCHLIST.name]
@@ -203,7 +203,7 @@ class GuildCFG:
             )  # this should never happen?
 
     def get_guild_watchlist(self, guild_id: int | str):
-        logger.info(f"Grabbing guild watchlist for guild {guild_id}...")
+        logger.debug(f"Grabbing guild watchlist for guild {guild_id}...")
         guild_config = self.get_guild_config(guild_id)
 
         return guild_config[self.CONFIG.settings.WATCHLIST.name]
@@ -220,7 +220,7 @@ class GuildCFG:
             game = SUPPORTED_GAMES.get_game(game)
 
         if not game:
-            logger.error(
+            logger.warning(
                 f"Attempt to set notifcation channel for non-existent game '{game}' in guild {guild_id}"
             )
             return False
@@ -239,7 +239,7 @@ class GuildCFG:
             game = SUPPORTED_GAMES.get_game(game)
 
         if not game:
-            logger.error(
+            logger.warning(
                 f"Attempt to get notifcation channel for non-existent game '{game}' in guild {guild_id}"
             )
             return False
@@ -277,25 +277,18 @@ class GuildCFG:
                 return reg.locales[0].value
 
     def set_region(self, guild_id: int | str, new_region: str):
-        logger.info(f"Setting region for guild {guild_id}...")
+        logger.debug(f"Setting region for guild {guild_id}...")
 
         current_region = self.get_guild_setting(guild_id, "region")
         current_locale = self.get_guild_setting(guild_id, "locale")
 
         if new_region == current_region:
-            logger.error(f"New region is the same as current region.")
-
             return False, self.CONFIG.errors.REGION_SAME_AS_CURRENT
 
         elif not new_region in self.CONFIG.SUPPORTED_REGIONS_STRING:
-            logger.error(f"Region '{new_region}' not supported, returning.")
-
             return False, self.CONFIG.errors.REGION_NOT_SUPPORTED
 
         elif not current_locale in self.get_region_supported_locales(new_region):
-            logger.error(
-                f"Locale '{current_locale}' not supported in {new_region}, setting locale to region default."
-            )
             self.update_guild_config(
                 guild_id, self.get_region_default_locale(new_region), "locale"
             )
@@ -309,22 +302,20 @@ class GuildCFG:
             return True, self.CONFIG.strings.REGION_UPDATED
 
     def get_region(self, guild_id: int | str):
-        logger.info(f"Fetching region for guild {guild_id}...")
+        logger.debug(f"Fetching region for guild {guild_id}...")
 
         return self.get_guild_setting(guild_id, "region")
 
     def set_locale(self, guild_id: int | str, new_locale: str):
-        logger.info(f"Setting locale for guild {guild_id}...")
+        logger.debug(f"Setting locale for guild {guild_id}...")
 
         current_region = self.get_guild_setting(guild_id, "region")
         current_locale = self.get_guild_setting(guild_id, "locale")
 
         if new_locale == current_locale:
-            logger.error(f"New locale is the same as current locale.")
             return False, self.CONFIG.errors.LOCALE_SAME_AS_CURRENT
 
         elif not self.is_locale_supported_by_region(new_locale, current_region):
-            logger.error(f"New locale not supported in current region.")
             return False, self.CONFIG.errors.LOCALE_NOT_SUPPORTED
 
         else:
@@ -334,6 +325,5 @@ class GuildCFG:
             )
 
     def get_locale(self, guild_id: int | str):
-        logger.info(f"Fetching locale for guild {guild_id}...")
-
+        logger.debug(f"Fetching locale for guild {guild_id}...")
         return self.get_guild_setting(guild_id, "locale")
