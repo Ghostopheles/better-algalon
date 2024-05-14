@@ -1,7 +1,7 @@
 import discord
 import logging
 
-from discord.ext import bridge, commands, pages, tasks
+from discord.ext import bridge, commands
 
 from .guild_config import GuildCFG
 
@@ -14,17 +14,10 @@ class GuildNUX(commands.Cog):
         self.guild_cfg = GuildCFG()
         self.watcher = self.bot.get_cog("CDNCog")
 
-    @commands.Cog.listener("on_guild_join")
-    async def on_guild_join(self, guild: discord.Guild):
-        logger.info(f"Joined new guild {guild.id}!")
-
-        if not self.guild_cfg.does_guild_config_exist(guild.id):
-            self.guild_cfg.add_guild_config(guild.id)
-
-        channel = guild.system_channel or guild.public_updates_channel
-        if not channel:
-            return
-
+    async def get_nux_message(
+        self,
+        guild: discord.Guild,
+    ) -> str:
         cmd_link_set_channel = self.watcher.get_command_link("setchannel")
         cmd_link_get_watchlist = self.watcher.get_command_link("watchlist")
         cmd_link_add_to_watchlist = self.watcher.get_command_link("addtowatchlist")
@@ -52,7 +45,20 @@ I'm {bot_display_name} and I'll be {guild.name}'s *personal* constellar :crystal
 
 If you have any questions, concerns, or suggestions, please reach out to {owner_mention} here on Discord, or open a GitHub issue [here](https://github.com/Ghostopheles/better-algalon).
 """
+        return nux_message
 
+    @commands.Cog.listener("on_guild_join")
+    async def on_guild_join(self, guild: discord.Guild):
+        logger.info(f"Joined new guild {guild.name} ({guild.id})!")
+
+        if not self.guild_cfg.does_guild_config_exist(guild.id):
+            self.guild_cfg.add_guild_config(guild.id)
+
+        channel = guild.system_channel or guild.public_updates_channel
+        if not channel:
+            return
+
+        nux_message = await self.get_nux_message(guild)
         await channel.send(nux_message)
 
 

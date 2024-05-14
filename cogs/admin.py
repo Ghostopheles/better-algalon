@@ -102,6 +102,15 @@ Members (approx): {guild.approximate_member_count}\n
         await message.add_reaction(emoji)
         await ctx.respond("gottem", ephemeral=True, delete_after=5)
 
+    @commands.is_owner()
+    @bridge.bridge_command(name="nuxtest", guild_ids=[HOME_GUILD], guild_only=True)
+    async def nuxtest(self, ctx: bridge.BridgeApplicationContext):
+        guild = ctx.guild
+        nux_cog = self.bot.get_cog("GuildNUX")
+        message = nux_cog.get_nux_message(guild)
+
+        await ctx.respond(message, ephemeral=True, delete_after=300)
+
 
 def setup(bot):
     bot.add_cog(AdminCog(bot))
