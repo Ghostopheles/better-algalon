@@ -153,6 +153,9 @@ class GuildCFG:
     # WATCHLIST IO
 
     def add_to_guild_watchlist(self, guild_id: int | str, branch: str):
+        if not SUPPORTED_PRODUCTS.has_key(branch):
+            return False, self.CONFIG.errors.BRANCH_NOT_VALID
+
         branch = SUPPORTED_PRODUCTS[branch].name
         logger.debug(f'Adding "{branch}" to watchlist for guild {guild_id}...')
 
@@ -176,6 +179,9 @@ class GuildCFG:
             return False, self.CONFIG.errors.ARG_BRANCH_NOT_VALID
 
     def remove_from_guild_watchlist(self, guild_id: int | str, branch: str):
+        if not SUPPORTED_PRODUCTS.has_key(branch):
+            return False, self.CONFIG.errors.BRANCH_NOT_VALID
+
         branch = SUPPORTED_PRODUCTS[branch].name
         logger.debug(f'Removing "{branch}" from watchlist for guild {guild_id}...')
         guild_config = self.get_guild_config(guild_id)
