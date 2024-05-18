@@ -165,7 +165,7 @@ class GuildCFG:
 
         if branch in watchlist:
             return False, self.CONFIG.errors.BRANCH_ALREADY_IN_WATCHLIST
-        elif self.CONFIG.PRODUCTS.has_key(branch):
+        else:
             if isinstance(watchlist, str):
                 watchlist = [watchlist, branch]
             else:
@@ -175,8 +175,6 @@ class GuildCFG:
                 guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST
             )
             return True, self.CONFIG.errors.OK
-        else:
-            return False, self.CONFIG.errors.ARG_BRANCH_NOT_VALID
 
     def remove_from_guild_watchlist(self, guild_id: int | str, branch: str):
         if not SUPPORTED_PRODUCTS.has_key(branch):
@@ -188,11 +186,9 @@ class GuildCFG:
 
         watchlist = guild_config[self.CONFIG.settings.WATCHLIST.name]
 
-        if not self.CONFIG.PRODUCTS.has_key(branch):
-            return False, self.CONFIG.errors.ARG_BRANCH_NOT_VALID
-        elif branch not in watchlist:
+        if branch not in watchlist:
             return False, self.CONFIG.errors.ARG_BRANCH_NOT_ON_WATCHLIST
-        elif self.CONFIG.PRODUCTS[branch]:
+        else:
             if isinstance(watchlist, str):
                 return False, self.CONFIG.errors.WATCHLIST_CANNOT_BE_EMPTY
             else:
@@ -202,11 +198,6 @@ class GuildCFG:
                 guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST
             )
             return True, self.CONFIG.errors.OK
-        else:
-            return (
-                False,
-                self.CONFIG.errors.ARG_BRANCH_NOT_VALID,
-            )  # this should never happen?
 
     def get_guild_watchlist(self, guild_id: int | str):
         logger.debug(f"Grabbing guild watchlist for guild {guild_id}...")
