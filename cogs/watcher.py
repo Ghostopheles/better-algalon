@@ -63,24 +63,6 @@ class CDNCog(commands.Cog):
             self.cdn_auto_refresh.add_exception_type(httpx.ConnectTimeout)
             self.cdn_auto_refresh.start()
             self.integrity_check.start()
-            self.check_loop_health.start()
-
-    @tasks.loop(minutes=6)
-    async def check_loop_health(self):
-        last_update = self.last_update
-
-        if last_update == 0 and self.check_loop_health.current_loop == 0:
-            return
-
-        now = time.time()
-        buffer = 45  # seconds
-
-        fetch_interval = self.live_cfg.get_fetch_interval()
-        mins_since_last_update = ((now - last_update) + buffer) * 60
-
-        if mins_since_last_update > fetch_interval:
-            message = f"Algalon CDN refresh loop stopped\nLast update: {self.last_update_formatted}"
-            await self.bot.send_message_to_owner(message)
 
     @tasks.loop(hours=24)
     async def integrity_check(self):
