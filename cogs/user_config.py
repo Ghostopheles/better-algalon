@@ -2,10 +2,10 @@ import os
 import json
 import logging
 
-from typing import Union, TypeVar, Optional
+from typing import TypeVar, Optional
 
 from .config import CacheConfig
-from .config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
+from .config import SUPPORTED_PRODUCTS
 
 SELF_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -211,7 +211,8 @@ class UserConfigFile:
         self.stale = True
         if exc_type is not None:
             logger.error(
-                f"Exception of type {exc_type.__name__} occurred within UserConfigFile context: {exc_value}"
+                f"Exception of type {exc_type.__name__} occurred within UserConfigFile context: {exc_value}",
+                exc_info=True,
             )
             return
 

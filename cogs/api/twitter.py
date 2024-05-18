@@ -52,7 +52,7 @@ class Twitter:
 
         logger.info("Sending tweet...")
         if nonce in self.sent_tokens:
-            logger.info("Tweet already sent for this package. Skipping...")
+            logger.critical("Tweet already sent for this package. Skipping...")
             return
 
         is_warcraft = False
@@ -87,16 +87,13 @@ class Twitter:
                     self.sent_tokens.append(nonce)
                     return
                 else:
-                    logger.error(
-                        f"Error occurred sending tweet. Please investigate.\n{response.errors or response}"  # type: ignore
+                    logger.critical(
+                        f"Error occurred sending tweet.\n{response.errors or response}"  # type: ignore
                     )
                     return response
-            except Exception as exc:
-                logger.error(
-                    "Error occurred sending tweet. Please investigate.", exc_info=exc
-                )
+            except Exception:
+                logger.critical("Error occurred sending tweet.", exc_info=True)
                 return text
         else:
             logger.info("Debug mode enabled. Skipping tweet...")
-            logger.debug(f"Tweet text:\n{text}")
             return

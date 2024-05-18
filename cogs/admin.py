@@ -1,11 +1,9 @@
-import os
+import io
 import logging
 import discord
 
 from time import time
-from discord.ext import bridge, commands, tasks
-
-from .config import LiveConfig
+from discord.ext import bridge, commands
 
 logger = logging.getLogger("discord.admin")
 
@@ -35,11 +33,11 @@ class AdminCog(commands.Cog):
             return
 
         cog_name_internal = f"cogs.{cog_name}"
-        logger.debug(f"Reloading {cog_name_internal}")
+        logger.info(f"Reloading {cog_name_internal}")
         try:
             self.bot.reload_extension(cog_name_internal)
         except Exception as exc:
-            logger.error(f"Error reloading {cog_name_internal}.")
+            logger.error(f"Error reloading cog '{cog_name_internal}'", exc_info=True)
             await self.bot.notify_owner_of_command_exception(ctx, exc)
             await ctx.interaction.response.send_message(
                 f"busted.\n`{exc}`", ephemeral=True, delete_after=300
@@ -56,22 +54,19 @@ class AdminCog(commands.Cog):
     @bridge.bridge_command(name="guilds", guild_ids=[HOME_GUILD], guild_only=True)
     async def get_all_guilds(self, ctx: bridge.BridgeApplicationContext):
         """Dumps details for all guilds Algalon is a part of."""
-        message = "```\n"
+        await ctx.defer()
+        message = ""
         for guild in self.bot.guilds:
             guild = await self.bot.fetch_guild(guild.id)
-            message += f"""
-{guild.name}
+            message += f"""Guild: {guild.name}
 ID: {guild.id}
-Members (approx): {guild.approximate_member_count}
-Description: {guild.description or 'N/A'}
-Icon: {guild.icon.url if guild.icon else 'N/A'}
-Banner: {guild.banner.url if guild.banner else 'N/A'}
+Members (approx): {guild.approximate_member_count}\n
 """
 
-        message += "```"
-        await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=300
-        )
+        message_bytes = io.BytesIO(message.encode())
+        file = discord.File(message_bytes, filename="guilds.txt")
+        await ctx.respond(file=file)
+        message_bytes.close()
 
     @commands.is_owner()
     @bridge.bridge_command(name="forceupdate", guild_ids=[HOME_GUILD], guild_only=True)
@@ -80,7 +75,7 @@ Banner: {guild.banner.url if guild.banner else 'N/A'}
         watcher = self.bot.get_cog("CDNCog")
         await ctx.defer()
         await watcher.cdn_auto_refresh()
-        await ctx.respond("Updates complete.")
+        await ctx.respond("Updates complete.", ephemeral=True, delete_after=300)
 
     @bridge.bridge_command(
         name="alien",
@@ -106,6 +101,15 @@ Banner: {guild.banner.url if guild.banner else 'N/A'}
 
         await message.add_reaction(emoji)
         await ctx.respond("gottem", ephemeral=True, delete_after=5)
+
+    @commands.is_owner()
+    @bridge.bridge_command(name="nuxtest", guild_ids=[HOME_GUILD], guild_only=True)
+    async def nuxtest(self, ctx: bridge.BridgeApplicationContext):
+        guild = ctx.guild
+        nux_cog = self.bot.get_cog("GuildNUX")
+        message = nux_cog.get_nux_message(guild)
+
+        await ctx.respond(message, ephemeral=True, delete_after=300)
 
 
 def setup(bot):

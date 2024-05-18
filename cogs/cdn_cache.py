@@ -34,20 +34,20 @@ class CDNCache:
 
     def patch_cdn_keys(self):
         with open(self.cdn_path, "r+") as file:
-            logger.info("Patching CDN file...")
+            logger.debug("Patching CDN file...")
             file_json = json.load(file)
             build_data = file_json["buildInfo"]
             try:
                 for branch in build_data:
                     for key, value in self.CONFIG.REQUIRED_KEYS_DEFAULTS.items():
                         if key not in build_data[branch]:
-                            logger.info(
+                            logger.debug(
                                 f"Adding {key} to {branch} with value {value}..."
                             )
                             build_data[branch][key] = value
 
-            except KeyError as exc:
-                logger.error("KeyError while patching CDN file", exc_info=exc)
+            except KeyError:
+                logger.error("KeyError while patching CDN file", exc_info=True)
 
             file_json["buildInfo"] = build_data
 
@@ -77,7 +77,9 @@ class CDNCache:
             if file_json[self.CONFIG.indices.LAST_UPDATED_BY] != self.PLATFORM and (
                 time.time() - file_json[self.CONFIG.indices.LAST_UPDATED_AT]
             ) < (self.fetch_interval * 60):
-                logger.info("Skipping build comparison, data is outdated")
+                logger.info(
+                    f"Skipping build comparison for '{branch}', data is outdated"
+                )
                 return False
 
             if not "encrypted" in file_json:  # just a safeguard
@@ -116,7 +118,7 @@ class CDNCache:
             return file_json["buildInfo"].keys()
 
     def create_cache_backup(self):
-        logger.info("Backing up CDN cache file...")
+        logger.debug("Backing up CDN cache file...")
         backup_path = os.path.join(self.cache_path, "backups")
         if not os.path.exists(backup_path):
             os.mkdir(backup_path)
@@ -134,7 +136,7 @@ class CDNCache:
             backup_path, f"cdn_{len(backup_files)+1}.json.bak"
         )
         shutil.copyfile(self.cdn_path, backup_filename)
-        logger.info("Backup complete!")
+        logger.debug("Backup complete!")
 
     def save_build_data(self, branch: str, data: dict):
         """Saves new build data to the `cdn.json` file."""
@@ -162,7 +164,7 @@ class CDNCache:
 
     async def fetch_cdn(self):
         """This is sort of a disaster."""
-        logger.info(self.CONFIG.strings.LOG_FETCH_DATA)
+        logger.info("Fetching CDN versions...")
         self.create_cache_backup()
         coros = [
             self.fetch_branch_ribbit(branch.name) for branch in self.CONFIG.PRODUCTS
@@ -173,11 +175,11 @@ class CDNCache:
         return new_data
 
     async def fetch_branch_ribbit(self, branch: str):
-        logger.info(f"Grabbing versions for {branch}")
+        logger.info(f"Fetching versions for {branch}...")
         _data, seqn = await RibbitClient().fetch_versions_for_product(product=branch)
 
         if not _data:
-            logger.error(f"No response for {branch}.")
+            logger.warning(f"No response for {branch}")
             return
 
         region = "PUB-29" if branch == "catalogs" else "us"
@@ -185,7 +187,7 @@ class CDNCache:
         _data = _data[region]
         data = _data.__dict__()
 
-        logger.info(f"Comparing build data for {branch}")
+        logger.debug(f"Comparing build data for {branch}")
         is_new = self.compare_builds(branch, data)
 
         if is_new:
@@ -197,9 +199,7 @@ class CDNCache:
                 output_data["old"] = old_data
 
             output_data["branch"] = branch
-            logger.debug(f"Updated build payload: {output_data}")
-
-            logger.info(f"Saving new build data for {branch}")
+            logger.debug(f"Saving new build data for {branch}. New data: {output_data}")
             self.save_build_data(branch, data)
 
             return output_data

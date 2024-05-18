@@ -9,7 +9,7 @@ from .locale import Locales
 
 ## GLOBAL CONFIGURATION
 
-FETCH_INTERVAL = 5
+FETCH_INTERVAL = 1
 
 
 class Singleton:
@@ -442,7 +442,7 @@ class LiveConfig(Singleton):
     def __get_default_cfg(self):
         cfg = {
             "products": {},
-            "meta": {"fetch_interval": 5},
+            "meta": {"fetch_interval": FETCH_INTERVAL},
         }
         for branch in SUPPORTED_PRODUCTS:
             cfg["products"][branch.name] = {
