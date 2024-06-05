@@ -182,7 +182,18 @@ class CDNCache:
             logger.warning(f"No response for {branch}")
             return
 
-        region = "PUB-29" if branch == "catalogs" else "us"
+        if branch == "catalogs":
+            highest_region = None
+            highest_build = 0
+            for region, data in _data.items():
+                build_text = int(data.build_text)
+                if build_text > highest_build:
+                    highest_build = build_text
+                    highest_region = region
+
+            region = highest_region
+        else:
+            region = "us"
 
         _data = _data[region]
         data = _data.__dict__()
