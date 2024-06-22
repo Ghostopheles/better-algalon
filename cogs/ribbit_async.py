@@ -156,7 +156,7 @@ class RibbitClient:
         output = {}
 
         for region in data:
-            if region != "us" and region != "PUB-29":
+            if region != "us" and product != "catalogs":
                 continue
 
             d = data[region]
@@ -164,7 +164,7 @@ class RibbitClient:
             regionData["region"] = region
             regionData["branch"] = product
 
-            if region != "PUB-29":
+            if product != "catalogs":
                 try:
                     encrypted = await TACT.is_encrypted(
                         product, regionData["ProductConfig"]
