@@ -1,7 +1,7 @@
 # better-algalon
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) ![LastUpdate](https://img.shields.io/github/last-commit/Ghostamoose/better-algalon?style=flat-square) [![Docker](https://github.com/Ghostamoose/better-algalon/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Ghostamoose/better-algalon/actions/workflows/docker-publish.yml)
 
-v1.9 - Yttrium
+v1.9.2 - Gallium
 
 A bot that watches Blizzard's CDN and automatically posts new build updates to specified Discord channels.
 
@@ -82,23 +82,23 @@ Algalon provides a number of commands to control your guild's (server) watchlist
 
 #### Watchlist Controls
 
-`/addtowatchlist`*: Adds a specific branch to your guild's watchlist. Specify multiple branches at once by separating them with a comma.
+`/watchlist add`*: Adds a specific branch to your guild's watchlist. Specify multiple branches at once by separating them with a comma.
 
-`/removefromwatchlist`*: Removes a specific branch to your guild's watchlist.
+`/watchlist remove`*: Removes a specific branch to your guild's watchlist.
 
-`/watchlist`: Returns your guild's current watchlist.
+`/watchlist view`: Returns your guild's current watchlist.
 
 #### Notification Channel Controls
 
-`/setchannel`*: Sets the channel in which it's invoked as the notification channel for your guild. Optionally, specify a game to set the notification channel for that game. Defaults to Warcraft.
+`/channel set`*: Sets the channel in which it's invoked as the notification channel for your guild. Optionally, specify a game to set the notification channel for that game. Defaults to Warcraft.
 
-`/getchannel`: Returns the current notification channel for your guild. Optionally, specify a game to get the notification channel for that game. Defaults to Warcraft.
+`/channel get`: Returns the current notification channel for your guild. Optionally, specify a game to get the notification channel for that game. Defaults to Warcraft.
 
 #### User DM Updates
 
-`/subscribe`: Subscribes the user to DM updates for the given branches. Supports comma-delimited input.
+`/dm subscribe`: Subscribes the user to DM updates for the given branches. Supports comma-delimited input.
 
-`/unsubscribe`: Unsubscribes the user from DM updates for the given branches. Supports comma-delimited input.
+`/dm unsubscribe`: Unsubscribes the user from DM updates for the given branches. Supports comma-delimited input.
 
-`/subscribed`: Returns all the branches you're currently subscribed to.
+`/dm view`: Returns all the branches you're currently subscribed to.
 
