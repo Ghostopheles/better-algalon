@@ -3,9 +3,10 @@ import json
 
 from discord import Color
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Union
 from enum import StrEnum
-from .locale import Locales
+
+from cogs.locale import Locales
 
 ## GLOBAL CONFIGURATION
 
@@ -23,7 +24,7 @@ class Singleton:
 
 
 class Region(Singleton):
-    def __init__(self, region_name: str, valid_locales: list):
+    def __init__(self, region_name: str, valid_locales: list[Locales]):
         self.name = region_name
         self.locales = valid_locales
 
@@ -115,7 +116,7 @@ class SUPPORTED_PRODUCTS(StrEnum):
     catalogs = "Catalogs"
 
     @classmethod
-    def has_key(cls, value):
+    def has_key(cls, value) -> bool:
         return value in cls._member_names_
 
 
@@ -218,7 +219,7 @@ class CacheDefaults(Singleton):
 @dataclass
 class Setting:
     name: str
-    default: str
+    default: Union[str, int, list[str]]
 
 
 class Settings(Singleton):
@@ -244,7 +245,7 @@ class Settings(Singleton):
 
 
 class UserSettings(Singleton):
-    WATCHLIST = Setting("watchlist", [])
+    WATCHLIST = Setting("watchlist", list())
 
 
 class ErrorStrings(Singleton):
@@ -404,7 +405,7 @@ class WatcherConfig(Singleton):
     cache_defaults = CacheDefaults
 
     @staticmethod
-    def get_game_from_branch(branch: str) -> SUPPORTED_GAMES:
+    def get_game_from_branch(branch: str) -> Optional[SUPPORTED_GAMES]:
         product = SUPPORTED_PRODUCTS[branch]
         if product in WOW_BRANCHES:
             return SUPPORTED_GAMES.Warcraft
@@ -414,6 +415,8 @@ class WatcherConfig(Singleton):
             return SUPPORTED_GAMES.Gryphon
         elif product in BNET_BRANCHES:
             return SUPPORTED_GAMES.BattleNet
+
+        return SUPPORTED_GAMES.BattleNet
 
 
 ## BLIZZARD API CONFIGURATION
@@ -445,7 +448,7 @@ class LiveConfig(Singleton):
             "meta": {"fetch_interval": FETCH_INTERVAL},
         }
         for branch in SUPPORTED_PRODUCTS:
-            cfg["products"][branch.name] = {
+            cfg["products"][branch.name] = {  # type: ignore
                 "public_name": branch.value,
                 "test_branch": branch in TEST_BRANCHES,
             }
@@ -455,17 +458,17 @@ class LiveConfig(Singleton):
         with open(self.cfg_path, "r") as f:
             data = json.load(f)
 
-        return data
+        return data  # type: ignore
 
-    def get_cfg_value(self, category: str, key: str) -> Optional[str]:
+    def get_cfg_value(self, category: str, key: str) -> Optional[Union[str, int, bool]]:
         data = self.__open()
 
         if category in data.keys():
             section = data[category]
             if key in section.keys():
-                return section[key]
+                return section[key]  # type: ignore
 
-        return
+        return None  # type: ignore
 
     def get_all_products(self):
         data = self.__open()
