@@ -2,7 +2,6 @@ import io
 import logging
 import discord
 
-from time import time
 from discord.ext import bridge, commands
 
 logger = logging.getLogger("discord.admin")
@@ -14,15 +13,22 @@ DEBUG_GUILDS = [
     1144396478840844439,
 ]
 
-HOME_GUILD = 318246001309646849
+HOME_GUILD = [318246001309646849]
 
 
 class AdminCog(commands.Cog):
     def __init__(self, bot: bridge.Bot):
         self.bot = bot
 
+    admin_commands = discord.SlashCommandGroup(
+        name="admin",
+        description="Administration commands",
+        guild_only=True,
+        guild_ids=HOME_GUILD,
+    )
+
     @commands.is_owner()
-    @bridge.bridge_command(name="reload", guild_ids=[HOME_GUILD], guild_only=True)
+    @admin_commands.command(name="reload")
     async def reload_cog(self, ctx: bridge.BridgeApplicationContext, cog_name: str):
         """Reloads a currently loaded cog."""
 
@@ -51,7 +57,7 @@ class AdminCog(commands.Cog):
         )
 
     @commands.is_owner()
-    @bridge.bridge_command(name="guilds", guild_ids=[HOME_GUILD], guild_only=True)
+    @admin_commands.command(name="guilds")
     async def get_all_guilds(self, ctx: bridge.BridgeApplicationContext):
         """Dumps details for all guilds Algalon is a part of."""
         await ctx.defer()
@@ -69,13 +75,24 @@ Members (approx): {guild.approximate_member_count}\n
         message_bytes.close()
 
     @commands.is_owner()
-    @bridge.bridge_command(name="forceupdate", guild_ids=[HOME_GUILD], guild_only=True)
+    @admin_commands.command(name="forceupdate")
     async def force_update_check(self, ctx: bridge.BridgeApplicationContext):
         """Forces a CDN check."""
         watcher = self.bot.get_cog("CDNCog")
         await ctx.defer()
         await watcher.cdn_auto_refresh()
         await ctx.respond("Updates complete.", ephemeral=True, delete_after=300)
+
+    @commands.is_owner()
+    @admin_commands.command(name="nuxtest")
+    async def nuxtest(self, ctx: bridge.BridgeApplicationContext):
+        guild = ctx.guild
+        nux_cog = self.bot.get_cog("GuildNUX")
+        message = await nux_cog.get_nux_message(guild)
+
+        await ctx.respond(message, ephemeral=True, delete_after=300)
+
+    # funni commands
 
     @bridge.bridge_command(
         name="alien",
@@ -101,15 +118,6 @@ Members (approx): {guild.approximate_member_count}\n
 
         await message.add_reaction(emoji)
         await ctx.respond("gottem", ephemeral=True, delete_after=5)
-
-    @commands.is_owner()
-    @bridge.bridge_command(name="nuxtest", guild_ids=[HOME_GUILD], guild_only=True)
-    async def nuxtest(self, ctx: bridge.BridgeApplicationContext):
-        guild = ctx.guild
-        nux_cog = self.bot.get_cog("GuildNUX")
-        message = nux_cog.get_nux_message(guild)
-
-        await ctx.respond(message, ephemeral=True, delete_after=300)
 
 
 def setup(bot):
