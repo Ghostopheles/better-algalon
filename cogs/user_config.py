@@ -2,7 +2,7 @@ import os
 import json
 import logging
 
-from typing import TypeVar, Optional
+from typing import Optional, Union, Sequence, TypeVar, Any
 
 from .config import CacheConfig
 from .config import SUPPORTED_PRODUCTS
@@ -11,20 +11,17 @@ SELF_PATH = os.path.dirname(os.path.realpath(__file__))
 
 logger = logging.getLogger("discord.cdn.user-cfg")
 
-# userID type alias, have to use the old way because old python :(
-UID = TypeVar("UID", str, int)
-
 
 class UserEntry:
-    def __init__(self, user_id: UID, user_entry: Optional[dict] = None):
+    def __init__(self, user_id: int, user_entry: Optional[dict] = None):  # type: ignore
         self.__entry = user_entry if user_entry else self.__get_default_entry()
         self.user_id = str(user_id)
-        self.watchlist: list[str] = self.__entry["watchlist"]
+        self.watchlist: list[str] = self.__entry["watchlist"]  # type: ignore
 
-    def __get_default_entry(self) -> dict:
-        return {"watchlist": []}
+    def __get_default_entry(self) -> dict:  # type: ignore
+        return {"watchlist": list()}
 
-    def to_json(self) -> dict:
+    def to_json(self) -> dict:  # type: ignore
         return {"watchlist": self.watchlist}
 
     def get_user_id(self) -> str:
@@ -52,19 +49,19 @@ class UserEntry:
 
 
 class UserTable:
-    def __init__(self, user_table: dict):
+    __user_lookup: Sequence[int]
+
+    def __init__(self, user_table: dict):  # type: ignore
         self.__user_table = user_table
         self.__users = self.__generate_users()
-        self.__user_lookup = None
-        self.__update_lookup()  # populates __user_lookup w/ __users keys
-
         self.__current_index = 0
-        self.__num_users = len(self.__user_lookup)
+        self.__num_users = 0
+        self.__update_lookup()  # populates __user_lookup w/ __users keys
 
     def __iter__(self):
         return self
 
-    def __next__(self) -> tuple[UID, UserEntry]:
+    def __next__(self) -> tuple[int, UserEntry]:
         if self.__current_index < self.__num_users:
             key = self.__user_lookup[self.__current_index]
             entry = self.__users[key]
@@ -74,7 +71,7 @@ class UserTable:
             self.__current_index = 0
             raise StopIteration
 
-    def __generate_users(self) -> dict[UID, UserEntry]:
+    def __generate_users(self) -> dict[int, UserEntry]:
         users = {}
         for user_id, user_entry in self.__user_table.items():
             users[user_id] = UserEntry(user_id, user_entry)
@@ -84,7 +81,7 @@ class UserTable:
     # self.__user_lookup helps with iteration support so we want to keep it up to date
     # this might be stupid idk
     def __update_lookup(self):
-        self.__user_lookup = list(self.__users.keys())
+        self.__user_lookup = [int(user) for user in self.__user_table.keys()]
         self.__num_users = len(self.__user_lookup)
 
     def to_json(self):
@@ -94,26 +91,28 @@ class UserTable:
     def get_default(cls):
         return {}
 
-    def user_exists(self, user_id: UID):
+    def user_exists(self, user_id: int):
         return user_id in self.__users.keys()
 
-    def get_or_add_user(self, user_id: UID) -> UserEntry:
+    def get_or_add_user(self, user_id: int) -> Optional[UserEntry]:
         if self.user_exists(user_id):
             return self.get_user(user_id)
         else:
             return self.add_user(user_id)
 
-    def get_user(self, user_id: UID) -> Optional[UserEntry]:
-        user_id = str(user_id)
+    def get_user(self, user_id: int) -> Optional[UserEntry]:
+        user_id = int(user_id)
 
         if self.user_exists(user_id):
             return self.__users[user_id]
 
-    def add_user(self, user_id: UID) -> Optional[UserEntry]:
-        user_id = str(user_id)
+        return None
+
+    def add_user(self, user_id: int) -> Optional[UserEntry]:
+        user_id = int(user_id)
 
         if self.user_exists(user_id):
-            return
+            return None
 
         entry = UserEntry(user_id)
         self.__users[user_id] = entry
@@ -121,8 +120,8 @@ class UserTable:
 
         return entry
 
-    def remove_user(self, user_id: UID) -> bool:
-        user_id = str(user_id)
+    def remove_user(self, user_id: int) -> bool:
+        user_id = int(user_id)
 
         if not self.user_exists(user_id):
             return False
@@ -131,18 +130,18 @@ class UserTable:
         self.__update_lookup()
         return True
 
-    def get_watchlist_for_user(self, user_id: UID) -> Optional[list[str]]:
-        user_id = str(user_id)
+    def get_watchlist_for_user(self, user_id: int) -> Optional[list[str]]:
+        user_id = int(user_id)
 
         if not self.user_exists(user_id):
-            return
+            return None
 
         user = self.__users[user_id]
         return user.get_watchlist()
 
 
 class LookupTable:
-    def __init__(self, lookup: dict[str, list[UID]]):
+    def __init__(self, lookup: dict[str, list[int]]):
         self.__lookup = lookup
 
     def to_json(self):
@@ -155,33 +154,28 @@ class LookupTable:
     def has_branch(self, branch: str):
         return branch in self.__lookup.keys()
 
-    def is_subscribed(self, user_id: UID, branch: str):
+    def is_subscribed(self, user_id: int, branch: str):
         return user_id in self.__lookup[branch]
 
-    def get_subscribers_for_branch(
-        self, branch: str, convert_to_int: bool = False
-    ) -> list[UID]:
+    def get_subscribers_for_branch(self, branch: str) -> Optional[list[int]]:
         if not self.has_branch(branch):
-            return
+            return None
 
-        if convert_to_int:
-            subscribers = [int(uid) for uid in self.__lookup[branch]]
-        else:
-            subscribers = [str(uid) for uid in self.__lookup[branch]]
+        subscribers = [int(uid) for uid in self.__lookup[branch]]
         return subscribers
 
-    def add_subscriber_to_branch(self, user_id: UID, branch: str) -> bool:
+    def add_subscriber_to_branch(self, user_id: int, branch: str) -> bool:
         if not self.has_branch(branch) or self.is_subscribed(user_id, branch):
             return False
 
-        self.__lookup[branch].append(str(user_id))
+        self.__lookup[branch].append(int(user_id))
         return True
 
-    def remove_subscriber_from_branch(self, user_id: UID, branch: str) -> bool:
+    def remove_subscriber_from_branch(self, user_id: int, branch: str) -> bool:
         if not self.has_branch(branch) or not self.is_subscribed(user_id, branch):
             return False
 
-        self.__lookup[branch].remove(str(user_id))
+        self.__lookup[branch].remove(int(user_id))
         return True
 
 
@@ -229,7 +223,7 @@ class UserConfigFile:
         with open(self.CONFIG_PATH, "w") as f:
             json.dump(default, f, indent=4)
 
-    def __populate(self, config: dict):
+    def __populate(self, config: dict):  # type: ignore
         self.__config = config
 
         self.lookup = LookupTable(self.__config["lookup"])
@@ -242,15 +236,15 @@ class UserConfigFile:
 
     def get_watchlist(self, user_id: int) -> Optional[list[str]]:
         if not self.__active:
-            return
+            return None
 
         if self.stale:
-            return
+            return None
 
-        user_id = str(user_id)
+        user_id = int(user_id)
         user = self.users.get_user(user_id)
         if not user:
-            return
+            return None
 
         return user.get_watchlist()
 
@@ -264,8 +258,10 @@ class UserConfigFile:
         if not self.lookup.has_branch(branch):
             return False, "Invalid branch"
 
-        user_id = str(user_id)
+        user_id = int(user_id)
         user = self.users.get_or_add_user(user_id)
+        if user is None:
+            return False, "User not found"
 
         if user.is_on_watchlist(branch):
             return False, "Already subscribed to branch"
@@ -293,7 +289,7 @@ class UserConfigFile:
         if not self.lookup.has_branch(branch):
             return False, "Invalid branch"
 
-        user_id = str(user_id)
+        user_id = int(user_id)
         user = self.users.get_user(user_id)
 
         if not user:
@@ -320,86 +316,4 @@ class ConfigFileEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, UserConfigFile):
             return obj.to_json()
-        return super().default(self, obj)
-
-
-class ConfigFileDecoder(json.JSONDecoder):
-    def __init__(self, config_file: UserConfigFile, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.config_file = config_file
-
-    def decode(self, json_string):
-        parsed_data = super().decode(json_string)
-        if "users" in parsed_data and "lookup" in parsed_data and self.config_file:
-            return self.config_file.__populate()
-        return parsed_data
-
-
-class UserCFG:
-    CONFIG = CacheConfig()
-
-    def is_valid_branch(self, branch: str):
-        return SUPPORTED_PRODUCTS.has_key(branch)
-
-    def lookup(self, branch: str) -> list[int]:
-        data = self.read()
-
-        return data["lookup"][branch]
-
-    def make_unique(self, obj: list) -> list:
-        return list(set(obj))
-
-    def subscribe(self, user_id: int, branch: str) -> tuple[bool, str]:
-        if not self.is_valid_branch(branch):
-            return False, "Invalid branch"
-
-        config = self.read()
-
-        lookup = config["lookup"][branch]
-        if user_id in lookup:
-            return False, "Already subscribed"
-
-        lookup.append(user_id)
-        lookup = self.make_unique(lookup)
-
-        user_id = str(user_id)
-        user_config = config["users"]
-        if not user_id in user_config.keys():
-            user_config[user_id] = self.get_default_user_entry()
-
-        watchlist = user_config[user_id]["watchlist"]
-        watchlist.append(branch)
-        watchlist = self.make_unique(watchlist)
-
-        self.write(config)
-        return True, "Success"
-
-    def get_subscribed(self, user_id: int):
-        config = self.read()
-
-        user_id = str(user_id)
-        users = config["users"]
-        if user_id not in users.keys():
-            users[user_id] = self.get_default_user_entry()
-
-        watchlist = config["users"][user_id]["watchlist"]
-        return watchlist
-
-    def unsubscribe(self, user_id: int, branch: str) -> tuple[bool, str]:
-        if not self.is_valid_branch(branch):
-            return False, "Invalid branch"
-
-        config = self.read()
-
-        lookup = config["lookup"][branch]
-        if user_id not in lookup:
-            return False, "Not subscribed"
-
-        lookup.remove(user_id)
-
-        user_id = str(user_id)
-        user_watchlist = config["users"][user_id]["watchlist"]
-        user_watchlist.remove(branch)
-
-        self.write(config)
-        return True, "Success"
+        return super().default(self, obj)  # type: ignore
