@@ -1,14 +1,7 @@
 import enum
 
 
-class LocalesMeta(enum.EnumMeta):
-    def __contains__(cls, item):
-        return isinstance(item, cls) or item in [
-            v.value for v in cls.__members__.values()  # type: ignore
-        ]
-
-
-class Locales(enum.Enum, metaclass=LocalesMeta):
+class Locales(enum.Enum):
     en_US = "en_US"
     en_GB = "en_GB"
 
