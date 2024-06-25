@@ -49,7 +49,7 @@ I'm {bot_display_name} and I'll be {guild.name}'s *personal* constellar :crystal
 
 :blue_heart: Thanks for trying out Algalon! :blue_heart:
 
-If you have any questions, concerns, or suggestions, please reach out to {owner_mention} here on Discord, or open a GitHub issue [here](https://github.com/Ghostopheles/better-algalon).
+If you have any questions, concerns, or suggestions, please reach out to {owner_mention} here on Discord, or open a GitHub issue [here](https://github.ghst.tools/better-algalon).
 """
         return nux_message
 
