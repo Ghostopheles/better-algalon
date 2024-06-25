@@ -1,6 +1,7 @@
 import discord
 import logging
 
+from typing import Union
 from discord.ext import bridge
 
 logger = logging.getLogger("discord")
@@ -30,7 +31,9 @@ class CDNBot(bridge.Bot):
         logger.info(f"{self.user.name} has successfully connected to Discord!")  # type: ignore
 
     async def notify_owner_of_command_exception(
-        self, ctx: discord.ApplicationContext, exc: discord.DiscordException
+        self,
+        ctx: discord.ApplicationContext,
+        exc: Union[discord.DiscordException, Exception],
     ):
         message = f"An error occurred in command `{ctx.command}`:\n```py\n{exc.__class__.__name__}\n"
         message += f"Args:\n"

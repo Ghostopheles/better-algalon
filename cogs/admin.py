@@ -4,6 +4,9 @@ import discord
 
 from discord.ext import bridge, commands
 
+from cogs.watcher import CDNCog
+from cogs.bot import CDNBot
+
 logger = logging.getLogger("discord.admin")
 
 DEBUG_GUILDS = [
@@ -17,7 +20,7 @@ HOME_GUILD = [318246001309646849]
 
 
 class AdminCog(commands.Cog):
-    def __init__(self, bot: bridge.Bot):
+    def __init__(self, bot: CDNBot):
         self.bot = bot
 
     admin_commands = discord.SlashCommandGroup(
@@ -79,8 +82,14 @@ Members (approx): {guild.approximate_member_count}\n
     async def force_update_check(self, ctx: bridge.BridgeApplicationContext):
         """Forces a CDN check."""
         watcher = self.bot.get_cog("CDNCog")
+        if watcher is None:
+            await ctx.respond(
+                "Watcher cog not found.", ephemeral=True, delete_after=300
+            )
+            return
+
         await ctx.defer()
-        await watcher.cdn_auto_refresh()
+        await watcher.cdn_auto_refresh()  # type: ignore
         await ctx.respond("Updates complete.", ephemeral=True, delete_after=300)
 
     @commands.is_owner()
@@ -88,7 +97,7 @@ Members (approx): {guild.approximate_member_count}\n
     async def nuxtest(self, ctx: bridge.BridgeApplicationContext):
         guild = ctx.guild
         nux_cog = self.bot.get_cog("GuildNUX")
-        message = await nux_cog.get_nux_message(guild)
+        message = await nux_cog.get_nux_message(guild)  # type: ignore
 
         await ctx.respond(message, ephemeral=True, delete_after=300)
 
@@ -115,6 +124,10 @@ Members (approx): {guild.approximate_member_count}\n
         emoji = self.bot.get_emoji(fatcathuh)
         if emoji is None:
             emoji = self.bot.get_emoji(diffs)
+
+        if emoji is None:
+            await ctx.respond("Unable to find emoji", ephemeral=True, delete_after=5)
+            return
 
         await message.add_reaction(emoji)
         await ctx.respond("gottem", ephemeral=True, delete_after=5)
