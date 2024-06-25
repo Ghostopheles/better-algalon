@@ -98,15 +98,21 @@ class CDNCog(commands.Cog):
 
         logger.info("Cache configuration check complete")
 
-    def get_command_link(self, command: str):
-        all_cmds = self.get_commands()
+    def get_command_link(
+        self, command: str, cmd_group: Optional[discord.SlashCommandGroup] = None
+    ):
+        if cmd_group is not None and isinstance(cmd_group, discord.SlashCommandGroup):
+            all_cmds = cmd_group.subcommands
+        else:
+            all_cmds = self.get_commands()
+
         for cmd in all_cmds:
             if isinstance(cmd, bridge.BridgeCommand):
                 slash = cmd.slash_variant
                 if slash and slash.name == command:
                     return slash.mention
             elif isinstance(cmd, discord.SlashCommand):
-                if cmd.name == command and cmd.id is not None:
+                if cmd.qualified_name == command:
                     return cmd.mention
 
         return f"`/{command}`"

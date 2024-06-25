@@ -18,11 +18,17 @@ class GuildNUX(commands.Cog):
         self,
         guild: discord.Guild,
     ) -> str:
-        cmd_link_set_channel = self.watcher.get_command_link("setchannel")
-        cmd_link_get_watchlist = self.watcher.get_command_link("watchlist")
-        cmd_link_add_to_watchlist = self.watcher.get_command_link("addtowatchlist")
+        cmd_link_set_channel = self.watcher.get_command_link(
+            "channel set", self.watcher.channel_commands
+        )
+        cmd_link_get_watchlist = self.watcher.get_command_link(
+            "watchlist view", self.watcher.watchlist_commands
+        )
+        cmd_link_add_to_watchlist = self.watcher.get_command_link(
+            "watchlist add", self.watcher.watchlist_commands
+        )
         cmd_link_rm_from_watchlist = self.watcher.get_command_link(
-            "removefromwatchlist"
+            "watchlist remove", self.watcher.watchlist_commands
         )
         cmd_link_data = self.watcher.get_command_link("cdndata")
 
