@@ -24,7 +24,6 @@ class AdminCog(commands.Cog):
         name="admin",
         description="Administration commands",
         guild_ids=HOME_GUILD,
-        contexts={discord.InteractionContextType.guild},
     )
 
     @commands.is_owner()
