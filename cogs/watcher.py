@@ -493,14 +493,26 @@ class CDNCog(commands.Cog):
 
     # DISCORD COMMANDS
 
-    @bridge.bridge_command(name="cdndata")
+    @bridge.bridge_command(
+        name="cdndata",
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.bot_dm,
+        },
+    )
     async def cdn_data(self, ctx: bridge.BridgeApplicationContext):
         """Returns a paginator with the currently cached CDN data."""
         logger.debug("Generating paginator to display CDN data...")
         paginator = self.build_paginator_for_current_build_data()
         await paginator.respond(ctx.interaction, ephemeral=True)
 
-    @bridge.bridge_command(name="branches")
+    @bridge.bridge_command(
+        name="branches",
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.bot_dm,
+        },
+    )
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_branches(self, ctx: bridge.BridgeApplicationContext):
         """Returns all observable branches."""
@@ -515,7 +527,9 @@ class CDNCog(commands.Cog):
         )
 
     watchlist_commands = discord.SlashCommandGroup(
-        name="watchlist", description="Watchlist commands", guild_only=True
+        name="watchlist",
+        description="Watchlist commands",
+        contexts={discord.InteractionContextType.guild},
     )
 
     @watchlist_commands.command(
@@ -654,7 +668,9 @@ class CDNCog(commands.Cog):
         )
 
     channel_commands = discord.SlashCommandGroup(
-        name="channel", description="Notification channel commands", guild_only=True
+        name="channel",
+        description="Notification channel commands",
+        contexts={discord.InteractionContextType.guild},
     )
 
     @channel_commands.command(
@@ -715,7 +731,13 @@ class CDNCog(commands.Cog):
         )
 
     dm_commands = discord.SlashCommandGroup(
-        name="dm", description="DM notification commands"
+        name="dm",
+        description="DM notification commands",
+        contexts={
+            discord.InteractionContextType.private_channel,
+            discord.InteractionContextType.bot_dm,
+        },
+        integration_types={discord.IntegrationType.user_install},
     )
 
     @dm_commands.command(
