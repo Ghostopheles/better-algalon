@@ -23,8 +23,8 @@ class AdminCog(commands.Cog):
     admin_commands = discord.SlashCommandGroup(
         name="admin",
         description="Administration commands",
-        guild_only=True,
         guild_ids=HOME_GUILD,
+        contexts={discord.InteractionContextType.guild},
     )
 
     @commands.is_owner()
