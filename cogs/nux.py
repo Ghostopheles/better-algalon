@@ -8,7 +8,7 @@ from .guild_config import GuildCFG
 logger = logging.getLogger("discord.nux")
 
 
-class GuildNUX(commands.Cog):
+class NUX(commands.Cog):
     def __init__(self, bot: bridge.Bot):
         self.bot = bot
         self.guild_cfg = GuildCFG()
@@ -69,4 +69,4 @@ If you have any questions, concerns, or suggestions, please reach out to {owner_
 
 
 def setup(bot):
-    bot.add_cog(GuildNUX(bot))
+    bot.add_cog(NUX(bot))
