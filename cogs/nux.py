@@ -18,11 +18,17 @@ class GuildNUX(commands.Cog):
         self,
         guild: discord.Guild,
     ) -> str:
-        cmd_link_set_channel = self.watcher.get_command_link("setchannel")
-        cmd_link_get_watchlist = self.watcher.get_command_link("watchlist")
-        cmd_link_add_to_watchlist = self.watcher.get_command_link("addtowatchlist")
+        cmd_link_set_channel = self.watcher.get_command_link(
+            "channel set", self.watcher.channel_commands
+        )
+        cmd_link_get_watchlist = self.watcher.get_command_link(
+            "watchlist view", self.watcher.watchlist_commands
+        )
+        cmd_link_add_to_watchlist = self.watcher.get_command_link(
+            "watchlist add", self.watcher.watchlist_commands
+        )
         cmd_link_rm_from_watchlist = self.watcher.get_command_link(
-            "removefromwatchlist"
+            "watchlist remove", self.watcher.watchlist_commands
         )
         cmd_link_data = self.watcher.get_command_link("cdndata")
 
@@ -43,7 +49,7 @@ I'm {bot_display_name} and I'll be {guild.name}'s *personal* constellar :crystal
 
 :blue_heart: Thanks for trying out Algalon! :blue_heart:
 
-If you have any questions, concerns, or suggestions, please reach out to {owner_mention} here on Discord, or open a GitHub issue [here](https://github.com/Ghostopheles/better-algalon).
+If you have any questions, concerns, or suggestions, please reach out to {owner_mention} here on Discord, or open a GitHub issue [here](https://github.ghst.tools/better-algalon).
 """
         return nux_message
 

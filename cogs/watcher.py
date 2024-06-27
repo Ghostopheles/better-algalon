@@ -42,6 +42,8 @@ ANNOUNCEMENT_CHANNELS = [
 DELETE_AFTER = 120
 COOLDOWN = 5
 
+ADMIN_ONLY_PERM = discord.Permissions(administrator=True)
+
 
 class CDNCog(commands.Cog):
     """This is the actual Cog that gets added to the Discord bot."""
@@ -96,15 +98,21 @@ class CDNCog(commands.Cog):
 
         logger.info("Cache configuration check complete")
 
-    def get_command_link(self, command: str):
-        all_cmds = self.get_commands()
+    def get_command_link(
+        self, command: str, cmd_group: Optional[discord.SlashCommandGroup] = None
+    ):
+        if cmd_group is not None and isinstance(cmd_group, discord.SlashCommandGroup):
+            all_cmds = cmd_group.subcommands
+        else:
+            all_cmds = self.get_commands()
+
         for cmd in all_cmds:
             if isinstance(cmd, bridge.BridgeCommand):
                 slash = cmd.slash_variant
                 if slash and slash.name == command:
                     return slash.mention
             elif isinstance(cmd, discord.SlashCommand):
-                if cmd.name == command and cmd.id is not None:
+                if cmd.qualified_name == command:
                     return cmd.mention
 
         return f"`/{command}`"
@@ -506,10 +514,13 @@ class CDNCog(commands.Cog):
             message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
-    @bridge.bridge_command(
-        name="addtowatchlist",
-        default_member_permissions=discord.Permissions(administrator=True),
-        guild_only=True,
+    watchlist_commands = discord.SlashCommandGroup(
+        name="watchlist", description="Watchlist commands", guild_only=True
+    )
+
+    @watchlist_commands.command(
+        name="add",
+        default_member_permissions=ADMIN_ONLY_PERM,
         input_type=str,
         min_length=3,
         max_length=500,
@@ -589,10 +600,9 @@ class CDNCog(commands.Cog):
                 delete_after=DELETE_AFTER,
             )
 
-    @bridge.bridge_command(
-        name="removefromwatchlist",
-        default_member_permissions=discord.Permissions(administrator=True),
-        guild_only=True,
+    @watchlist_commands.command(
+        name="remove",
+        default_member_permissions=ADMIN_ONLY_PERM,
         input_type=str,
         min_length=3,
         max_length=500,
@@ -623,10 +633,7 @@ class CDNCog(commands.Cog):
                 delete_after=DELETE_AFTER,
             )
 
-    @bridge.bridge_command(
-        name="watchlist",
-        guild_only=True,
-    )
+    @watchlist_commands.command(name="view")
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_watchlist(self, ctx: bridge.BridgeApplicationContext):
         """Returns the watchlist for your guild."""
@@ -646,10 +653,13 @@ class CDNCog(commands.Cog):
             message, ephemeral=True, delete_after=DELETE_AFTER
         )
 
-    @bridge.bridge_command(
-        name="setchannel",
-        default_member_permissions=discord.Permissions(administrator=True),
-        guild_only=True,
+    channel_commands = discord.SlashCommandGroup(
+        name="channel", description="Notification channel commands", guild_only=True
+    )
+
+    @channel_commands.command(
+        name="set",
+        default_member_permissions=ADMIN_ONLY_PERM,
     )
     @commands.cooldown(1, 5, commands.BucketType.user)
     async def cdn_set_channel(
@@ -669,10 +679,7 @@ class CDNCog(commands.Cog):
             delete_after=DELETE_AFTER,
         )
 
-    @bridge.bridge_command(
-        name="getchannel",
-        guild_only=True,
-    )
+    @channel_commands.command(name="get")
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_get_channel(
         self,
@@ -707,9 +714,15 @@ class CDNCog(commands.Cog):
             delete_after=DELETE_AFTER,
         )
 
-    @bridge.bridge_command(
+    dm_commands = discord.SlashCommandGroup(
+        name="dm", description="DM notification commands"
+    )
+
+    @dm_commands.command(
         name="subscribe",
-        guild_ids=TEST_GUILDS,
+        input_type=str,
+        min_length=3,
+        max_length=500,
     )
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def user_subscribe(self, ctx: bridge.BridgeApplicationContext, branch: str):
@@ -744,9 +757,11 @@ class CDNCog(commands.Cog):
                     message, ephemeral=True, delete_after=DELETE_AFTER
                 )
 
-    @bridge.bridge_command(
+    @dm_commands.command(
         name="unsubscribe",
-        guild_ids=TEST_GUILDS,
+        input_type=str,
+        min_length=3,
+        max_length=500,
     )
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def user_unsubscribe(self, ctx: bridge.BridgeApplicationContext, branch: str):
@@ -783,10 +798,7 @@ class CDNCog(commands.Cog):
                     message, ephemeral=True, delete_after=DELETE_AFTER
                 )
 
-    @bridge.bridge_command(
-        name="subscribed",
-        guild_ids=TEST_GUILDS,
-    )
+    @dm_commands.command(name="view")
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def user_subscribed(self, ctx: bridge.BridgeApplicationContext):
         """View all branches you're receiving DM updates for."""
