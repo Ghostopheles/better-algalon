@@ -13,9 +13,9 @@
 
 ## Changed
 - Commands have been restructured.
-   - Watchlist commands have been moved to `/watchlist {add|remove|view}`
+   - Watchlist commands have been moved to `/watchlist {add|remove|edit|view}`
    - Channel commands have been moved to `/channel {set|get}`
-   - DM commands have been moved to `/dm {subscribe|unsubscribe|view}`
+   - DM commands have been moved to `/dm {subscribe|unsubscribe|edit|view}`
 
 # Changelog v1.9 - Yttrium
 
