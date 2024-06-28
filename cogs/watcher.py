@@ -20,7 +20,9 @@ from .config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
 from .utils import get_discord_timestamp
 from .api.twitter import Twitter
 
-START_LOOPS = True
+from cogs.ui import WatchlistUI
+
+START_LOOPS = False
 
 logger = logging.getLogger("discord.cdn.watcher")
 
@@ -652,6 +654,28 @@ class CDNCog(commands.Cog):
         await ctx.interaction.response.send_message(
             message, ephemeral=True, delete_after=DELETE_AFTER
         )
+
+    @watchlist_commands.command(name="edit")
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.guild)
+    async def cdn_edit_watchlist(
+        self, ctx: discord.ApplicationContext, game: SUPPORTED_GAMES
+    ):
+        """Returns a graphical editor for your guild's watchlist"""
+        watchlist = self.guild_cfg.get_guild_watchlist(ctx.guild_id)
+        menu = WatchlistUI.create_menus(watchlist, game)
+        if menu is None:
+            await ctx.respond(
+                "An error occurred while generating the watchlist editor.",
+                ephemeral=True,
+                delete_after=DELETE_AFTER,
+            )
+            return
+
+        message = f"""# {game.name} Watchlist Editor
+Changes are saved when you click out of the menu.
+"""
+
+        await ctx.respond(message, view=menu, ephemeral=True, delete_after=DELETE_AFTER)
 
     channel_commands = discord.SlashCommandGroup(
         name="channel", description="Notification channel commands", guild_only=True
