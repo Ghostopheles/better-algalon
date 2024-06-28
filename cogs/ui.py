@@ -2,6 +2,8 @@ import logging
 import discord
 import discord.ui as ui
 
+from enum import Enum
+
 from cogs.config import (
     SUPPORTED_GAMES,
     SUPPORTED_PRODUCTS,
@@ -15,8 +17,14 @@ from cogs.config import (
 )
 
 from cogs.guild_config import GuildCFG
+from cogs.user_config import UserConfigFile
 
 logger = logging.getLogger("discord.test")
+
+
+class WatchlistMenuType(Enum):
+    GUILD = 1
+    USER = 2
 
 
 def get_branches_for_game(game: SUPPORTED_GAMES):
@@ -34,34 +42,57 @@ def get_branches_for_game(game: SUPPORTED_GAMES):
 
 
 GUILD_CONFIG = GuildCFG()
+USER_CONFIG = UserConfigFile()
 
 
-class SelectMenu(ui.Select):
+class GuildSelectMenu(ui.Select):
     async def callback(self, interaction: discord.Interaction):
         guild_id = interaction.guild_id
         if interaction.data is None:
             return
 
         selected = interaction.data["values"]
-        game = WatcherConfig.get_game_from_branch(selected[0])
-        branches = get_branches_for_game(game)
-        old_watchlist = GUILD_CONFIG.get_guild_watchlist(guild_id)
-        for branch in branches:
-            branch = branch.name
-            if branch in selected and branch not in old_watchlist:
-                GUILD_CONFIG.add_to_guild_watchlist(guild_id, branch)
-            elif branch in old_watchlist and branch not in selected:
-                GUILD_CONFIG.remove_from_guild_watchlist(guild_id, branch)
+        if len(selected) > 0:
+            game = WatcherConfig.get_game_from_branch(selected[0])
+            branches = get_branches_for_game(game)
+            old_watchlist = GUILD_CONFIG.get_guild_watchlist(guild_id)
+            for branch in branches:
+                branch = branch.name
+                if branch in selected and branch not in old_watchlist:
+                    GUILD_CONFIG.add_to_guild_watchlist(guild_id, branch)
+                elif branch in old_watchlist and branch not in selected:
+                    GUILD_CONFIG.remove_from_guild_watchlist(guild_id, branch)
+
+        await interaction.response.defer(ephemeral=True, invisible=True)
+
+
+class UserSelectMenu(ui.Select):
+    async def callback(self, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        if interaction.data is None:
+            return
+
+        selected = interaction.data["values"]
+        if len(selected) > 0:
+            game = WatcherConfig.get_game_from_branch(selected[0])
+            with USER_CONFIG as cfg:
+
+                branches = get_branches_for_game(game)
+                old_watchlist = cfg.get_watchlist(user_id)
+                for branch in branches:
+                    branch = branch.name
+                    if branch in selected and branch not in old_watchlist:
+                        cfg.subscribe(user_id, branch)
+                    elif branch in old_watchlist and branch not in selected:
+                        cfg.unsubscribe(user_id, branch)
 
         await interaction.response.defer(ephemeral=True, invisible=True)
 
 
 class WatchlistUI(ui.View):
     @classmethod
-    def create_menus(
-        cls,
-        watchlist: list[str],
-        game: SUPPORTED_GAMES,
+    def create_menu(
+        cls, watchlist: list[str], game: SUPPORTED_GAMES, menuType: WatchlistMenuType
     ):
         branches = get_branches_for_game(game)
         if branches is None:
@@ -90,7 +121,11 @@ class WatchlistUI(ui.View):
 
         min_values = 0
 
-        menu = SelectMenu(
+        menuClass = (
+            GuildSelectMenu if menuType == WatchlistMenuType.GUILD else UserSelectMenu
+        )
+
+        menu = menuClass(
             select_type=discord.ComponentType.string_select,
             options=options,
             min_values=min_values,
