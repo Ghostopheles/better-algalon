@@ -1,3 +1,11 @@
+# Changelog v2.0.0 - Fermium
+
+## Added
+- Algalon now supports user-installation, allowing you to setup DM notifications without being in a server Algalon is in.
+   - This is an area I'm looking to expand
+- A graphical UI for editing your watchlist, either for a server or for yourself, that can be used to add or remove branches from your watchlist
+   - Due to Discord limitations, these are capped at 25 elements. This means I've had to split them up by game. Sorry :c
+
 # Changelog v1.9.2 - Gallium
 
 ## Added
