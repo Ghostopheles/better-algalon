@@ -22,7 +22,7 @@ from .api.twitter import Twitter
 
 from cogs.ui import WatchlistUI
 
-START_LOOPS = False
+START_LOOPS = True
 
 logger = logging.getLogger("discord.cdn.watcher")
 
