@@ -7,7 +7,7 @@ import secrets
 import discord
 import logging
 
-from typing import Optional
+from typing import Optional, Union
 from discord.ext import bridge, commands, pages, tasks
 
 from .user_config import UserConfigFile
@@ -40,9 +40,7 @@ ANNOUNCEMENT_CHANNELS = [
 ]
 
 DELETE_AFTER = 120
-COOLDOWN = 5
-
-ADMIN_ONLY_PERM = discord.Permissions(administrator=True)
+COOLDOWN = 15
 
 
 class CDNCog(commands.Cog):
@@ -65,6 +63,15 @@ class CDNCog(commands.Cog):
             self.cdn_auto_refresh.add_exception_type(httpx.ConnectTimeout)
             self.cdn_auto_refresh.start()
             self.integrity_check.start()
+
+    @staticmethod
+    def user_is_admin_or_owner(ctx: discord.ApplicationContext):
+        if ctx.guild.owner_id == ctx.user.id:
+            return True
+
+        return ctx.user.top_role.permissions.administrator
+
+    __ADMIN_CHECKS = [user_is_admin_or_owner]
 
     @tasks.loop(hours=24)
     async def integrity_check(self):
@@ -119,8 +126,8 @@ class CDNCog(commands.Cog):
 
     async def notify_owner_of_exception(
         self,
-        error,
-        ctx: discord.ApplicationContext | bridge.BridgeApplicationContext | None = None,
+        error: Union[discord.ApplicationCommandError, str],
+        ctx: Optional[discord.ApplicationContext] = None,
     ):
         """This is supposed to notify the owner of an error, but doesn't always work."""
         owner = await self.bot.fetch_user(self.bot.owner_id)  # type: ignore
@@ -471,13 +478,27 @@ class CDNCog(commands.Cog):
 
     @commands.Cog.listener(name="on_command_error")
     @commands.Cog.listener(name="on_application_command_error")
-    async def handle_command_error(self, ctx: discord.ApplicationContext, exception):
+    async def handle_command_error(
+        self,
+        ctx: discord.ApplicationContext,
+        exception: Union[
+            commands.CommandOnCooldown,
+            commands.NotOwner,
+            discord.CheckFailure,
+            discord.ApplicationCommandError,
+        ],
+    ):
+        delete_after = DELETE_AFTER
+
         if isinstance(exception, commands.CommandOnCooldown):
             timestamp = get_discord_timestamp(
                 round(time.time() + exception.retry_after), relative=True
             )
             message = f"This command is on cooldown. Try again {timestamp}"
-        elif isinstance(exception, commands.NotOwner):
+            delete_after = int(exception.retry_after)
+        elif isinstance(exception, commands.NotOwner) or isinstance(
+            exception, discord.CheckFailure
+        ):
             message = f"You do not have permission to use this command."
         else:
             message = "I have encountered an error handling your command. The Titans have been notified."
@@ -487,9 +508,12 @@ class CDNCog(commands.Cog):
             )
             await self.bot.notify_owner_of_command_exception(ctx, exception)  # type: ignore
 
-        await ctx.interaction.response.send_message(
-            message, ephemeral=True, delete_after=DELETE_AFTER
-        )
+        await ctx.respond(message, ephemeral=True, delete_after=delete_after)
+
+    @commands.Cog.listener(name="on_unknown_application_command")
+    async def handle_unk_command(self, ctx: discord.ApplicationContext):
+        message = "Unknown command. Please try again in a few minutes."
+        await ctx.respond(message, ephemeral=True, delete_after=DELETE_AFTER)
 
     # DISCORD COMMANDS
 
@@ -520,12 +544,12 @@ class CDNCog(commands.Cog):
 
     @watchlist_commands.command(
         name="add",
-        default_member_permissions=ADMIN_ONLY_PERM,
+        checks=__ADMIN_CHECKS,
         input_type=str,
         min_length=3,
         max_length=500,
     )
-    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.guild)
     async def cdn_add_to_watchlist(
         self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
@@ -602,12 +626,12 @@ class CDNCog(commands.Cog):
 
     @watchlist_commands.command(
         name="remove",
-        default_member_permissions=ADMIN_ONLY_PERM,
+        checks=__ADMIN_CHECKS,
         input_type=str,
         min_length=3,
         max_length=500,
     )
-    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.guild)
     async def cdn_remove_from_watchlist(
         self, ctx: bridge.BridgeApplicationContext, branch: str
     ):
@@ -659,9 +683,9 @@ class CDNCog(commands.Cog):
 
     @channel_commands.command(
         name="set",
-        default_member_permissions=ADMIN_ONLY_PERM,
+        checks=__ADMIN_CHECKS,
     )
-    @commands.cooldown(1, 5, commands.BucketType.user)
+    @commands.cooldown(1, COOLDOWN, commands.BucketType.guild)
     async def cdn_set_channel(
         self,
         ctx: bridge.BridgeApplicationContext,
