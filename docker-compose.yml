@@ -1,5 +1,9 @@
 version: "3.8"
 
+# this here's the great docker compose file I use to run Algalon
+# obviously it's missing all of the environment variables - you can't have those
+# too bad!
+
 services:
   ulduar:
     container_name: algalon
