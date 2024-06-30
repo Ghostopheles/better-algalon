@@ -2,7 +2,7 @@
 
 FROM --platform=$TARGETPLATFORM python:3.12.3
 
-WORKDIR /usr/algalon
+WORKDIR /algalon
 
 COPY requirements.txt requirements.txt
 RUN python3 -m pip install -U -r requirements.txt

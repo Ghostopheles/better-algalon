@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  ulduar:
+    container_name: algalon
+    image: registry.ghst.tools/algalon:latest
+    volumes:
+      - algalon:/algalon/cogs/cache
+
+    labels:
+      stage: prod
+
+    restart: unless-stopped
+
+volumes:
+  algalon:
+    external: true
+    name: algalon
