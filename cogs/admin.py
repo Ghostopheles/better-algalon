@@ -23,7 +23,6 @@ class AdminCog(commands.Cog):
     admin_commands = discord.SlashCommandGroup(
         name="admin",
         description="Administration commands",
-        guild_only=True,
         guild_ids=HOME_GUILD,
     )
 
@@ -82,15 +81,6 @@ Members (approx): {guild.approximate_member_count}\n
         await ctx.defer()
         await watcher.cdn_auto_refresh()
         await ctx.respond("Updates complete.", ephemeral=True, delete_after=300)
-
-    @commands.is_owner()
-    @admin_commands.command(name="nuxtest")
-    async def nuxtest(self, ctx: bridge.BridgeApplicationContext):
-        guild = ctx.guild
-        nux_cog = self.bot.get_cog("GuildNUX")
-        message = await nux_cog.get_nux_message(guild)
-
-        await ctx.respond(message, ephemeral=True, delete_after=300)
 
     # funni commands
 

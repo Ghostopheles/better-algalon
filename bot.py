@@ -99,7 +99,7 @@ if __name__ == "__main__":
         debug_guilds = [int(os.getenv("DEBUG_GUILD_ID")), int(os.getenv("DEBUG_GUILD_ID2"))]  # type: ignore
     else:  # is NOT debug mode
         token = os.getenv("DISCORD_TOKEN")
-        debug_guilds = []
+        debug_guilds = None
 
     bot = CDNBot(
         command_prefix="!",
