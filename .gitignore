@@ -159,4 +159,5 @@ invite.txt
 cogs/cache/
 .vscode/
 *.code-workspace
+pycord/
 docker-compose-dev.yml

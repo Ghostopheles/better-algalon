@@ -86,6 +86,8 @@ Algalon provides a number of commands to control your guild's (server) watchlist
 
 `/watchlist remove`*: Removes a specific branch to your guild's watchlist.
 
+`/watchlist edit`*: Returns a graphical editor for editing your guild's watchlist.
+
 `/watchlist view`: Returns your guild's current watchlist.
 
 #### Notification Channel Controls
@@ -99,6 +101,8 @@ Algalon provides a number of commands to control your guild's (server) watchlist
 `/dm subscribe`: Subscribes the user to DM updates for the given branches. Supports comma-delimited input.
 
 `/dm unsubscribe`: Unsubscribes the user from DM updates for the given branches. Supports comma-delimited input.
+
+`/dm edit`*: Returns a graphical editor for editing your personal watchlist.
 
 `/dm view`: Returns all the branches you're currently subscribed to.
 
