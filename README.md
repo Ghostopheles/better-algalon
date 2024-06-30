@@ -1,6 +1,5 @@
 # better-algalon
-![GitHub License](https://img.shields.io/github/license/ghostopheles/better-algalon?style=for-the-badge)
- ![LastUpdate](https://img.shields.io/github/last-commit/Ghostamoose/better-algalon?style=flat-square) ![Discord](https://img.shields.io/discord/1144396478840844439?style=for-the-badge&logo=discord)
+![GitHub License](https://img.shields.io/github/license/ghostopheles/better-algalon?style=for-the-badge) ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ghostopheles/better-algalon?style=for-the-badge) ![GitHub last commit](https://img.shields.io/github/last-commit/ghostopheles/better-algalon?display_timestamp=author&style=for-the-badge) ![Discord](https://img.shields.io/discord/1144396478840844439?style=for-the-badge&logo=discord)
 
 v2.0.0 - Fermium
 
