@@ -1,6 +1,5 @@
 """This is the module that handles watching the Blizzard CDN and posting updates to the correct places."""
 
-import os
 import time
 import httpx
 import secrets
@@ -8,33 +7,32 @@ import discord
 import logging
 
 from typing import Optional, Union
-from discord.ext import bridge, commands, pages, tasks
+from discord.ext import commands, pages, tasks
 
 from cogs.bot import Algalon
-
-from .user_config import UserConfigFile
-from .guild_config import GuildCFG
-from .cdn_cache import CDNCache
-from .config import CommonStrings, LiveConfig
-from .config import WatcherConfig as cfg
-from .config import DebugConfig as dbg
-from .config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
-from .utils import get_discord_timestamp
-from .api.twitter import Twitter
-
+from cogs.user_config import UserConfigFile
+from cogs.guild_config import GuildCFG
+from cogs.cdn_cache import CDNCache
+from cogs.config import CommonStrings
+from cogs.config import LiveConfig as livecfg
+from cogs.config import WatcherConfig as cfg
+from cogs.config import DebugConfig as dbg
+from cogs.config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
+from cogs.utils import get_discord_timestamp
+from cogs.api.twitter import Twitter
 from cogs.ui import WatchlistUI, WatchlistMenuType
 
-START_LOOPS = False
+START_LOOPS = livecfg.get_cfg_value("meta", "start_loops")
 
 logger = logging.getLogger("discord.cdn.watcher")
 
 DELIMITER = ","
-FETCH_INTERVAL = LiveConfig.get_fetch_interval()
+FETCH_INTERVAL = livecfg.get_cfg_value("meta", "fetch_interval", 5)
 
-ANNOUNCEMENT_CHANNELS = LiveConfig.get_cfg_value("discord", "announcement_channels")
+ANNOUNCEMENT_CHANNELS = livecfg.get_cfg_value("discord", "announcement_channels")
 
-DELETE_AFTER = 120
-COOLDOWN = 15
+DELETE_AFTER = livecfg.get_cfg_value("discord", "delete_msgs_after", 120)
+COOLDOWN = livecfg.get_cfg_value("discord", "cmd_cooldown", 15)
 
 
 class CDNCog(commands.Cog):
@@ -45,7 +43,7 @@ class CDNCog(commands.Cog):
         self.cdn_cache = CDNCache()
         self.guild_cfg = GuildCFG()
         self.user_cfg = UserConfigFile()
-        self.live_cfg = LiveConfig()
+        self.live_cfg = livecfg()
         self.twitter = Twitter()
         self.last_update = 0
         self.last_update_formatted = ""
@@ -162,7 +160,10 @@ class CDNCog(commands.Cog):
                 icon_url=config["icon_url"],
             )
 
-            embed.set_footer(text=CommonStrings.EMBED_FOOTER)
+            algalon_version = self.live_cfg.get_cfg_value("meta", "version", "Dev")
+            embed.set_footer(
+                text=CommonStrings.EMBED_FOOTER.format(version=algalon_version)
+            )
 
             value_string = ""
 

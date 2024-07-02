@@ -484,7 +484,9 @@ class LiveConfig(Singleton):
         return data
 
     @staticmethod
-    def get_cfg_value(category: str, key: str) -> Optional[str]:
+    def get_cfg_value(
+        category: str, key: str, default: Optional[Any] = None
+    ) -> Optional[str]:
         data = LiveConfig.__open()
 
         if category in data:
@@ -492,7 +494,7 @@ class LiveConfig(Singleton):
             if key in section:
                 return section[key]
 
-        return None
+        return default
 
     @staticmethod
     def get_all_products():
@@ -504,11 +506,6 @@ class LiveConfig(Singleton):
         data = LiveConfig.__open()
         if branch in data["products"].keys():
             return data["products"][branch]["public_name"]
-
-    @staticmethod
-    def get_fetch_interval():
-        data = LiveConfig.__open()
-        return data["meta"]["fetch_interval"]
 
     @staticmethod
     def get_debug_value(key: str, default: Optional[Any] = None) -> Optional[str]:

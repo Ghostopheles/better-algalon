@@ -2,7 +2,7 @@ import io
 import logging
 import discord
 
-from discord.ext import bridge, commands
+from discord.ext import commands
 
 from cogs.bot import Algalon
 
