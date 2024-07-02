@@ -10,6 +10,8 @@ import logging
 from typing import Optional, Union
 from discord.ext import bridge, commands, pages, tasks
 
+from cogs.bot import Algalon
+
 from .user_config import UserConfigFile
 from .guild_config import GuildCFG
 from .cdn_cache import CDNCache
@@ -38,7 +40,7 @@ COOLDOWN = 15
 class CDNCog(commands.Cog):
     """This is the actual Cog that gets added to the Discord bot."""
 
-    def __init__(self, bot: bridge.Bot):
+    def __init__(self, bot: Algalon):
         self.bot = bot
         self.cdn_cache = CDNCache()
         self.guild_cfg = GuildCFG()
@@ -106,11 +108,7 @@ class CDNCog(commands.Cog):
             all_cmds = self.get_commands()
 
         for cmd in all_cmds:
-            if isinstance(cmd, bridge.BridgeCommand):
-                slash = cmd.slash_variant
-                if slash and slash.name == command:
-                    return slash.mention
-            elif isinstance(cmd, discord.SlashCommand):
+            if isinstance(cmd, discord.SlashCommand):
                 if cmd.qualified_name == command:
                     return cmd.mention
 
@@ -509,20 +507,20 @@ class CDNCog(commands.Cog):
 
     # DISCORD COMMANDS
 
-    @bridge.bridge_command(
+    @discord.slash_command(
         name="cdndata",
         contexts={
             discord.InteractionContextType.guild,
             discord.InteractionContextType.bot_dm,
         },
     )
-    async def cdn_data(self, ctx: bridge.BridgeApplicationContext):
+    async def cdn_data(self, ctx: discord.ApplicationContext):
         """Returns a paginator with the currently cached CDN data."""
         logger.debug("Generating paginator to display CDN data...")
         paginator = self.build_paginator_for_current_build_data()
         await paginator.respond(ctx.interaction, ephemeral=True)
 
-    @bridge.bridge_command(
+    @discord.slash_command(
         name="branches",
         contexts={
             discord.InteractionContextType.guild,
@@ -530,7 +528,7 @@ class CDNCog(commands.Cog):
         },
     )
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
-    async def cdn_branches(self, ctx: bridge.BridgeApplicationContext):
+    async def cdn_branches(self, ctx: discord.ApplicationContext):
         """Returns all observable branches."""
         message = f"## These are all the branches I can watch for you:\n```\n"
         for product in self.cdn_cache.CONFIG.PRODUCTS:
@@ -556,9 +554,7 @@ class CDNCog(commands.Cog):
         max_length=500,
     )
     @commands.cooldown(1, COOLDOWN, commands.BucketType.guild)
-    async def cdn_add_to_watchlist(
-        self, ctx: bridge.BridgeApplicationContext, branch: str
-    ):
+    async def cdn_add_to_watchlist(self, ctx: discord.ApplicationContext, branch: str):
         """Add a branch to the watchlist. Add multiple branches by separating them with a comma."""
         branch = branch.lower()
         branch = branch.replace(" ", "")
@@ -639,7 +635,7 @@ class CDNCog(commands.Cog):
     )
     @commands.cooldown(1, COOLDOWN, commands.BucketType.guild)
     async def cdn_remove_from_watchlist(
-        self, ctx: bridge.BridgeApplicationContext, branch: str
+        self, ctx: discord.ApplicationContext, branch: str
     ):
         """Remove specific branches from this guild's watchlist."""
         success, error = self.guild_cfg.remove_from_guild_watchlist(ctx.guild_id, branch)  # type: ignore
@@ -665,7 +661,7 @@ class CDNCog(commands.Cog):
 
     @watchlist_commands.command(name="view")
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
-    async def cdn_watchlist(self, ctx: bridge.BridgeApplicationContext):
+    async def cdn_watchlist(self, ctx: discord.ApplicationContext):
         """Returns the watchlist for your guild."""
         message = (
             "## These are the branches I'm currently observing for this guild:\n```\n"
@@ -718,7 +714,7 @@ Changes are saved when you click out of the menu.
     @commands.cooldown(1, COOLDOWN, commands.BucketType.guild)
     async def cdn_set_channel(
         self,
-        ctx: bridge.BridgeApplicationContext,
+        ctx: discord.ApplicationContext,
         game: Optional[SUPPORTED_GAMES] = SUPPORTED_GAMES.Warcraft,
     ):
         """Sets the current channel as the notification channel for the given game. Defaults to Warcraft."""
@@ -737,7 +733,7 @@ Changes are saved when you click out of the menu.
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_get_channel(
         self,
-        ctx: bridge.BridgeApplicationContext,
+        ctx: discord.ApplicationContext,
         game: Optional[SUPPORTED_GAMES] = SUPPORTED_GAMES.Warcraft,
     ):
         """Returns the current notification channel for the given game. Defaults to Warcraft."""
@@ -758,9 +754,9 @@ Changes are saved when you click out of the menu.
                 delete_after=DELETE_AFTER,
             )
 
-    @bridge.bridge_command(name="lastupdate")
+    @discord.slash_command(name="lastupdate")
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
-    async def cdn_last_update(self, ctx: bridge.BridgeApplicationContext):
+    async def cdn_last_update(self, ctx: discord.ApplicationContext):
         """Returns the last time the bot checked for an update."""
         await ctx.interaction.response.send_message(
             f"Last update: {self.last_update_formatted}.",
@@ -785,7 +781,7 @@ Changes are saved when you click out of the menu.
         max_length=500,
     )
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
-    async def user_subscribe(self, ctx: bridge.BridgeApplicationContext, branch: str):
+    async def user_subscribe(self, ctx: discord.ApplicationContext, branch: str):
         """Subscribe to build updates via DM for the given branch."""
 
         message = ""
@@ -824,7 +820,7 @@ Changes are saved when you click out of the menu.
         max_length=500,
     )
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
-    async def user_unsubscribe(self, ctx: bridge.BridgeApplicationContext, branch: str):
+    async def user_unsubscribe(self, ctx: discord.ApplicationContext, branch: str):
         """Unsubscribe from build updates via DM for the given branch."""
 
         message = ""
@@ -884,7 +880,7 @@ Changes are saved when you click out of the menu.
 
     @dm_commands.command(name="view")
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
-    async def user_subscribed(self, ctx: bridge.BridgeApplicationContext):
+    async def user_subscribed(self, ctx: discord.ApplicationContext):
         """View all branches you're receiving DM updates for."""
         user_id = ctx.author.id
         with self.user_cfg as config:

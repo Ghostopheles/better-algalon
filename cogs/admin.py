@@ -4,6 +4,8 @@ import discord
 
 from discord.ext import bridge, commands
 
+from cogs.bot import Algalon
+
 logger = logging.getLogger("discord.admin")
 
 DEBUG_GUILDS = [
@@ -17,7 +19,7 @@ HOME_GUILD = [318246001309646849]
 
 
 class AdminCog(commands.Cog):
-    def __init__(self, bot: bridge.Bot):
+    def __init__(self, bot: Algalon):
         self.bot = bot
 
     admin_commands = discord.SlashCommandGroup(
@@ -28,7 +30,7 @@ class AdminCog(commands.Cog):
 
     @commands.is_owner()
     @admin_commands.command(name="reload")
-    async def reload_cog(self, ctx: bridge.BridgeApplicationContext, cog_name: str):
+    async def reload_cog(self, ctx: discord.ApplicationContext, cog_name: str):
         """Reloads a currently loaded cog."""
 
         if cog_name == self.qualified_name:
@@ -57,7 +59,7 @@ class AdminCog(commands.Cog):
 
     @commands.is_owner()
     @admin_commands.command(name="guilds")
-    async def get_all_guilds(self, ctx: bridge.BridgeApplicationContext):
+    async def get_all_guilds(self, ctx: discord.ApplicationContext):
         """Dumps details for all guilds Algalon is a part of."""
         await ctx.defer()
         message = ""
@@ -75,7 +77,7 @@ Members (approx): {guild.approximate_member_count}\n
 
     @commands.is_owner()
     @admin_commands.command(name="forceupdate")
-    async def force_update_check(self, ctx: bridge.BridgeApplicationContext):
+    async def force_update_check(self, ctx: discord.ApplicationContext):
         """Forces a CDN check."""
         watcher = self.bot.get_cog("CDNCog")
         await ctx.defer()
@@ -84,11 +86,11 @@ Members (approx): {guild.approximate_member_count}\n
 
     # funni commands
 
-    @bridge.bridge_command(
+    @discord.slash_command(
         name="alien",
         guild_ids=DEBUG_GUILDS,
     )
-    async def alien(self, ctx: bridge.BridgeApplicationContext):
+    async def alien(self, ctx: discord.ApplicationContext):
         """secre"""
         await ctx.respond("behind you")
 
@@ -97,9 +99,7 @@ Members (approx): {guild.approximate_member_count}\n
         name="Perceive",
         guild_ids=DEBUG_GUILDS,
     )
-    async def Perceive(
-        self, ctx: bridge.BridgeApplicationContext, message: discord.Message
-    ):
+    async def Perceive(self, ctx: discord.ApplicationContext, message: discord.Message):
         diffs = 1141816184405229608
         fatcathuh = 1140450046748397691
         emoji = self.bot.get_emoji(fatcathuh)
