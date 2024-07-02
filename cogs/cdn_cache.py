@@ -17,14 +17,14 @@ class CDNCache:
     SELF_PATH = os.path.dirname(os.path.realpath(__file__))
     PLATFORM = sys.platform
     CONFIG = CacheConfig()
-    LIVE_CONFIG = LiveConfig()
+    LIVE_CONFIG = LiveConfig
     TACT = BlizzardTACTExplorer()
 
     def __init__(self):
         self.cache_path = os.path.join(self.SELF_PATH, self.CONFIG.CACHE_FOLDER_NAME)
         self.cdn_path = os.path.join(self.cache_path, self.CONFIG.CACHE_FILE_NAME)
 
-        self.fetch_interval = self.LIVE_CONFIG.get_fetch_interval()
+        self.fetch_interval = self.LIVE_CONFIG.get_cfg_value("meta", "fetch_interval")
 
         if not os.path.exists(self.cache_path):
             os.mkdir(self.cache_path)

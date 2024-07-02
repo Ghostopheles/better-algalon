@@ -9,4 +9,4 @@ RUN python3 -m pip install -U -r requirements.txt
 
 COPY . .
 
-CMD ["python", "-u", "bot.py"]
+CMD ["python", "-u", "main.py"]

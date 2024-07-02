@@ -3,7 +3,7 @@ import json
 
 from discord import Color
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Any
 from enum import StrEnum
 from .locale import Locales
 
@@ -343,7 +343,7 @@ class CacheConfig(Singleton):
 
 
 class CommonStrings(Singleton):
-    EMBED_FOOTER = f"Data provided by Algalon {os.getenv('ENVIRONMENT', 'Dev')}."
+    EMBED_FOOTER = "Data provided by Algalon {version}"
     VALID_REGIONS = SUPPORTED_REGIONS_STRINGS
 
     SPEECH = "$$dalaran.speech$$"
@@ -457,10 +457,17 @@ class LiveConfig(Singleton):
                 cfg = self.__get_default_cfg()
                 json.dump(cfg, f, indent=4)
 
-    def __get_default_cfg(self):
+    @staticmethod
+    def __get_default_cfg():
         cfg = {
             "products": {},
             "meta": {"fetch_interval": FETCH_INTERVAL},
+            "discord": {
+                "owner_id": 130987844125720576,  # hey look it's me!
+            },
+            "debug": {
+                "debug_mode": True,  # defaults to True because y'know, the file doesn't exist, probably first run or something
+            },
         }
         for branch in SUPPORTED_PRODUCTS:
             cfg["products"][branch.name] = {
@@ -469,46 +476,57 @@ class LiveConfig(Singleton):
             }
         return cfg
 
-    def __open(self):
-        with open(self.cfg_path, "r") as f:
+    @staticmethod
+    def __open():
+        with open(LiveConfig.cfg_path, "r") as f:
             data = json.load(f)
 
         return data
 
-    def get_cfg_value(self, category: str, key: str) -> Optional[str]:
-        data = self.__open()
+    @staticmethod
+    def get_cfg_value(
+        category: str, key: str, default: Optional[Any] = None
+    ) -> Optional[str]:
+        data = LiveConfig.__open()
 
-        if category in data.keys():
+        if category in data:
             section = data[category]
-            if key in section.keys():
+            if key in section:
                 return section[key]
 
-        return
+        return default
 
-    def get_all_products(self):
-        data = self.__open()
+    @staticmethod
+    def get_all_products():
+        data = LiveConfig.__open()
         return data["products"]
 
-    def get_product_name(self, branch: str):
-        data = self.__open()
+    @staticmethod
+    def get_product_name(branch: str):
+        data = LiveConfig.__open()
         if branch in data["products"].keys():
             return data["products"][branch]["public_name"]
 
-    def get_fetch_interval(self):
-        data = self.__open()
-        return data["meta"]["fetch_interval"]
+    @staticmethod
+    def get_debug_value(key: str, default: Optional[Any] = None) -> Optional[str]:
+        data = LiveConfig.__open()
+        dbg_data = data["debug"]
+        if key in dbg_data:
+            return dbg_data[key]
+
+        return default
 
 
 ## DEBUG CONFIGURATION
 
 
-class DebugConfig(Singleton):
-    debug_enabled = os.getenv("DEBUG")
-    debug_guild_id = os.getenv("DEBUG_GUILD_ID")
-    debug_channel_id = os.getenv("DEBUG_CHANNEL_ID")
-    debug_channel_id_d4 = os.getenv("DEBUG_CHANNEL_ID_D4")
-    debug_channel_id_gryphon = os.getenv("DEBUG_CHANNEL_ID_GRYPHON")
-    debug_channel_id_bnet = os.getenv("DEBUG_CHANNEL_ID_BNET")
+class DebugConfig:
+    debug_enabled = LiveConfig.get_debug_value("debug_mode", True)
+    debug_guild_id = LiveConfig.get_debug_value("debug_guild")
+    debug_channel_id = LiveConfig.get_debug_value("debug_channel")
+    debug_channel_id_d4 = LiveConfig.get_debug_value("debug_channel_d4")
+    debug_channel_id_gryphon = LiveConfig.get_debug_value("debug_channel_gryphon")
+    debug_channel_id_bnet = LiveConfig.get_debug_value("debug_channel_bnet")
 
     debug_channel_id_by_game = {
         "wow": debug_channel_id,
