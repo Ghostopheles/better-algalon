@@ -18,7 +18,7 @@ handlers:
   stdout:
     class: logging.StreamHandler
     level: DEBUG
-    formatter: json
+    formatter: simple
     stream: ext://sys.stdout
   file:
     class: logging.handlers.RotatingFileHandler
