@@ -3,7 +3,8 @@ import logging
 
 from discord.ext import bridge, commands
 
-from .guild_config import GuildCFG
+from cogs.config import LiveConfig as cfg
+from cogs.guild_config import GuildCFG
 
 logger = logging.getLogger("discord.nux")
 
@@ -59,6 +60,11 @@ If you have any questions, concerns, or suggestions, please reach out to {owner_
 
         if not self.guild_cfg.does_guild_config_exist(guild.id):
             self.guild_cfg.add_guild_config(guild.id)
+
+        if guild.approximate_member_count >= cfg.get_cfg_value(
+            "discord", "nux_max_member_count", 100
+        ):
+            return
 
         channel = guild.system_channel or guild.public_updates_channel
         if not channel:
