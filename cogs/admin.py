@@ -5,17 +5,13 @@ import discord
 from discord.ext import commands
 
 from cogs.bot import Algalon
+from cogs.config import LiveConfig as cfg
 
 logger = logging.getLogger("discord.admin")
 
-DEBUG_GUILDS = [
-    242364846362853377,
-    1101764045964578896,
-    318246001309646849,
-    1144396478840844439,
-]
+TRUSTED_GUILDS = cfg.get_cfg_value("discord", "trusted_guilds")
 
-HOME_GUILD = [318246001309646849]
+HOME_GUILD = [cfg.get_debug_value("debug_guild")]
 
 
 class AdminCog(commands.Cog):
@@ -88,7 +84,7 @@ Members (approx): {guild.approximate_member_count}\n
 
     @discord.slash_command(
         name="alien",
-        guild_ids=DEBUG_GUILDS,
+        guild_ids=TRUSTED_GUILDS,
     )
     async def alien(self, ctx: discord.ApplicationContext):
         """secre"""
@@ -97,7 +93,7 @@ Members (approx): {guild.approximate_member_count}\n
     @commands.is_owner()
     @commands.message_command(
         name="Perceive",
-        guild_ids=DEBUG_GUILDS,
+        guild_ids=TRUSTED_GUILDS,
     )
     async def Perceive(self, ctx: discord.ApplicationContext, message: discord.Message):
         diffs = 1141816184405229608
