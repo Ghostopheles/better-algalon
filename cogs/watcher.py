@@ -748,7 +748,7 @@ Changes are saved when you click out of the menu.
                 delete_after=DELETE_AFTER,
             )
         else:
-            cmdlink = self.get_command_link("setchannel")
+            cmdlink = self.get_command_link("set", self.channel_commands)
             await ctx.interaction.response.send_message(
                 f"This server does not have a notification channel set, try {cmdlink} to set your notification channel!",
                 ephemeral=True,
