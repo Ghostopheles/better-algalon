@@ -343,7 +343,7 @@ class CacheConfig(Singleton):
 
 
 class CommonStrings(Singleton):
-    EMBED_FOOTER = f"Data provided by Algalon {os.getenv('ENVIRONMENT', 'Dev')}."
+    EMBED_FOOTER = "Data provided by Algalon {version}"
     VALID_REGIONS = SUPPORTED_REGIONS_STRINGS
 
     SPEECH = "$$dalaran.speech$$"

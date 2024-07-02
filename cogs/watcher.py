@@ -27,19 +27,9 @@ START_LOOPS = False
 logger = logging.getLogger("discord.cdn.watcher")
 
 DELIMITER = ","
-FETCH_INTERVAL = LiveConfig().get_fetch_interval()
+FETCH_INTERVAL = LiveConfig.get_fetch_interval()
 
-if dbg.debug_enabled:
-    TEST_GUILDS = [318246001309646849]
-else:
-    TEST_GUILDS = [242364846362853377, 1144396478840844439, 318246001309646849]
-
-ANNOUNCEMENT_CHANNELS = [
-    int(os.getenv("ANNOUNCEMENT_CHANNEL")),
-    int(os.getenv("ANNOUNCEMENT_CHANNEL2")),
-    int(os.getenv("ANNOUNCEMENT_CHANNEL3")),
-    int(os.getenv("ANNOUNCEMENT_CHANNEL4")),
-]
+ANNOUNCEMENT_CHANNELS = LiveConfig.get_cfg_value("discord", "announcement_channels")
 
 DELETE_AFTER = 120
 COOLDOWN = 15
@@ -354,7 +344,7 @@ class CDNCog(commands.Cog):
                             )
                             continue
 
-                        if channel.id == int(os.getenv("ANNOUNCEMENT_CHANNEL")):
+                        if channel.id == ANNOUNCEMENT_CHANNELS["wow"]:
                             await message.publish()
                             response = await self.twitter.send_tweet(
                                 actual_embed.to_dict(), token
@@ -364,7 +354,7 @@ class CDNCog(commands.Cog):
                                     f"Tweet failed with: {response}.\n{actual_embed.to_dict()}"
                                 )
                                 await self.notify_owner_of_exception(response)
-                        elif channel.id in ANNOUNCEMENT_CHANNELS:
+                        elif channel.id in ANNOUNCEMENT_CHANNELS.values():
                             await message.publish()
                     elif actual_embed and not channel:
                         logger.warning(f"No channel found for guild {guild}, aborting.")
