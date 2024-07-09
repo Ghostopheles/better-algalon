@@ -82,15 +82,6 @@ class CDNCache:
                 )
                 return False
 
-            if not "encrypted" in file_json:  # just a safeguard
-                file_json["encrypted"] = None
-
-            if (
-                file_json["buildInfo"][branch]["encrypted"] == True
-                and newBuild["encrypted"] == None
-            ):
-                newBuild["encrypted"] = True
-
             # ignore builds with lower seqn numbers because it's probably just a caching issue
             new_seqn, old_seqn = int(newBuild["seqn"]), int(
                 file_json["buildInfo"][branch]["seqn"]

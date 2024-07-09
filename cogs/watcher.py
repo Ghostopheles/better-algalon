@@ -191,7 +191,7 @@ class CDNCog(commands.Cog):
                 )
                 build = f"**{build}**" if build != build_old else build
 
-                encrypted = ":lock:" if ver["encrypted"] else ""
+                encrypted = ":lock:" if product_config[branch]["encrypted"] else ""
 
                 value_string += f"`{public_name} ({branch})`{encrypted}: {build_text_old}.{build_old} --> {build_text}.{build}\n"
 
@@ -244,27 +244,6 @@ class CDNCog(commands.Cog):
                         new_build_id = f"**{new_build_id}**"
 
                     message = f"{SUPPORTED_GAMES._value2member_map_[game].name} build: `{branch}` -> {new_build_text}.{new_build_id}"
-
-                    if (
-                        game == SUPPORTED_GAMES.Warcraft and update["encrypted"] != True
-                    ):  # determine if this build has been seen before on other public branches
-                        fresh_build = True
-                        for _branch in SUPPORTED_PRODUCTS:
-                            if _branch == branch:
-                                continue
-
-                            data = self.cdn_cache.load_build_data(_branch.name)
-                            if not data or data["encrypted"] == True:
-                                continue
-
-                            if int(new_build) > int(data["build"]):
-                                fresh_build = True
-                            else:
-                                fresh_build = False
-                                break
-
-                        if fresh_build:
-                            message = "New " + message
 
                     for subscriber in subscribers:
                         user = await self.bot.get_or_fetch_user(subscriber)

@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     if dbg.debug_enabled:  # is debug mode
         token = os.getenv("DEBUG_DISCORD_TOKEN")
-        debug_guilds = [dbg.debug_guild_id]  # type: ignore
+        debug_guilds = None
     else:  # is NOT debug mode
         token = os.getenv("DISCORD_TOKEN")
         debug_guilds = None
