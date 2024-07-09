@@ -511,8 +511,13 @@ class CDNCog(commands.Cog):
     @discord.slash_command(
         name="cdndata",
         contexts={
+            discord.InteractionContextType.private_channel,
             discord.InteractionContextType.guild,
             discord.InteractionContextType.bot_dm,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
         },
     )
     async def cdn_data(self, ctx: discord.ApplicationContext):
@@ -524,8 +529,13 @@ class CDNCog(commands.Cog):
     @discord.slash_command(
         name="branches",
         contexts={
+            discord.InteractionContextType.private_channel,
             discord.InteractionContextType.guild,
             discord.InteractionContextType.bot_dm,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
         },
     )
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
@@ -770,9 +780,13 @@ Changes are saved when you click out of the menu.
         description="DM notification commands",
         contexts={
             discord.InteractionContextType.private_channel,
+            discord.InteractionContextType.guild,
             discord.InteractionContextType.bot_dm,
         },
-        integration_types={discord.IntegrationType.user_install},
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
     )
 
     @dm_commands.command(
