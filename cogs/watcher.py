@@ -779,9 +779,14 @@ Changes are saved when you click out of the menu.
         name="dm",
         description="DM notification commands",
         contexts={
+            discord.InteractionContextType.private_channel,
+            discord.InteractionContextType.guild,
             discord.InteractionContextType.bot_dm,
         },
-        integration_types={discord.IntegrationType.user_install},
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
     )
 
     @dm_commands.command(
