@@ -134,15 +134,15 @@ class GuildCFG:
 
         return True
 
-    def update_guild_config(self, guild_id: int | str, new_data, setting: Setting):
+    def update_guild_config(self, guild_id: int | str, new_data, setting_name: str):
         logger.debug(f"Updating guild configuration for guild {guild_id}...")
         logger.debug(
-            f"Guild config update payload - new data: {new_data}, setting: {setting.name}."
+            f"Guild config update payload - new data: {new_data}, setting: {setting_name}."
         )
 
         with open(self.guild_cfg_path, "r+") as file:
             file_json = json.load(file)
-            file_json[str(guild_id)][setting.name] = new_data
+            file_json[str(guild_id)][setting_name] = new_data
 
             file.seek(0)
             json.dump(file_json, file, indent=4)
