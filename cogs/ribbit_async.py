@@ -30,7 +30,6 @@ class Version:
     build: str
     build_text: str
     product_config: str
-    encrypted: bool
     branch: str
     seqn: int
 
@@ -57,7 +56,6 @@ class Version:
             "build": self.build,
             "build_text": self.build_text,
             "product_config": self.product_config,
-            "encrypted": self.encrypted,
             "branch": self.branch,
             "seqn": self.seqn,
         }
@@ -163,22 +161,6 @@ class RibbitClient:
             regionData = d
             regionData["region"] = region
             regionData["branch"] = product
-
-            if product != "catalogs":
-                try:
-                    encrypted = await TACT.is_encrypted(
-                        product, regionData["ProductConfig"]
-                    )
-                except:
-                    logger.error(
-                        f"Error occurred checking encryption status for {product}.",
-                        exc_info=True,
-                    )
-                    encrypted = None
-
-                regionData["encrypted"] = encrypted
-            else:
-                regionData["encrypted"] = False
 
             output[d["Region"]] = Version(regionData, sequence)
 

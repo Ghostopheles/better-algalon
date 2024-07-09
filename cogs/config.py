@@ -473,6 +473,7 @@ class LiveConfig(Singleton):
             cfg["products"][branch.name] = {
                 "public_name": branch.value,
                 "test_branch": branch in TEST_BRANCHES,
+                "encrypted": False,
             }
         return cfg
 
@@ -506,6 +507,12 @@ class LiveConfig(Singleton):
         data = LiveConfig.__open()
         if branch in data["products"].keys():
             return data["products"][branch]["public_name"]
+
+    @staticmethod
+    def get_product_encryption_state(branch: str):
+        data = LiveConfig.__open()
+        if branch in data["products"].keys():
+            return data["products"][branch]["encrypted"]
 
     @staticmethod
     def get_debug_value(key: str, default: Optional[Any] = None) -> Optional[str]:
