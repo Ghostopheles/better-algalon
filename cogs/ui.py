@@ -187,3 +187,19 @@ class MonitorUI(ui.View):
 
         view.add_item(menu)
         return view
+
+
+class PremiumButton(ui.Button):
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.respond("uwu")
+
+
+class PremiumRequired(ui.View):
+    @classmethod
+    def create(cls, label: str, sku: int):
+        view = cls()
+        button = PremiumButton(
+            label=label, style=discord.ButtonStyle.premium, sku_id=sku
+        )
+        view.add_item(button)
+        return view
