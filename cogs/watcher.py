@@ -435,6 +435,8 @@ class CDNCog(commands.Cog):
 
         try:
             await self.distribute_embeds(self.cdn_auto_refresh.current_loop == 0)
+            monitor = self.bot.get_cog("MonitorCog")
+            await monitor.distribute_notifications()
         except Exception as exc:
             logger.critical("Error occurred when distributing embeds", exc_info=True)
 
