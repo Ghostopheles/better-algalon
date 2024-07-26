@@ -40,7 +40,7 @@ class MonitorCog(commands.Cog):
         watcher.cdn_cache.register_monitor_cog(self)
 
     def is_disabled(self):
-        return not livecfg.get_cfg_value("discord", "monitoring_enabled", False)
+        return not livecfg.get_cfg_value("features", "monitoring_enabled", False)
 
     def get_field_enum_from_value(self, field: str):
         for enum_val in Monitorable:
