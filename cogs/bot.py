@@ -35,7 +35,9 @@ class Algalon(discord.Bot):
         message += f"Args:\n"
         message += "\n".join(arg for arg in exc.args)
         message += f"\nCALLER: {ctx.author} ({ctx.author.id})\n"
-        message += f"GUILD: {ctx.guild} ({ctx.guild.id})\n```"  # type: ignore
+        if ctx.guild is not None:
+            message += f"GUILD: {ctx.guild} ({ctx.guild.id})\n"  # type: ignore
+        message += "```"
         message += "See logs for traceback."
 
         await self.send_message_to_owner(message)
