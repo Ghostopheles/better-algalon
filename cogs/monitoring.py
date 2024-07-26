@@ -114,6 +114,8 @@ class MonitorCog(commands.Cog):
             if dm_channel:
                 await dm_channel.send(message)
 
+        self.updates.clear()
+
     monitor_commands = discord.SlashCommandGroup(
         name="monitor",
         description="Data monitoring commands",
