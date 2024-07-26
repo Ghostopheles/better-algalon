@@ -114,7 +114,7 @@ class MonitorCog(commands.Cog):
             discord.InteractionContextType.bot_dm,
         },
         integration_types={
-            discord.IntegrationType.guild_install,
+            # discord.IntegrationType.guild_install, TODO: reenable after testing
             discord.IntegrationType.user_install,
         },
     )
@@ -142,19 +142,6 @@ class MonitorCog(commands.Cog):
             ephemeral=True,
             delete_after=300,
         )
-
-    @monitor_commands.command(name="test")
-    async def monitor_test(self, ctx: discord.ApplicationContext):
-        # TODO: remove me
-
-        new_data = "test data pls ignore"
-        self.on_field_update("wow", "keyring", new_data)
-        self.on_field_update("wow", "cdn_config", new_data)
-        self.on_field_update("wow_beta", "keyring", new_data)
-        self.on_field_update("wow_beta", "cdn_config", new_data)
-        self.on_field_update("wowdev", "product_config", new_data)
-
-        await self.distribute_notifications()
 
 
 def setup(bot: Algalon):
