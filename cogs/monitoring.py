@@ -84,7 +84,7 @@ class MonitorCog(commands.Cog):
                 return
 
             i = len(packages)
-            message = f"Field change{'s'[:i^1]} found:\n"
+            message = f"## Field change{'s'[:i^1]} found:\n"
             for package in packages:
                 package: UpdatePackage
                 if package.field == Monitorable.CDNConfig:
@@ -99,7 +99,7 @@ class MonitorCog(commands.Cog):
                 else:
                     new_data = f"`{new_data}`"
 
-                message += f"{package.branch}: `{package.branch.name}`.`{package.field}` -> {new_data}\n"
+                message += f"**{package.branch}**: `{package.branch.name}`.`{package.field}` -> {new_data}\n"
 
             dm_channel = await user.create_dm()
             if dm_channel:
