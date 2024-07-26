@@ -23,20 +23,6 @@ class Monitorable(StrEnum):
     KeyRing = "keyring"
 
 
-"""
-It's a bit arcane but this is the structure I see for the internal monitoring list
-
-monitoring = {
-    "keyring": {
-        "us": [
-            "wow_beta"
-        ]
-    }
-}
-
-"""
-
-
 class MonitorList:
     def __init__(self, monitoring: Optional[dict[str, list[str]]] = None):
         self.__monitoring = monitoring if monitoring else self.__get_default_list()
