@@ -39,6 +39,9 @@ class MonitorCog(commands.Cog):
         watcher = self.bot.get_cog("CDNCog")
         watcher.cdn_cache.register_monitor_cog(self)
 
+    def is_disabled(self):
+        return not livecfg.get_cfg_value("discord", "monitoring_enabled", False)
+
     def get_field_enum_from_value(self, field: str):
         for enum_val in Monitorable:
             if enum_val.value == field:
@@ -56,6 +59,9 @@ class MonitorCog(commands.Cog):
         return users
 
     def on_field_update(self, branch: str, field: str, new_data: Any):
+        if self.is_disabled():
+            return
+
         branch = SUPPORTED_PRODUCTS[branch]
         field = self.get_field_enum_from_value(field)
         package = UpdatePackage(branch, field, new_data)
@@ -70,6 +76,9 @@ class MonitorCog(commands.Cog):
                 self.updates[user_id] = [package]
 
     async def distribute_notifications(self):
+        if self.is_disabled():
+            return
+
         updates = self.updates
         if len(updates) == 0:
             return
@@ -114,7 +123,7 @@ class MonitorCog(commands.Cog):
             discord.InteractionContextType.bot_dm,
         },
         integration_types={
-            # discord.IntegrationType.guild_install, TODO: reenable after testing
+            discord.IntegrationType.guild_install,
             discord.IntegrationType.user_install,
         },
     )
@@ -128,6 +137,12 @@ class MonitorCog(commands.Cog):
         branch: str,
     ):
         """Edit the fields you're watching for the given branch"""
+        if self.is_disabled():
+            await ctx.respond(
+                "Monitoring features are currently disabled. Please try again later."
+            )
+            return
+
         try:
             branch = SUPPORTED_PRODUCTS[branch]
         except:
