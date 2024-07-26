@@ -5,7 +5,7 @@ import logging
 
 from dataclasses import dataclass
 from typing import Any
-from discord.ext import commands, pages, tasks
+from discord.ext import commands
 
 from cogs.bot import Algalon
 from cogs.user_config import UserConfigFile, Monitorable
