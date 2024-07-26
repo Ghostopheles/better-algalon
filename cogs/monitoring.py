@@ -141,7 +141,9 @@ class MonitorCog(commands.Cog):
         """Edit the fields you're watching for the given branch"""
         if self.is_disabled():
             await ctx.respond(
-                "Monitoring features are currently disabled. Please try again later."
+                "Monitoring features are currently disabled. Please try again later.",
+                ephemeral=True,
+                delete_after=DELETE_AFTER,
             )
             return
 
