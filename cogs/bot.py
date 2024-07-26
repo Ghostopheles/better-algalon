@@ -9,7 +9,7 @@ logger = logging.getLogger("discord")
 class Algalon(discord.Bot):
     """This is the almighty CDN bot, also known as Algalon. Inherits from `discord.Bot`."""
 
-    COGS_LIST = ["watcher", "nux", "admin"]
+    COGS_LIST = ["watcher", "nux", "monitoring", "admin"]
 
     def __init__(self, command_prefix, **options):
         command_prefix = command_prefix or "!"

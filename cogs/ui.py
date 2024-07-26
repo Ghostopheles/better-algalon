@@ -17,7 +17,7 @@ from cogs.config import (
 )
 
 from cogs.guild_config import GuildCFG
-from cogs.user_config import UserConfigFile
+from cogs.user_config import UserConfigFile, Monitorable, MonitorableRegion
 
 logger = logging.getLogger("discord.test")
 
@@ -120,6 +120,67 @@ class WatchlistUI(ui.View):
             options.append(option)
 
         min_values = 0
+
+        menuClass = (
+            GuildSelectMenu if menuType == WatchlistMenuType.GUILD else UserSelectMenu
+        )
+
+        menu = menuClass(
+            select_type=discord.ComponentType.string_select,
+            options=options,
+            min_values=min_values,
+            max_values=len(options),
+        )
+
+        view.add_item(menu)
+
+        return view
+
+
+class MonitorSelectMode(Enum):
+    FIELD = 1
+    REGION = 2
+
+
+class MonitorSelectMenu(ui.Select):
+    mode: MonitorSelectMode
+
+    async def callback(self, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        if interaction.data is None:
+            return
+
+        selected = interaction.data["values"]
+
+        await interaction.response.defer(ephemeral=True, invisible=True)
+
+
+class MonitorUI(ui.View):
+    @classmethod
+    def create_monitor_setup(cls, user_id: int, field: Monitorable):
+        view = cls()
+
+        min_field_values = 1
+        max_field_values = len(Monitorable)
+        field_options = []
+        for field in Monitorable:
+            option = discord.SelectOption(
+                label=field,
+                value=field.name,
+                default=False,
+                description="Monitor changes to this field in only this region",
+            )
+
+        min_region_values = 1
+        max_region_values = 1
+        region_options = []
+        for region in MonitorableRegion:
+            option = discord.SelectOption(
+                label=region,
+                value=region.name,
+                default=region == MonitorableRegion.US,
+                description="Monitor changes to this field in only this region",
+            )
 
         menuClass = (
             GuildSelectMenu if menuType == WatchlistMenuType.GUILD else UserSelectMenu

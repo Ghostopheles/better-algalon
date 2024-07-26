@@ -2,6 +2,7 @@ import os
 import json
 import logging
 
+from enum import StrEnum
 from typing import TypeVar, Optional
 
 from .config import CacheConfig
@@ -15,17 +16,123 @@ logger = logging.getLogger("discord.cdn.user-cfg")
 UID = TypeVar("UID", str, int)
 
 
+class Monitorable(StrEnum):
+    BuildConfig = "build_config"
+    CDNConfig = "cdn_config"
+    ProductConfig = "product_config"
+    KeyRing = "keyring"
+
+
+class MonitorableRegion(StrEnum):
+    US = "us"
+    EU = "eu"
+    CN = "cn"
+    KR = "kr"
+    TW = "tw"
+    SG = "sg"
+    XX = "xx"
+
+
+"""
+It's a bit arcane but this is the structure I see for the internal monitoring list
+
+monitoring = {
+    "keyring": {
+        "us": [
+            "wow_beta"
+        ]
+    }
+}
+
+"""
+
+
+class MonitorList:
+    DEFAULT_REGION = "us"
+
+    def __init__(self, monitoring: Optional[dict[str, list[str]]] = None):
+        self.__monitoring = monitoring if monitoring else self.__get_default_list()
+
+    def __get_default_list(self) -> dict:
+        return dict()
+
+    def __remove_duplicates(self):
+        for field, regions in self.__monitoring.items():
+            for region, branches in regions.items():
+                self.__monitoring[field][region] = [*set(branches)]
+
+    def to_json(self) -> dict:
+        return self.__monitoring
+
+    def is_monitoring_field(
+        self,
+        branch: str,
+        field: Monitorable,
+        region: MonitorableRegion = DEFAULT_REGION,
+    ) -> bool:
+        if field not in self.__monitoring:
+            return False
+
+        if region not in self.__monitoring[field]:
+            return False
+
+        return branch in self.__monitoring[field][region]
+
+    def monitor_field(
+        self,
+        branch: str,
+        field: Monitorable,
+        region: MonitorableRegion = DEFAULT_REGION,
+    ):
+        if field not in self.__monitoring:
+            self.__monitoring[field] = dict()
+
+        if region not in self.__monitoring[field]:
+            self.__monitoring[field][region] = list()
+
+        self.__monitoring[field][region].append(branch)
+        self.__remove_duplicates()
+        return True
+
+    def unmonitor_field(
+        self,
+        branch: str,
+        field: Monitorable,
+        region: MonitorableRegion = DEFAULT_REGION,
+    ):
+        if field not in self.__monitoring:
+            return False
+
+        if region not in self.__monitoring[field]:
+            return False
+
+        if branch not in self.__monitoring[field][region]:
+            return False
+
+        self.__monitoring[field][region].remove(branch)
+        if len(self.__monitoring[field][region]) == 0:
+            del self.__monitoring[field][region]
+
+        if len(self.__monitoring[field]) == 0:
+            del self.__monitoring[field]
+
+        return True
+
+
 class UserEntry:
     def __init__(self, user_id: UID, user_entry: Optional[dict] = None):
         self.__entry = user_entry if user_entry else self.__get_default_entry()
         self.user_id = str(user_id)
         self.watchlist: list[str] = self.__entry["watchlist"]
+        self.monitor: MonitorList = MonitorList(
+            self.__entry["monitor"] if "monitor" in self.__entry else None
+        )
 
     def __get_default_entry(self) -> dict:
-        return {"watchlist": []}
+        return {"watchlist": [], "monitor": MonitorList()}
 
     def to_json(self) -> dict:
-        return {"watchlist": self.watchlist}
+        return {"watchlist": self.watchlist, "monitor": self.monitor.to_json()}
 
     def get_user_id(self) -> str:
         return self.user_id
@@ -49,6 +156,22 @@ class UserEntry:
 
         self.watchlist.remove(branch)
         return True
+
+    def get_monitor_list(self) -> MonitorList:
+        return self.monitor
+
+    def is_monitoring(self, branch: str, field: Monitorable, region: MonitorableRegion):
+        return self.monitor.is_monitoring_field(branch, field, region)
+
+    def add_to_monitor(
+        self, branch: str, field: Monitorable, region: MonitorableRegion
+    ) -> bool:
+        return self.monitor.monitor_field(branch, field, region)
+
+    def remove_from_monitor(
+        self, branch: str, field: Monitorable, region: MonitorableRegion
+    ) -> bool:
+        return self.monitor.unmonitor_field(branch, field, region)
 
 
 class UserTable:
@@ -253,6 +376,98 @@ class UserConfigFile:
             return
 
         return user.get_watchlist()
+
+    def get_monitor_list(self, user_id: int) -> Optional[MonitorList]:
+        if not self.__active:
+            return
+
+        if self.stale:
+            return
+
+        user_id = str(user_id)
+        user = self.users.get_user(user_id)
+        if not user:
+            return
+
+        return user.get_monitor_list()
+
+    def monitor(
+        self, user_id: int, branch: str, field: Monitorable, region: MonitorableRegion
+    ) -> tuple[bool, str]:
+        if not self.__active:
+            return False, "File context not active"
+
+        if self.stale:
+            return False, "Stale config file"
+
+        if not self.lookup.has_branch(branch):
+            return False, "Invalid branch"
+
+        user_id = str(user_id)
+        user = self.users.get_or_add_user(user_id)
+
+        monitor_list = user.get_monitor_list()
+        if monitor_list.is_monitoring_field(branch, field, region):
+            return (
+                False,
+                "You are already monitoring this field for this branch and region",
+            )
+
+        success = user.add_to_monitor(branch, field, region)
+        if success:
+            message = "Success"
+        else:
+            message = "Error occurred adding branch, field, and region to monitor list"
+        return success, message
+
+    def unmonitor(
+        self, user_id: int, branch: str, field: Monitorable, region: MonitorableRegion
+    ) -> tuple[bool, str]:
+        if not self.__active:
+            return False, "File context not active"
+
+        if self.stale:
+            return False, "Stale config file"
+
+        if not self.lookup.has_branch(branch):
+            return False, "Invalid branch"
+
+        user_id = str(user_id)
+        user = self.users.get_or_add_user(user_id)
+
+        monitor_list = user.get_monitor_list()
+        if not monitor_list.is_monitoring_field(branch, field, region):
+            return (
+                False,
+                "You are not monitoring this field for this branch and region",
+            )
+
+        success = user.remove_from_monitor(branch, field, region)
+        if success:
+            message = "Success"
+        else:
+            message = (
+                "Error occurred removing branch, field, and region from monitor list"
+            )
+        return success, message
+
+    def is_monitoring(
+        self, user_id: int, branch: str, field: Monitorable, region: MonitorableRegion
+    ) -> bool:
+        if not self.__active:
+            return False, "File context not active"
+
+        if self.stale:
+            return False, "Stale config file"
+
+        if not self.lookup.has_branch(branch):
+            return False, "Invalid branch"
+
+        user_id = str(user_id)
+        user = self.users.get_or_add_user(user_id)
+
+        monitor_list = user.get_monitor_list()
+        return monitor_list.is_monitoring_field(branch, field, region)
 
     def subscribe(self, user_id: int, branch: str) -> tuple[bool, str]:
         if not self.__active:
