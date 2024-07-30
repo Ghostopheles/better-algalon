@@ -6,6 +6,9 @@ import shutil
 import logging
 import asyncio
 
+from typing import Any
+
+from cogs.user_config import Monitorable
 from .api.blizzard_tact import BlizzardTACTExplorer
 from .config import LiveConfig, CacheConfig
 from .ribbit_async import RibbitClient
@@ -31,6 +34,8 @@ class CDNCache:
             self.init_cdn()
 
         self.patch_cdn_keys()
+
+        self.monitor = None
 
     def patch_cdn_keys(self):
         with open(self.cdn_path, "r+") as file:
@@ -65,6 +70,15 @@ class CDNCache:
             }
             json.dump(template, file, indent=4)
 
+    def register_monitor_cog(self, cog):
+        self.monitor = cog
+
+    def notify_watched_field_updated(self, branch: str, field: str, new_data: Any):
+        if not self.monitor:
+            return
+
+        self.monitor.on_field_update(branch, field, new_data)
+
     def compare_builds(self, branch: str, newBuild: dict) -> bool:
         """
         Compares two builds.
@@ -90,13 +104,27 @@ class CDNCache:
                 logger.warning(f"Lower sequence number found for {branch}")
                 return False
 
+            build_info = file_json["buildInfo"]
+            for area in newBuild:
+                if area not in Monitorable._value2member_map_:
+                    continue
+
+                if branch not in build_info:
+                    break
+
+                if area not in build_info[branch]:
+                    build_info[branch][area] = None
+
+                if build_info[branch][area] != newBuild[area]:
+                    self.notify_watched_field_updated(branch, area, newBuild[area])
+
             for area in self.CONFIG.AREAS_TO_CHECK_FOR_UPDATES:
-                if branch in file_json["buildInfo"]:
-                    if file_json["buildInfo"][branch][area] != newBuild[area]:
+                if branch in build_info:
+                    if build_info[branch][area] != newBuild[area]:
                         logger.debug(f"Updated info found for {branch} @ {area}")
                         return True
                 else:
-                    file_json["buildInfo"][branch][area] = newBuild[area]
+                    build_info[branch][area] = newBuild[area]
                     return True
             return False
 
@@ -207,4 +235,5 @@ class CDNCache:
             return output_data
         else:
             logger.debug(f"No new data found for {branch}")
+            self.save_build_data(branch, data)
             return

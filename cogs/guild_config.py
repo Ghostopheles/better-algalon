@@ -172,7 +172,7 @@ class GuildCFG:
                 watchlist.append(branch)
 
             self.update_guild_config(
-                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST
+                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST.name
             )
             return True, self.CONFIG.errors.OK
 
@@ -195,7 +195,7 @@ class GuildCFG:
                 watchlist.remove(branch)
 
             self.update_guild_config(
-                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST
+                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST.name
             )
             return True, self.CONFIG.errors.OK
 
@@ -227,7 +227,7 @@ class GuildCFG:
         )
 
         key = self.get_cfg_for_game(game)
-        self.update_guild_config(guild_id, new_channel, key)
+        self.update_guild_config(guild_id, new_channel, key.name)
 
         return True
 

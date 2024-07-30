@@ -19,6 +19,7 @@ field_name_conversions = {
     "BuildId": "build",
     "VersionsName": "build_text",
     "ProductConfig": "product_config",
+    "KeyRing": "keyring",
 }
 
 
@@ -31,6 +32,7 @@ class Version:
     build_text: str
     product_config: str
     branch: str
+    keyring: str
     seqn: int
 
     def __init__(self, data: dict, seqn: int):
@@ -46,7 +48,7 @@ class Version:
         if len(build_text_split) > 1:
             self.build_text = ".".join(build_text_split)
 
-        self.seqn = seqn
+        self.seqn = int(seqn)
 
     def __dict__(self):
         return {
@@ -57,6 +59,7 @@ class Version:
             "build_text": self.build_text,
             "product_config": self.product_config,
             "branch": self.branch,
+            "keyring": self.keyring,
             "seqn": self.seqn,
         }
 
