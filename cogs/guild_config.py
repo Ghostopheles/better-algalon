@@ -227,7 +227,7 @@ class GuildCFG:
         )
 
         key = self.get_cfg_for_game(game)
-        self.update_guild_config(guild_id, new_channel, key)
+        self.update_guild_config(guild_id, new_channel, key.name)
 
         return True
 
