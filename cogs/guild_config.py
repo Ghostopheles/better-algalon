@@ -172,7 +172,7 @@ class GuildCFG:
                 watchlist.append(branch)
 
             self.update_guild_config(
-                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST
+                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST.name
             )
             return True, self.CONFIG.errors.OK
 
@@ -195,7 +195,7 @@ class GuildCFG:
                 watchlist.remove(branch)
 
             self.update_guild_config(
-                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST
+                guild_id, [*set(watchlist)], self.CONFIG.settings.WATCHLIST.name
             )
             return True, self.CONFIG.errors.OK
 
