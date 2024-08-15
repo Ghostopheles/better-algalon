@@ -17,7 +17,7 @@ from cogs.config import (
 )
 
 from cogs.guild_config import GuildCFG
-from cogs.user_config import UserConfigFile
+from cogs.user_config import UserConfigFile, Monitorable
 
 logger = logging.getLogger("discord.test")
 
@@ -76,7 +76,6 @@ class UserSelectMenu(ui.Select):
         if len(selected) > 0:
             game = WatcherConfig.get_game_from_branch(selected[0])
             with USER_CONFIG as cfg:
-
                 branches = get_branches_for_game(game)
                 old_watchlist = cfg.get_watchlist(user_id)
                 for branch in branches:
@@ -134,4 +133,73 @@ class WatchlistUI(ui.View):
 
         view.add_item(menu)
 
+        return view
+
+
+class MonitorSelectMenu(ui.Select):
+    branch: SUPPORTED_PRODUCTS
+
+    async def callback(self, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        if interaction.data is None:
+            return
+
+        branch = self.branch.name
+        selected = interaction.data["values"]
+        with USER_CONFIG as cfg:
+            for field in Monitorable:
+                monitoring = cfg.is_monitoring(user_id, branch, field)
+                if field in selected and not monitoring:
+                    cfg.monitor(user_id, branch, field)
+                elif monitoring and field not in selected:
+                    cfg.unmonitor(user_id, branch, field)
+
+        await interaction.response.defer(ephemeral=True, invisible=True)
+
+    def set_branch(self, branch: str):
+        self.branch = branch
+
+
+class MonitorUI(ui.View):
+    @classmethod
+    def create(cls, user_id: int, branch: SUPPORTED_PRODUCTS):
+        view = cls()
+
+        min_values = 0
+        with USER_CONFIG as user_data:
+            options = []
+            for field in Monitorable:
+                option = discord.SelectOption(
+                    label=field,
+                    value=field,
+                    default=user_data.is_monitoring(user_id, branch.name, field),
+                    description=f"Notify on changes to the {field.value} field in {branch}",
+                )
+                options.append(option)
+
+        menu = MonitorSelectMenu(
+            select_type=discord.ComponentType.string_select,
+            options=options,
+            min_values=min_values,
+            max_values=len(options),
+        )
+        menu.set_branch(branch)
+
+        view.add_item(menu)
+        return view
+
+
+class PremiumButton(ui.Button):
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.respond("uwu")
+
+
+class PremiumRequired(ui.View):
+    @classmethod
+    def create(cls, label: str, sku: int):
+        view = cls()
+        button = PremiumButton(
+            label=label, style=discord.ButtonStyle.premium, sku_id=sku
+        )
+        view.add_item(button)
         return view

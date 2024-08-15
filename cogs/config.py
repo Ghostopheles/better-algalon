@@ -468,6 +468,7 @@ class LiveConfig(Singleton):
             "debug": {
                 "debug_mode": True,  # defaults to True because y'know, the file doesn't exist, probably first run or something
             },
+            "features": {"monitoring_enabled": False},
         }
         for branch in SUPPORTED_PRODUCTS:
             cfg["products"][branch.name] = {

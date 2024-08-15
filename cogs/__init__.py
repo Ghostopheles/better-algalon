@@ -13,4 +13,5 @@ __all__ = [
     "ui",
     "utils",
     "watcher",
+    "monitoring",
 ]
