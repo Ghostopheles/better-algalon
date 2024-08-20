@@ -104,9 +104,12 @@ class SUPPORTED_PRODUCTS(StrEnum):
     fenrisdev = "Diablo IV Internal"
     fenrisdev2 = "Diablo IV Internal 2"
     fenrise = "Diablo IV Event"
+    fenrishf = "Diablo IV Hotfix"
     fenrisvendor1 = "Diablo IV Vendor"
     fenrisvendor2 = "Diablo IV Vendor 2"
     fenrisvendor3 = "Diablo IV Vendor 3"
+    fenrisvendor4 = "Diablo IV Vendor 4"
+    fenrisvendor5 = "Diablo IV Vendor 5"
     # Rumble
     gryphon = "Warcraft Rumble Live"
     gryphonb = "Warcraft Rumble Beta"
