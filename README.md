@@ -50,9 +50,12 @@ A lock indicates that the given branch is encrypted and not accessible to the pu
 | fenrisdev :lock: | Diablo IV Internal |
 | fenrisdev2 :lock: | Diablo IV Internal 2 |
 | fenrise :lock: | Diablo IV Event |
+| fenrishf | Diablo IV Hotfix |
 | fenrisvendor1 :lock: | Diablo IV Vendor |
 | fenrisvendor2 :lock: | Diablo IV Vendor 2 |
 | fenrisvendor3 :lock: | Diablo IV Vendor 3 |
+| fenrisvendor4 :lock: | Diablo IV Vendor 4 |
+| fenrisvendor5 :lock: | Diablo IV Vendor 5 |
 
 ### Warcraft Rumble
 | Branch Name | Readable Name |
