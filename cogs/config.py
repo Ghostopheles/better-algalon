@@ -188,9 +188,12 @@ DIABLO_BRANCHES = [
     SUPPORTED_PRODUCTS.fenrisdev,
     SUPPORTED_PRODUCTS.fenrisdev2,
     SUPPORTED_PRODUCTS.fenrise,
+    SUPPORTED_PRODUCTS.fenrishf,
     SUPPORTED_PRODUCTS.fenrisvendor1,
     SUPPORTED_PRODUCTS.fenrisvendor2,
     SUPPORTED_PRODUCTS.fenrisvendor3,
+    SUPPORTED_PRODUCTS.fenrisvendor4,
+    SUPPORTED_PRODUCTS.fenrisvendor5,
 ]
 
 RUMBLE_BRANCHES = [
