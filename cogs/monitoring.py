@@ -4,7 +4,7 @@ import discord
 import logging
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 from discord.ext import commands
 
 from cogs.bot import Algalon
@@ -62,7 +62,11 @@ class MonitorCog(commands.Cog):
         if self.is_disabled():
             return
 
-        branch = SUPPORTED_PRODUCTS[branch]
+        if SUPPORTED_PRODUCTS.has_key(branch):
+            branch = SUPPORTED_PRODUCTS[branch]
+        else:
+            return
+
         field = self.get_field_enum_from_value(field)
         package = UpdatePackage(branch, field, new_data)
         watchers = self.get_all_watchers_for_branch_field(branch, field)
@@ -147,12 +151,13 @@ class MonitorCog(commands.Cog):
             )
             return
 
-        try:
+        if SUPPORTED_PRODUCTS.has_key(branch):
             branch = SUPPORTED_PRODUCTS[branch]
-        except:
+        else:
             await ctx.respond(
                 "Invalid branch specified", ephemeral=True, delete_after=DELETE_AFTER
             )
+            return
 
         view = MonitorUI.create(ctx.author.id, branch)
         await ctx.respond(
