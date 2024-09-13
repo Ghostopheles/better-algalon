@@ -412,7 +412,7 @@ class CDNCog(commands.Cog):
             data_text += f"**Build:** `{data['build']}`\n"
             data_text += f"**Version:** `{data['build_text']}`\n"
             data_text += f"**Product Config:** `{data['product_config'] if data['product_config'] != "" else "N/A"}`\n"
-            data_text += f"**Encrypted:** `{data['encrypted']}`"
+            data_text += f"**Encrypted:** `{data['encrypted'] if 'encrypted' in data else 'N/A'}`"
 
             embed.add_field(name="Current Data", value=data_text, inline=False)
 
