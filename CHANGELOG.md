@@ -1,3 +1,14 @@
+# Changelog v2.1.0 - Iridium
+
+## Added
+- Algalon has finally left the house and touched the sky. Algalon can now be found on Bluesky as [@algalon.bsky.social](https://bsky.app/profile/algalon.bsky.social/).
+- Algalon is now able to notify your via DM about certain metadata field updates for specific game branches.
+   - As an example, you can receive a DM every time the `keyring` field is updated for `wow_beta`. Pretty fancy, huh? Just me? Okay.
+- Now observing `fenrishf`, `fenrisvendor4` and `fenrisvendor5`
+
+## Fixed
+- Cleared up a few annoying bugs that would cause confusing error messages or failed commands
+
 # Changelog v2.0.0 - Fermium
 
 ## Added

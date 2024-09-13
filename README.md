@@ -1,13 +1,13 @@
 # better-algalon
 ![GitHub License](https://img.shields.io/github/license/ghostopheles/better-algalon?style=for-the-badge) ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ghostopheles/better-algalon?style=for-the-badge) ![GitHub last commit](https://img.shields.io/github/last-commit/ghostopheles/better-algalon?display_timestamp=author&style=for-the-badge) ![Discord](https://img.shields.io/discord/1144396478840844439?style=for-the-badge&logo=discord)
 
-v2.0.0 - Fermium
+v2.1.0 - Iridium
 
 A bot that watches Blizzard's CDN and automatically posts new build updates to specified Discord channels.
 
 Inspired by, and vaguely based on the original [Algalon bot by Ellypse](https://github.com/Ellypse/Algalon).
 
-Includes a Twitter integration to post updates to Twitter alongside Discord. This will be replaced in the future with Algalon 3.0 (lol). This bot can be found on Twitter as [@algalon_ghost](https://algalon.ghst.tools/).
+Includes some social integrations to post updates to different social media sites alongside Discord. This bot can be found on Twitter as [@algalon_ghost](https://algalon.ghst.tools/) and on Bluesky as [@algalon.bsky.social](https://bsky.app/profile/algalon.bsky.social/).
 
 Check out the [changelog](CHANGELOG.md) to view the most recent changes.
 
@@ -108,4 +108,8 @@ Algalon provides a number of commands to control your guild's (server) watchlist
 `/dm edit`*: Returns a graphical editor for editing your personal watchlist.
 
 `/dm view`: Returns all the branches you're currently subscribed to.
+
+#### Metadata Monitoring
+
+`/monitor edit`: Returns a graphical editor to configure DM notifications about game version metadata changes.
 
