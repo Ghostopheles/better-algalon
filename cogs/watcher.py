@@ -19,7 +19,7 @@ from cogs.config import WatcherConfig as cfg
 from cogs.config import DebugConfig as dbg
 from cogs.config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
 from cogs.utils import get_discord_timestamp
-from cogs.api.twitter import Twitter
+from cogs.api.social import SocialPlatforms
 from cogs.ui import WatchlistUI, WatchlistMenuType
 
 START_LOOPS = livecfg.get_cfg_value("meta", "start_loops")
@@ -44,7 +44,7 @@ class CDNCog(commands.Cog):
         self.guild_cfg = GuildCFG()
         self.user_cfg = UserConfigFile()
         self.live_cfg = livecfg()
-        self.twitter = Twitter()
+        self.socials = SocialPlatforms()
         self.last_update = 0
         self.last_update_formatted = ""
 
@@ -324,14 +324,9 @@ class CDNCog(commands.Cog):
 
                         if channel.id == ANNOUNCEMENT_CHANNELS["wow"]:
                             await message.publish()
-                            response = await self.twitter.send_tweet(
+                            await self.socials.distribute_posts(
                                 actual_embed.to_dict(), token
                             )
-                            if response:
-                                logger.critical(
-                                    f"Tweet failed with: {response}.\n{actual_embed.to_dict()}"
-                                )
-                                await self.notify_owner_of_exception(response)
                         elif channel.id in ANNOUNCEMENT_CHANNELS.values():
                             await message.publish()
                     elif actual_embed and not channel:

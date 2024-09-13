@@ -533,6 +533,12 @@ class LiveConfig(Singleton):
 
         return default
 
+    @staticmethod
+    def is_social_platform_enabled(key: str) -> bool:
+        data = LiveConfig.__open()
+        platform_cfg = data["social"][key]
+        return platform_cfg["enabled"]
+
 
 ## DEBUG CONFIGURATION
 
