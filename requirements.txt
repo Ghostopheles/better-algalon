@@ -1,4 +1,5 @@
 py-cord[speed]==2.6.0
-httpx[http2]==0.27.0
+httpx[http2]==0.26.0
 tweepy[async]==4.14.0
 pyyaml==6.0.1
+atproto==0.0.53
