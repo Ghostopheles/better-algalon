@@ -151,12 +151,13 @@ class MonitorCog(commands.Cog):
             )
             return
 
-        try:
+        if SUPPORTED_PRODUCTS.has_key(branch):
             branch = SUPPORTED_PRODUCTS[branch]
-        except:
+        else:
             await ctx.respond(
                 "Invalid branch specified", ephemeral=True, delete_after=DELETE_AFTER
             )
+            return
 
         view = MonitorUI.create(ctx.author.id, branch)
         await ctx.respond(
