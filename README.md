@@ -1,5 +1,5 @@
 # better-algalon
-![GitHub License](https://img.shields.io/github/license/ghostopheles/better-algalon?style=for-the-badge) ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ghostopheles/better-algalon?style=for-the-badge) ![GitHub last commit](https://img.shields.io/github/last-commit/ghostopheles/better-algalon?display_timestamp=author&style=for-the-badge) ![Discord](https://img.shields.io/discord/1144396478840844439?style=for-the-badge&logo=discord)
+![GitHub License](https://img.shields.io/github/license/ghostopheles/better-algalon?style=for-the-badge) ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ghostopheles/better-algalon?style=for-the-badge) ![GitHub last commit](https://img.shields.io/github/last-commit/ghostopheles/better-algalon?display_timestamp=author&style=for-the-badge)
 
 v2.1.0 - Iridium
 
@@ -10,6 +10,8 @@ Inspired by, and vaguely based on the original [Algalon bot by Ellypse](https://
 Includes some social integrations to post updates to different social media sites alongside Discord. This bot can be found on Twitter as [@algalon_ghost](https://algalon.ghst.tools/) and on Bluesky as [@algalon.bsky.social](https://bsky.app/profile/algalon.bsky.social/).
 
 Check out the [changelog](CHANGELOG.md) to view the most recent changes.
+
+Add Algalon to your server or account [here!](https://ghst.tools/algalon/install)
 
 ## Observable Branches
 A lock indicates that the given branch is encrypted and not accessible to the public.
