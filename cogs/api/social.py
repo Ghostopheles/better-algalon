@@ -127,8 +127,9 @@ class SocialPlatforms:
 
     async def send_tweet(self, text: str):
         response = await self.twitter.create_tweet(text=text)
-        response.raise_for_status()
-        logger.info("Tweet sent successfully!")
+        if isinstance(response, aiohttp.ClientResponse):
+            response.raise_for_status()
+            logger.info("Tweet sent successfully!")
 
     async def send_bsky_post(self, text: str):
         await self.bsky.login(BSKY_USER, BSKY_PASS)

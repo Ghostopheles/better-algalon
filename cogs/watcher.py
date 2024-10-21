@@ -324,9 +324,14 @@ class CDNCog(commands.Cog):
 
                         if channel.id == ANNOUNCEMENT_CHANNELS["wow"]:
                             await message.publish()
-                            await self.socials.distribute_posts(
-                                actual_embed.to_dict(), token
-                            )
+                            try:
+                                await self.socials.distribute_posts(
+                                    actual_embed.to_dict(), token
+                                )
+                            except:
+                                logger.error(
+                                    "Encountered an error while distributing social media posts"
+                                )
                         elif channel.id in ANNOUNCEMENT_CHANNELS.values():
                             await message.publish()
                     elif actual_embed and not channel:
