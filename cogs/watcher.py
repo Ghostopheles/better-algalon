@@ -399,7 +399,8 @@ class CDNCog(commands.Cog):
                 )
                 continue
 
-            lock = ":lock:" if data["encrypted"] else ""
+            encrypted = data["encrypted"] if "encrypted" in data else "N/A"
+            lock = ":lock:" if encrypted else ""
 
             embed = discord.Embed(
                 title=f"CDN Data for: {product}{lock}",
@@ -412,7 +413,7 @@ class CDNCog(commands.Cog):
             data_text += f"**Build:** `{data['build']}`\n"
             data_text += f"**Version:** `{data['build_text']}`\n"
             data_text += f"**Product Config:** `{data['product_config'] if data['product_config'] != "" else "N/A"}`\n"
-            data_text += f"**Encrypted:** `{data['encrypted'] if 'encrypted' in data else 'N/A'}`"
+            data_text += f"**Encrypted:** `{encrypted}`"
 
             embed.add_field(name="Current Data", value=data_text, inline=False)
 
