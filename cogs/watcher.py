@@ -399,7 +399,7 @@ class CDNCog(commands.Cog):
                 )
                 continue
 
-            encrypted = data["encrypted"] if "encrypted" in data else "N/A"
+            encrypted = self.live_cfg.get_product_encryption_state(product.name)
             lock = ":lock:" if encrypted else ""
 
             embed = discord.Embed(
