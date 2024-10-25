@@ -8,10 +8,10 @@ import asyncio
 
 from typing import Any
 
-from cogs.user_config import Monitorable
-from .api.blizzard_tact import BlizzardTACTExplorer
-from .config import LiveConfig, CacheConfig
-from .ribbit_async import RibbitClient
+from cogs.api.blizzard_tact import BlizzardTACTExplorer
+from cogs.config import LiveConfig, CacheConfig
+from cogs.ribbit_async import RibbitClient
+from cogs.db import AlgalonDB as DB
 
 logger = logging.getLogger("discord.cdn.cache")
 
@@ -73,13 +73,15 @@ class CDNCache:
     def register_monitor_cog(self, cog):
         self.monitor = cog
 
-    def notify_watched_field_updated(self, branch: str, field: str, new_data: Any):
+    async def notify_watched_field_updated(
+        self, branch: str, field: str, new_data: Any
+    ):
         if not self.monitor:
             return
 
-        self.monitor.on_field_update(branch, field, new_data)
+        await self.monitor.on_field_update(branch, field, new_data)
 
-    def compare_builds(self, branch: str, newBuild: dict) -> bool:
+    async def compare_builds(self, branch: str, newBuild: dict) -> bool:
         """
         Compares two builds.
 
@@ -104,9 +106,10 @@ class CDNCache:
                 logger.warning(f"Lower sequence number found for {branch}")
                 return False
 
+            metadata_fields = await DB.get_all_metadata_fields()
             build_info = file_json["buildInfo"]
             for area in newBuild:
-                if area not in Monitorable._value2member_map_:
+                if area not in metadata_fields:
                     continue
 
                 if branch not in build_info:
@@ -116,7 +119,9 @@ class CDNCache:
                     build_info[branch][area] = None
 
                 if build_info[branch][area] != newBuild[area]:
-                    self.notify_watched_field_updated(branch, area, newBuild[area])
+                    await self.notify_watched_field_updated(
+                        branch, area, newBuild[area]
+                    )
 
             for area in self.CONFIG.AREAS_TO_CHECK_FOR_UPDATES:
                 if branch in build_info:
@@ -218,7 +223,7 @@ class CDNCache:
         data = _data.__dict__()
 
         logger.debug(f"Comparing build data for {branch}")
-        is_new = self.compare_builds(branch, data)
+        is_new = await self.compare_builds(branch, data)
 
         if is_new:
             output_data = data.copy()

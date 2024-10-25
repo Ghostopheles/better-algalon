@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import discord
 import discord.ui as ui
@@ -16,8 +17,8 @@ from cogs.config import (
     WatcherConfig,
 )
 
-from cogs.guild_config import GuildCFG
-from cogs.user_config import UserConfigFile, Monitorable
+from cogs.db import AlgalonDB as DB, Branch
+
 
 logger = logging.getLogger("discord.test")
 
@@ -27,7 +28,7 @@ class WatchlistMenuType(Enum):
     USER = 2
 
 
-def get_branches_for_game(game: SUPPORTED_GAMES):
+def get_branches_for_game(game: SUPPORTED_GAMES) -> list[Branch]:
     match game:
         case SUPPORTED_GAMES.Warcraft:
             return WOW_BRANCHES
@@ -41,10 +42,6 @@ def get_branches_for_game(game: SUPPORTED_GAMES):
             return None
 
 
-GUILD_CONFIG = GuildCFG()
-USER_CONFIG = UserConfigFile()
-
-
 class GuildSelectMenu(ui.Select):
     async def callback(self, interaction: discord.Interaction):
         guild_id = interaction.guild_id
@@ -55,13 +52,13 @@ class GuildSelectMenu(ui.Select):
         if len(selected) > 0:
             game = WatcherConfig.get_game_from_branch(selected[0])
             branches = get_branches_for_game(game)
-            old_watchlist = GUILD_CONFIG.get_guild_watchlist(guild_id)
+            old_watchlist = await DB.get_guild_watchlist(guild_id)
             for branch in branches:
                 branch = branch.name
                 if branch in selected and branch not in old_watchlist:
-                    GUILD_CONFIG.add_to_guild_watchlist(guild_id, branch)
+                    await DB.add_to_guild_watchlist(guild_id, branch)
                 elif branch in old_watchlist and branch not in selected:
-                    GUILD_CONFIG.remove_from_guild_watchlist(guild_id, branch)
+                    await DB.remove_from_guild_watchlist(guild_id, branch)
 
         await interaction.response.defer(ephemeral=True, invisible=True)
 
@@ -74,16 +71,17 @@ class UserSelectMenu(ui.Select):
 
         selected = interaction.data["values"]
         if len(selected) > 0:
-            game = WatcherConfig.get_game_from_branch(selected[0])
-            with USER_CONFIG as cfg:
-                branches = get_branches_for_game(game)
-                old_watchlist = cfg.get_watchlist(user_id)
-                for branch in branches:
-                    branch = branch.name
-                    if branch in selected and branch not in old_watchlist:
-                        cfg.subscribe(user_id, branch)
-                    elif branch in old_watchlist and branch not in selected:
-                        cfg.unsubscribe(user_id, branch)
+            game = WatcherConfig.get_game_from_branch(
+                selected[0]
+            )  # TODO: replace with db
+            branches = get_branches_for_game(game)
+            old_watchlist = await DB.get_user_watchlist(user_id)
+            for branch in branches:
+                branch = branch.internal_name
+                if branch in selected and branch not in old_watchlist:
+                    await DB.add_to_user_watchlist(user_id, branch)
+                elif branch in old_watchlist and branch not in selected:
+                    await DB.remove_from_user_watchlist(user_id, branch)
 
         await interaction.response.defer(ephemeral=True, invisible=True)
 
@@ -91,7 +89,7 @@ class UserSelectMenu(ui.Select):
 class WatchlistUI(ui.View):
     @classmethod
     def create_menu(
-        cls, watchlist: list[str], game: SUPPORTED_GAMES, menuType: WatchlistMenuType
+        cls, watchlist: list[Branch], game: SUPPORTED_GAMES, menuType: WatchlistMenuType
     ):
         branches = get_branches_for_game(game)
         if branches is None:
@@ -101,19 +99,17 @@ class WatchlistUI(ui.View):
 
         options = []
         for branch in branches:
-            branch: SUPPORTED_PRODUCTS
-
-            if branch in TEST_BRANCHES:
+            if branch.test:
                 description = "This is a test branch"
-            elif branch in INTERNAL_BRANCHES:
+            elif branch.internal:
                 description = "This is an internal branch"
             else:
                 description = None
 
             option = discord.SelectOption(
-                label=f"{branch.value} ({branch.name})",
-                value=branch.name,
-                default=branch.name in watchlist,
+                label=f"{branch.internal_name} ({branch.public_name})",
+                value=branch.internal_name,
+                default=branch.internal_name in watchlist,
                 description=description,
             )
             options.append(option)
@@ -144,15 +140,16 @@ class MonitorSelectMenu(ui.Select):
         if interaction.data is None:
             return
 
+        monitorable_fields = await DB.get_all_metadata_fields()
+
         branch = self.branch.name
         selected = interaction.data["values"]
-        with USER_CONFIG as cfg:
-            for field in Monitorable:
-                monitoring = cfg.is_monitoring(user_id, branch, field)
-                if field in selected and not monitoring:
-                    cfg.monitor(user_id, branch, field)
-                elif monitoring and field not in selected:
-                    cfg.unmonitor(user_id, branch, field)
+        for field in monitorable_fields:
+            monitoring = await DB.is_user_monitoring(user_id, branch, field)
+            if field in selected and not monitoring:
+                await DB.user_monitor(user_id, branch, field)
+            elif monitoring and field not in selected:
+                await DB.user_unmonitor(user_id, branch, field)
 
         await interaction.response.defer(ephemeral=True, invisible=True)
 
@@ -165,17 +162,18 @@ class MonitorUI(ui.View):
     def create(cls, user_id: int, branch: SUPPORTED_PRODUCTS):
         view = cls()
 
+        monitorable_fields = asyncio.run(DB.get_all_metadata_fields())
+
         min_values = 0
-        with USER_CONFIG as user_data:
-            options = []
-            for field in Monitorable:
-                option = discord.SelectOption(
-                    label=field,
-                    value=field,
-                    default=user_data.is_monitoring(user_id, branch.name, field),
-                    description=f"Notify on changes to the {field.value} field in {branch}",
-                )
-                options.append(option)
+        options = []
+        for field in monitorable_fields:
+            option = discord.SelectOption(
+                label=field,
+                value=field,
+                default=asyncio.run(DB.is_user_monitoring(user_id, branch.name, field)),
+                description=f"Notify on changes to the {field} field in {branch}",
+            )
+            options.append(option)
 
         menu = MonitorSelectMenu(
             select_type=discord.ComponentType.string_select,
