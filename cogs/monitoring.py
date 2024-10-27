@@ -141,7 +141,7 @@ class MonitorCog(commands.Cog):
             )
             return
 
-        view = MonitorUI.create(ctx.author.id, branch)
+        view = await MonitorUI.create(ctx.author.id, branch)
         await ctx.respond(
             f"Edit the fields you're watching for `{branch.name}` below.",
             view=view,

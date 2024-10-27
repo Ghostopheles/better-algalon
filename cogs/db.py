@@ -257,7 +257,12 @@ class AlgalonDB:
         if await AlgalonDB.is_user_monitoring(user_id, branch, field):
             return False
 
-        query = f"UPSERT user:{user_id}->monitoring MERGE {{branches: [{branch}]}} WHERE out=metadata_field:{field}"
+        query = f"""LET $entry_exists = (SELECT * FROM user:{user_id}->monitoring WHERE out=metadata_field:{field});
+        IF array::len($entry_exists) > 0 THEN
+            UPDATE monitoring SET branches += branch:{branch} WHERE in=user:{user_id} AND out=metadata_field:{field};
+        ELSE
+            RELATE user:{user_id}->monitoring->metadata_field:{field} SET branches = <set>[branch:{branch}];
+        END;"""
         results = await execute_query(query)
         print(results)
 
@@ -266,11 +271,10 @@ class AlgalonDB:
         if not await AlgalonDB.is_user_monitoring(user_id, branch, field):
             return False
 
-        patch = (
-            f"{{'op': 'remove', 'path': 'branches/branch:{branch}', 'value': 'NULL'}}"
-        )
-
-        query = f"UPSERT user:{user_id}->monitoring PATCH [{patch}] WHERE out=metadata_field:{field}"
+        query = f"""LET $entry_exists = (SELECT * FROM user:{user_id}->monitoring WHERE out=metadata_field:{field});
+        IF array::len($entry_exists) > 0 THEN
+            UPDATE monitoring SET branches -= branch:{branch} WHERE in=user:{user_id} AND out=metadata_field:{field};
+        END;"""
         results = await execute_query(query)
         print(results)
 

@@ -159,10 +159,10 @@ class MonitorSelectMenu(ui.Select):
 
 class MonitorUI(ui.View):
     @classmethod
-    def create(cls, user_id: int, branch: SUPPORTED_PRODUCTS):
+    async def create(cls, user_id: int, branch: SUPPORTED_PRODUCTS):
         view = cls()
 
-        monitorable_fields = asyncio.run(DB.get_all_metadata_fields())
+        monitorable_fields = await DB.get_all_metadata_fields()
 
         min_values = 0
         options = []
@@ -170,7 +170,7 @@ class MonitorUI(ui.View):
             option = discord.SelectOption(
                 label=field,
                 value=field,
-                default=asyncio.run(DB.is_user_monitoring(user_id, branch.name, field)),
+                default=await DB.is_user_monitoring(user_id, branch.name, field),
                 description=f"Notify on changes to the {field} field in {branch}",
             )
             options.append(option)
