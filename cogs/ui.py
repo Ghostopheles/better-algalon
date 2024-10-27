@@ -92,7 +92,7 @@ class WatchlistUI(ui.View):
             option = discord.SelectOption(
                 label=f"{branch.internal_name} ({branch.public_name})",
                 value=branch.internal_name,
-                default=branch.internal_name in watchlist,
+                default=branch in watchlist,
                 description=description,
             )
             options.append(option)

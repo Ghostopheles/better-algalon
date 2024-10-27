@@ -654,8 +654,14 @@ class CDNCog(commands.Cog):
         self, ctx: discord.ApplicationContext, game: SUPPORTED_GAMES
     ):
         """Returns a graphical editor for your guild's watchlist"""
-        watchlist = await DB.get_guild_watchlist(ctx.guild_id)
-        menu = await WatchlistUI.create_menu(watchlist, game, WatchlistMenuType.GUILD)
+        try:
+            watchlist = await DB.get_guild_watchlist(ctx.guild_id)
+            menu = await WatchlistUI.create_menu(
+                watchlist, game, WatchlistMenuType.GUILD
+            )
+        except:
+            logger.error("GOTTEM", exc_info=True)
+            menu = None
         if menu is None:
             await ctx.respond(
                 "An error occurred while generating the watchlist editor.",

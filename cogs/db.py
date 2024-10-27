@@ -186,13 +186,9 @@ class AlgalonDB:
     async def get_user_watchlist(user_id: Union[int, str]) -> list[Branch]:
         query = f"SELECT out FROM user:{user_id}->watching;"
         results = await execute_query(query)
-        watchlist = []
-        for result in results:
-            branch_query = f"SELECT * FROM {result['out']}"
-            branch = await execute_query(branch_query)
-            watchlist.append(Branch.from_json(branch[0]))
-
-        return watchlist
+        coros = [AlgalonDB.fetch_branch_entry(result["out"]) for result in results]
+        data = await asyncio.gather(*coros)
+        return [i for i in data if i is not None]
 
     @staticmethod
     async def is_on_user_watchlist(user_id: Union[int, str], branch: str) -> bool:
@@ -281,17 +277,27 @@ class AlgalonDB:
     # MISC
 
     @staticmethod
+    async def fetch_branch_entry(branch: str) -> Branch:
+        if "branch:" not in branch:
+            branch = f"branch:{branch}"
+
+        query = f"SELECT * FROM {branch};"
+        branch = await execute_query(query)
+        return Branch.from_json(branch[0])
+
+    @staticmethod
     async def get_branches_for_game(game: str) -> list[Branch]:
         query = f"SELECT in FROM branchxgame WHERE out=game:{game};"
         results = await execute_query(query)
-        branches = [Branch.from_json(result) for result in results]
-        return branches
+        coros = [AlgalonDB.fetch_branch_entry(result["in"]) for result in results]
+        data = await asyncio.gather(*coros)
+        return [i for i in data if i is not None]
 
     @staticmethod
     async def get_game_from_branch(branch: str) -> str:
         query = f"SELECT out FROM branchxgame WHERE in=branch:{branch};"
         results = await execute_query(query)
-        return results[0]["id"].split(":")[1]
+        return results[0]["out"].split(":")[1]
 
 
 TEST_GUILD_ID = 193762909220896769
