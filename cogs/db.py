@@ -62,12 +62,12 @@ class Region(BaseModel):
 
 class Branch(BaseModel):
     id: str
-    enabled: bool
-    encrypted: bool
-    internal: bool
+    enabled: bool = False
+    encrypted: bool = False
+    internal: bool = False
     internal_name: str
     public_name: str
-    test: bool
+    test: bool = False
 
 
 class Version(BaseModel):
@@ -263,8 +263,8 @@ class AlgalonDB:
         ELSE
             RELATE user:{user_id}->monitoring->metadata_field:{field} SET branches = <set>[branch:{branch}];
         END;"""
-        results = await execute_query(query)
-        print(results)
+        await execute_query(query)
+        return True
 
     @staticmethod
     async def user_unmonitor(user_id: Union[int, str], branch: str, field: str) -> bool:
@@ -275,8 +275,23 @@ class AlgalonDB:
         IF array::len($entry_exists) > 0 THEN
             UPDATE monitoring SET branches -= branch:{branch} WHERE in=user:{user_id} AND out=metadata_field:{field};
         END;"""
+        await execute_query(query)
+        return True
+
+    # MISC
+
+    @staticmethod
+    async def get_branches_for_game(game: str) -> list[Branch]:
+        query = f"SELECT in FROM branchxgame WHERE out=game:{game};"
         results = await execute_query(query)
-        print(results)
+        branches = [Branch.from_json(result) for result in results]
+        return branches
+
+    @staticmethod
+    async def get_game_from_branch(branch: str) -> str:
+        query = f"SELECT out FROM branchxgame WHERE in=branch:{branch};"
+        results = await execute_query(query)
+        return results[0]["id"].split(":")[1]
 
 
 TEST_GUILD_ID = 193762909220896769

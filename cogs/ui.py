@@ -28,20 +28,6 @@ class WatchlistMenuType(Enum):
     USER = 2
 
 
-def get_branches_for_game(game: SUPPORTED_GAMES) -> list[Branch]:
-    match game:
-        case SUPPORTED_GAMES.Warcraft:
-            return WOW_BRANCHES
-        case SUPPORTED_GAMES.Diablo4:
-            return DIABLO_BRANCHES
-        case SUPPORTED_GAMES.Gryphon:
-            return RUMBLE_BRANCHES
-        case SUPPORTED_GAMES.BattleNet:
-            return BNET_BRANCHES
-        case _:
-            return None
-
-
 class GuildSelectMenu(ui.Select):
     async def callback(self, interaction: discord.Interaction):
         guild_id = interaction.guild_id
@@ -50,11 +36,10 @@ class GuildSelectMenu(ui.Select):
 
         selected = interaction.data["values"]
         if len(selected) > 0:
-            game = WatcherConfig.get_game_from_branch(selected[0])
-            branches = get_branches_for_game(game)
+            game = await DB.get_game_from_branch(selected[0])
+            branches = await DB.get_branches_for_game(game)
             old_watchlist = await DB.get_guild_watchlist(guild_id)
             for branch in branches:
-                branch = branch.name
                 if branch in selected and branch not in old_watchlist:
                     await DB.add_to_guild_watchlist(guild_id, branch)
                 elif branch in old_watchlist and branch not in selected:
@@ -71,10 +56,8 @@ class UserSelectMenu(ui.Select):
 
         selected = interaction.data["values"]
         if len(selected) > 0:
-            game = WatcherConfig.get_game_from_branch(
-                selected[0]
-            )  # TODO: replace with db
-            branches = get_branches_for_game(game)
+            game = await DB.get_game_from_branch(selected[0])
+            branches = await DB.get_branches_for_game(game)
             old_watchlist = await DB.get_user_watchlist(user_id)
             for branch in branches:
                 branch = branch.internal_name
@@ -88,11 +71,11 @@ class UserSelectMenu(ui.Select):
 
 class WatchlistUI(ui.View):
     @classmethod
-    def create_menu(
+    async def create_menu(
         cls, watchlist: list[Branch], game: SUPPORTED_GAMES, menuType: WatchlistMenuType
     ):
-        branches = get_branches_for_game(game)
-        if branches is None:
+        branches = await DB.get_branches_for_game(game.value)
+        if branches is None or len(branches) == 0:
             return None
 
         view = cls()

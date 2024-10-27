@@ -655,7 +655,7 @@ class CDNCog(commands.Cog):
     ):
         """Returns a graphical editor for your guild's watchlist"""
         watchlist = await DB.get_guild_watchlist(ctx.guild_id)
-        menu = WatchlistUI.create_menu(watchlist, game, WatchlistMenuType.GUILD)
+        menu = await WatchlistUI.create_menu(watchlist, game, WatchlistMenuType.GUILD)
         if menu is None:
             await ctx.respond(
                 "An error occurred while generating the watchlist editor.",
@@ -832,7 +832,7 @@ Changes are saved when you click out of the menu.
         """Returns a graphical editor for your personal watchlist."""
         watchlist = await DB.get_user_watchlist(ctx.author.id)
 
-        menu = WatchlistUI.create_menu(watchlist, game, WatchlistMenuType.USER)
+        menu = await WatchlistUI.create_menu(watchlist, game, WatchlistMenuType.USER)
         if menu is None:
             await ctx.respond(
                 "An error occurred while generating the watchlist editor.",
