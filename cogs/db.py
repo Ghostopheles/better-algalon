@@ -2,10 +2,7 @@ import os
 import httpx
 import asyncio
 
-from dotenv import load_dotenv
 from typing import Union
-
-load_dotenv("F:/better-algalon/.env")
 
 DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
@@ -84,8 +81,9 @@ class Version(BaseModel):
     seqn: int
 
 
-async def execute_query(query: str) -> dict:
-    res = await HTTPX_CLIENT.post("/sql", data=query)
+async def execute_query(query: str, **kwargs) -> dict:
+    query_params = httpx.QueryParams(kwargs)
+    res = await HTTPX_CLIENT.post("/sql", data=query, params=query_params)
     res.raise_for_status()
     return res.json()[0]["result"]
 
@@ -97,15 +95,15 @@ def get_channel_key_for_game(game: str):
 class AlgalonDB:
     @staticmethod
     async def get_current_version_for_branch(branch: str, region: str) -> Version:
-        query = f"SELECT * FROM version WHERE region=region:{region} AND branch=branch:{branch};"
-        results = await execute_query(query)
+        query = "SELECT * FROM version WHERE region=type::thing('region', $region) AND branch=type::thing('branch', $branch);"
+        results = await execute_query(query, branch=branch, region=region)
         return Version.from_json(results[0])
 
     # GUILD CONFIG STUFF
     @staticmethod
     async def get_all_guilds_watching_branch(branch: str):
-        query = f"SELECT * FROM guild WHERE ->(watching WHERE out=branch:{branch});"
-        results = await execute_query(query)
+        query = "SELECT * FROM guild WHERE ->(watching WHERE out=type::thing('branch', $branch));"
+        results = await execute_query(query, branch=branch)
         return [int(guild["id"].split(":")[1]) for guild in results]
 
     @staticmethod
@@ -113,108 +111,95 @@ class AlgalonDB:
         guild_id: Union[str, int], game: str
     ) -> int:
         channel_key = get_channel_key_for_game(game)
-        query = f"SELECT {channel_key} FROM guild:{guild_id};"
-        results = await execute_query(query)
-        return results[0][f"{channel_key}"]
+        query = "SELECT type::field($channel_key) FROM type::thing('guild', $guild_id);"
+        results = await execute_query(query, channel_key=channel_key, guild_id=guild_id)
+        return results[0]
 
     @staticmethod
     async def set_notification_channel_for_guild(
         guild_id: Union[str, int], game: str, channel_id: Union[str, int]
     ) -> bool:
         channel_key = get_channel_key_for_game(game)
-        query = f"UPDATE guild:{guild_id} SET {channel_key}={channel_id};"
-        results = await execute_query(query)
-        return results[0][channel_key] == channel_id
+        query = f"UPDATE type::thing('guild', $guild_id) SET {channel_key}=type::int($channel_id);"
+        await execute_query(query, guild=guild_id, channel_id=channel_id)
+        return True
 
     @staticmethod
     async def get_guild_watchlist(guild_id: Union[int, str]) -> list[Branch]:
-        query = f"SELECT out FROM guild:{guild_id}->watching;"
-        results = await execute_query(query)
-        watchlist = []
-        for result in results:
-            branch_query = f"SELECT * FROM {result['out']}"
-            branch = await execute_query(branch_query)
-            watchlist.append(Branch.from_json(branch[0]))
-
+        query = "SELECT ->watching.out.* AS branches FROM type::thing('guild', $guild_id) FETCH branch;"
+        results = await execute_query(query, guild_id=guild_id)
+        watchlist = [Branch.from_json(branch) for branch in results[0]["branches"]]
         return watchlist
 
     @staticmethod
     async def check_guild_exists(guild_id: Union[int, str]):
-        query = f"SELECT * FROM guild:{guild_id};"
-        results = await execute_query(query)
+        query = "SELECT * FROM type::thing('guild', $guild_id);"
+        results = await execute_query(query, guild_id=guild_id)
         if len(results) == 0:
-            query = f"CREATE guild:{guild_id};"
+            query = "CREATE type::thing('guild', $guild_id);"
+            await execute_query(query, guild_id=guild_id)
 
     @staticmethod
     async def is_on_guild_watchlist(guild_id: Union[int, str], branch: str) -> bool:
-        query = f"SELECT out FROM guild:{guild_id}->watching WHERE out=branch:{branch};"
-        results = await execute_query(query)
-        return len(results) > 0
+        watchlist = await AlgalonDB.get_guild_watchlist(guild_id)
+        for entry in watchlist:
+            if entry.internal_name == branch:
+                return True
+
+        return False
 
     @staticmethod
     async def add_to_guild_watchlist(guild_id: Union[int, str], branch: str) -> bool:
-        if await AlgalonDB.is_on_guild_watchlist(guild_id, branch):
-            return False
-
-        query = f"RELATE guild:{guild_id}->watching->branch:{branch};"
-        results = await execute_query(query)
-        return (
-            results[0]["in"] == f"guild:{guild_id}"
-            and results[0]["out"] == f"branch:{branch}"
-        )
+        query = """LET $guild = type::thing('guild', $guild_id);
+        LET $branch_rec = type::thing('branch', $branch);
+        RELATE $guild->watching->$branch_rec;"""
+        await execute_query(query, guild_id=guild_id, branch=branch)
+        return True
 
     @staticmethod
     async def remove_from_guild_watchlist(
         guild_id: Union[int, str], branch: str
     ) -> bool:
-        if not await AlgalonDB.is_on_guild_watchlist(guild_id, branch):
-            return False
-
-        query = f"DELETE guild:{guild_id}->watching WHERE out=branch:{branch};"
-        results = await execute_query(query)
+        query = "DELETE type::thing('guild', $guild_id)->watching WHERE out=type::thing('branch', $branch);"
+        results = await execute_query(query, guild_id=guild_id, branch=branch)
         return len(results) == 0
 
     # USER CONFIG STUFF
 
     @staticmethod
     async def get_all_users_watching_branch(branch: str):
-        query = f"SELECT * FROM user WHERE ->(watching WHERE out=branch:{branch});"
-        results = await execute_query(query)
+        query = "SELECT * FROM user WHERE ->(watching WHERE out=type::thing('branch', $branch));"
+        results = await execute_query(query, branch=branch)
         return [int(user["id"].split(":")[1]) for user in results]
 
     @staticmethod
     async def get_user_watchlist(user_id: Union[int, str]) -> list[Branch]:
-        query = f"SELECT out FROM user:{user_id}->watching;"
-        results = await execute_query(query)
-        coros = [AlgalonDB.fetch_branch_entry(result["out"]) for result in results]
-        data = await asyncio.gather(*coros)
-        return [i for i in data if i is not None]
+        query = "SELECT ->watching.out.* AS branches FROM type::thing('user', $user_id) FETCH branch;"
+        results = await execute_query(query, user_id=user_id)
+        watchlist = [Branch.from_json(branch) for branch in results[0]["branches"]]
+        return watchlist
 
     @staticmethod
     async def is_on_user_watchlist(user_id: Union[int, str], branch: str) -> bool:
-        query = f"SELECT out FROM user:{user_id}->watching WHERE out=branch:{branch};"
-        results = await execute_query(query)
-        return len(results) > 0
+        watchlist = await AlgalonDB.get_user_watchlist(user_id)
+        for entry in watchlist:
+            if entry.internal_name == branch:
+                return True
+
+        return False
 
     @staticmethod
     async def add_to_user_watchlist(user_id: Union[int, str], branch: str) -> bool:
-        if await AlgalonDB.is_on_user_watchlist(user_id, branch):
-            return False
-
-        query = f"RELATE user:{user_id}->watching->branch:{branch};"
-        results = await execute_query(query)
-        return (
-            results[0]["in"] == f"user:{user_id}"
-            and results[0]["out"] == f"branch:{branch}"
-        )
+        query = """LET $user = type::thing('user', $user_id);
+        LET $branch_rec = type::thing('branch', $branch);
+        RELATE $user->watching->$branch_rec;"""
+        await execute_query(query, user_id=user_id, branch=branch)
+        return True
 
     @staticmethod
     async def remove_from_user_watchlist(user_id: Union[int, str], branch: str) -> bool:
-        if not await AlgalonDB.is_on_user_watchlist(user_id, branch):
-            return False
-
-        query = f"DELETE user:{user_id}->watching WHERE out=branch:{branch};"
-        results = await execute_query(query)
+        query = "DELETE type::thing('user', $user_id)->watching WHERE out=type::thing('branch', $branch);"
+        results = await execute_query(query, user_id=user_id, branch=branch)
         return len(results) == 0
 
     # METADATA MONITORING
@@ -235,17 +220,18 @@ class AlgalonDB:
 
     @staticmethod
     async def get_all_monitors_for_branch_field(branch: str, field: str) -> list[int]:
-        print(branch, field)
-        query = f"SELECT id FROM user WHERE ->(monitoring WHERE out=metadata_field:{field} AND branches CONTAINS branch:{branch});"
-        results = await execute_query(query)
+        query = "SELECT id FROM user WHERE ->(monitoring WHERE out=type::thing('metadata_field', $field) AND branches CONTAINS type::thing('branch', $branch));"
+        results = await execute_query(query, field=field, branch=branch)
         return [int(result["id"].split(":")[1]) for result in results]
 
     @staticmethod
     async def is_user_monitoring(
         user_id: Union[int, str], branch: str, field: str
     ) -> bool:
-        query = f"SELECT * FROM user:{user_id}->monitoring WHERE out=metadata_field:{field} AND branches CONTAINS branch:{branch};"
-        results = await execute_query(query)
+        query = "SELECT * FROM type::thing('user', $user_id)->monitoring WHERE out=type::thing('metadata_field', $field) AND branches CONTAINS type::thing('branch', $branch);"
+        results = await execute_query(
+            query, user_id=user_id, branch=branch, field=field
+        )
         return len(results) > 0
 
     @staticmethod
@@ -253,13 +239,17 @@ class AlgalonDB:
         if await AlgalonDB.is_user_monitoring(user_id, branch, field):
             return False
 
-        query = f"""LET $entry_exists = (SELECT * FROM user:{user_id}->monitoring WHERE out=metadata_field:{field});
+        query = """LET $user = type::thing('user', $user_id);
+        LET $meta_field = type::thing('metadata_field', $field);
+        LET $branch_rec = type::thing('branch', $branch);
+
+        LET $entry_exists = (SELECT * FROM $user->monitoring WHERE out=$meta_field);
         IF array::len($entry_exists) > 0 THEN
-            UPDATE monitoring SET branches += branch:{branch} WHERE in=user:{user_id} AND out=metadata_field:{field};
+            UPDATE monitoring SET branches += $branch_rec WHERE in=$user AND out=$meta_field;
         ELSE
-            RELATE user:{user_id}->monitoring->metadata_field:{field} SET branches = <set>[branch:{branch}];
+            RELATE $user->monitoring->$meta_field SET branches = <set>[$branch_rec];
         END;"""
-        await execute_query(query)
+        await execute_query(query, user_id=user_id, branch=branch, field=field)
         return True
 
     @staticmethod
@@ -267,64 +257,35 @@ class AlgalonDB:
         if not await AlgalonDB.is_user_monitoring(user_id, branch, field):
             return False
 
-        query = f"""LET $entry_exists = (SELECT * FROM user:{user_id}->monitoring WHERE out=metadata_field:{field});
+        query = """LET $user = type::thing('user', $user_id);
+        LET $meta_field = type::thing('metadata_field', $field);
+        LET $branch_rec = type::thing('branch', $branch);
+
+        LET $entry_exists = (SELECT * FROM $user->monitoring WHERE out=$meta_field);
         IF array::len($entry_exists) > 0 THEN
-            UPDATE monitoring SET branches -= branch:{branch} WHERE in=user:{user_id} AND out=metadata_field:{field};
+            UPDATE monitoring SET branches -= $branch_rec WHERE in=$user AND out=$meta_field;
         END;"""
-        await execute_query(query)
+        await execute_query(query, user_id=user_id, branch=branch, field=field)
         return True
 
     # MISC
 
     @staticmethod
     async def fetch_branch_entry(branch: str) -> Branch:
-        if "branch:" not in branch:
-            branch = f"branch:{branch}"
-
-        query = f"SELECT * FROM {branch};"
-        branch = await execute_query(query)
+        query = "SELECT * FROM type::thing('branch', $branch);"
+        branch = await execute_query(query, branch=branch)
         return Branch.from_json(branch[0])
 
     @staticmethod
     async def get_branches_for_game(game: str) -> list[Branch]:
-        query = f"SELECT in FROM branchxgame WHERE out=game:{game};"
-        results = await execute_query(query)
+        query = "SELECT in FROM branchxgame WHERE out=type::thing('game', $game);"
+        results = await execute_query(query, game=game)
         coros = [AlgalonDB.fetch_branch_entry(result["in"]) for result in results]
         data = await asyncio.gather(*coros)
         return [i for i in data if i is not None]
 
     @staticmethod
     async def get_game_from_branch(branch: str) -> str:
-        query = f"SELECT out FROM branchxgame WHERE in=branch:{branch};"
-        results = await execute_query(query)
+        query = f"SELECT out FROM branchxgame WHERE in=type::thing('branch', $branch);"
+        results = await execute_query(query, branch=branch)
         return results[0]["out"].split(":")[1]
-
-
-TEST_GUILD_ID = 193762909220896769
-TEST_USER_ID = 130987844125720576
-
-
-async def main():
-    print(await AlgalonDB.get_current_version_for_branch("wow", "us"))
-    print(await AlgalonDB.get_notification_channel_for_guild(87306153297457152, "bnet"))
-    print(
-        await AlgalonDB.set_notification_channel_for_guild(
-            TEST_GUILD_ID, "bnet", TEST_GUILD_ID
-        )
-    )
-    print(await AlgalonDB.add_to_guild_watchlist(TEST_GUILD_ID, "wow"))
-    print(await AlgalonDB.remove_from_guild_watchlist(TEST_GUILD_ID, "wow"))
-    print(await AlgalonDB.get_guild_watchlist(TEST_GUILD_ID))
-    print(await AlgalonDB.is_on_guild_watchlist(TEST_GUILD_ID, "wowt"))
-
-    print(await AlgalonDB.add_to_user_watchlist(TEST_USER_ID, "wow"))
-    print(await AlgalonDB.remove_from_user_watchlist(TEST_USER_ID, "wow"))
-    print(await AlgalonDB.get_user_watchlist(TEST_USER_ID))
-    print(await AlgalonDB.is_on_user_watchlist(TEST_USER_ID, "wowt"))
-
-    print(await AlgalonDB.get_all_users_watching_branch("wow"))
-    print(await AlgalonDB.get_all_guilds_watching_branch("wow"))
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

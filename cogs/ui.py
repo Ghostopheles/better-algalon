@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import discord
 import discord.ui as ui
@@ -17,6 +16,7 @@ from cogs.config import (
     WatcherConfig,
 )
 
+from cogs.utils import convert_watchlist_to_name_set
 from cogs.db import AlgalonDB as DB, Branch
 
 
@@ -39,10 +39,12 @@ class GuildSelectMenu(ui.Select):
             game = await DB.get_game_from_branch(selected[0])
             branches = await DB.get_branches_for_game(game)
             old_watchlist = await DB.get_guild_watchlist(guild_id)
+            old_watchlist_set = convert_watchlist_to_name_set(old_watchlist)
             for branch in branches:
-                if branch in selected and branch not in old_watchlist:
+                branch = branch.internal_name
+                if branch in selected and branch not in old_watchlist_set:
                     await DB.add_to_guild_watchlist(guild_id, branch)
-                elif branch in old_watchlist and branch not in selected:
+                elif branch in old_watchlist_set and branch not in selected:
                     await DB.remove_from_guild_watchlist(guild_id, branch)
 
         await interaction.response.defer(ephemeral=True, invisible=True)
@@ -59,11 +61,12 @@ class UserSelectMenu(ui.Select):
             game = await DB.get_game_from_branch(selected[0])
             branches = await DB.get_branches_for_game(game)
             old_watchlist = await DB.get_user_watchlist(user_id)
+            old_watchlist_set = convert_watchlist_to_name_set(old_watchlist)
             for branch in branches:
                 branch = branch.internal_name
-                if branch in selected and branch not in old_watchlist:
+                if branch in selected and branch not in old_watchlist_set:
                     await DB.add_to_user_watchlist(user_id, branch)
-                elif branch in old_watchlist and branch not in selected:
+                elif branch in old_watchlist_set and branch not in selected:
                     await DB.remove_from_user_watchlist(user_id, branch)
 
         await interaction.response.defer(ephemeral=True, invisible=True)
@@ -72,7 +75,7 @@ class UserSelectMenu(ui.Select):
 class WatchlistUI(ui.View):
     @classmethod
     async def create_menu(
-        cls, watchlist: list[Branch], game: SUPPORTED_GAMES, menuType: WatchlistMenuType
+        cls, watchlist: set[str], game: SUPPORTED_GAMES, menuType: WatchlistMenuType
     ):
         branches = await DB.get_branches_for_game(game.value)
         if branches is None or len(branches) == 0:
@@ -92,7 +95,7 @@ class WatchlistUI(ui.View):
             option = discord.SelectOption(
                 label=f"{branch.internal_name} ({branch.public_name})",
                 value=branch.internal_name,
-                default=branch in watchlist,
+                default=branch.internal_name in watchlist,
                 description=description,
             )
             options.append(option)

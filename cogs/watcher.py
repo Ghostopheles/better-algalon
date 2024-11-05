@@ -15,8 +15,8 @@ from cogs.config import CommonStrings
 from cogs.config import LiveConfig as livecfg
 from cogs.config import WatcherConfig as cfg
 from cogs.config import DebugConfig as dbg
-from cogs.config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
-from cogs.utils import get_discord_timestamp
+from cogs.config import SUPPORTED_GAMES
+from cogs.utils import get_discord_timestamp, convert_watchlist_to_name_set
 from cogs.api.social import SocialPlatforms
 from cogs.ui import WatchlistUI, WatchlistMenuType
 from cogs.db import AlgalonDB as DB
@@ -656,15 +656,18 @@ class CDNCog(commands.Cog):
         """Returns a graphical editor for your guild's watchlist"""
         try:
             watchlist = await DB.get_guild_watchlist(ctx.guild_id)
+            watchlist_set = convert_watchlist_to_name_set(watchlist)
             menu = await WatchlistUI.create_menu(
-                watchlist, game, WatchlistMenuType.GUILD
+                watchlist_set, game, WatchlistMenuType.GUILD
             )
         except:
-            logger.error("GOTTEM", exc_info=True)
+            logger.error(
+                "Encountered an error when generating watchlist edit UI", exc_info=True
+            )
             menu = None
         if menu is None:
             await ctx.respond(
-                "An error occurred while generating the watchlist editor.",
+                "An error occurred while generating the watchlist editor. The Titans have been notified.",
                 ephemeral=True,
                 delete_after=DELETE_AFTER,
             )
