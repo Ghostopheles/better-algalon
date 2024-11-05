@@ -33,32 +33,7 @@ class CDNCache:
             os.mkdir(self.cache_path)
             self.init_cdn()
 
-        self.patch_cdn_keys()
-
         self.monitor = None
-
-    def patch_cdn_keys(self):
-        with open(self.cdn_path, "r+") as file:
-            logger.debug("Patching CDN file...")
-            file_json = json.load(file)
-            build_data = file_json["buildInfo"]
-            try:
-                for branch in build_data:
-                    for key, value in self.CONFIG.REQUIRED_KEYS_DEFAULTS.items():
-                        if key not in build_data[branch]:
-                            logger.debug(
-                                f"Adding {key} to {branch} with value {value}..."
-                            )
-                            build_data[branch][key] = value
-
-            except KeyError:
-                logger.error("KeyError while patching CDN file", exc_info=True)
-
-            file_json["buildInfo"] = build_data
-
-            file.seek(0)
-            json.dump(file_json, file, indent=4)
-            file.truncate()
 
     def init_cdn(self):
         """Populates the `cdn.json` file with default values if it does not exist."""
