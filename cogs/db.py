@@ -113,7 +113,7 @@ class AlgalonDB:
         channel_key = get_channel_key_for_game(game)
         query = "SELECT type::field($channel_key) FROM type::thing('guild', $guild_id);"
         results = await execute_query(query, channel_key=channel_key, guild_id=guild_id)
-        return results[0]
+        return results[0]["wow_channel"]
 
     @staticmethod
     async def set_notification_channel_for_guild(
