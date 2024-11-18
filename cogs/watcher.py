@@ -840,6 +840,7 @@ Changes are saved when you click out of the menu.
     ):
         """Returns a graphical editor for your personal watchlist."""
         watchlist = await DB.get_user_watchlist(ctx.author.id)
+        watchlist = convert_watchlist_to_name_set(watchlist)
 
         menu = await WatchlistUI.create_menu(watchlist, game, WatchlistMenuType.USER)
         if menu is None:
