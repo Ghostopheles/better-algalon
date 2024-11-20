@@ -81,11 +81,27 @@ class Version(BaseModel):
     seqn: int
 
 
+last_time = 0
+
+
+def get_last_db_time() -> str:
+    global last_time
+    return last_time
+
+
+def set_last_db_time(time):
+    global last_time
+    last_time = time
+
+
 async def execute_query(query: str, **kwargs) -> dict:
+    global last_time
     query_params = httpx.QueryParams(kwargs)
     res = await HTTPX_CLIENT.post("/sql", data=query, params=query_params)
     res.raise_for_status()
-    return res.json()[0]["result"]
+    data = res.json()[0]
+    set_last_db_time(data["time"])
+    return data["result"]
 
 
 def get_channel_key_for_game(game: str):
@@ -113,15 +129,17 @@ class AlgalonDB:
         channel_key = get_channel_key_for_game(game)
         query = "SELECT type::field($channel_key) FROM type::thing('guild', $guild_id);"
         results = await execute_query(query, channel_key=channel_key, guild_id=guild_id)
-        return results[0]["wow_channel"]
+        return results[0][channel_key]
 
     @staticmethod
     async def set_notification_channel_for_guild(
         guild_id: Union[str, int], game: str, channel_id: Union[str, int]
     ) -> bool:
         channel_key = get_channel_key_for_game(game)
-        query = f"UPDATE type::thing('guild', $guild_id) SET {channel_key}=type::int($channel_id);"
-        await execute_query(query, guild=guild_id, channel_id=channel_id)
+        query = f"""UPDATE type::thing('guild', $guild_id) SET {channel_key} = type::number($channel_id);"""
+        await execute_query(
+            query, guild_id=guild_id, channel_key=channel_key, channel_id=channel_id
+        )
         return True
 
     @staticmethod
@@ -152,8 +170,9 @@ class AlgalonDB:
     async def add_to_guild_watchlist(guild_id: Union[int, str], branch: str) -> bool:
         query = """LET $guild = type::thing('guild', $guild_id);
         LET $branch_rec = type::thing('branch', $branch);
-        RELATE $guild->watching->$branch_rec;"""
-        await execute_query(query, guild_id=guild_id, branch=branch)
+        LET $region_rec = type::thing('region', $region);
+        RELATE $guild->watching->$branch_rec SET regions = [$region_rec];"""
+        await execute_query(query, guild_id=guild_id, branch=branch, region="us")
         return True
 
     @staticmethod
@@ -278,6 +297,10 @@ class AlgalonDB:
 
     @staticmethod
     async def get_branches_for_game(game: str) -> list[Branch]:
+        # i hate it here
+        if game == "d4":
+            game = "fenris"
+
         query = "SELECT in FROM branchxgame WHERE out=type::thing('game', $game);"
         results = await execute_query(query, game=game)
         coros = [AlgalonDB.fetch_branch_entry(result["in"]) for result in results]
