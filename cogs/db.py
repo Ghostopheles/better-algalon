@@ -211,8 +211,9 @@ class AlgalonDB:
     async def add_to_user_watchlist(user_id: Union[int, str], branch: str) -> bool:
         query = """LET $user = type::thing('user', $user_id);
         LET $branch_rec = type::thing('branch', $branch);
-        RELATE $user->watching->$branch_rec;"""
-        await execute_query(query, user_id=user_id, branch=branch)
+        LET $region_rec = type::thing('region', $region);
+        RELATE $user->watching->$branch_rec SET regions=[$region_rec];"""
+        await execute_query(query, user_id=user_id, branch=branch, region="us")
         return True
 
     @staticmethod
