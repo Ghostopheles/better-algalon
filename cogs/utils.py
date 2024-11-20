@@ -38,3 +38,7 @@ def get_timestamp(day_only=False):
 
 def get_date():
     return datetime.now().strftime("%m-%d-%Y @ %H:%M")
+
+
+def convert_watchlist_to_name_set(watchlist: list) -> set[str]:
+    return set([branch.internal_name for branch in watchlist])

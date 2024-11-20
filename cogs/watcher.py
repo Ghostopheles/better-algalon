@@ -7,20 +7,19 @@ import discord
 import logging
 
 from typing import Optional, Union
-from discord.ext import commands, pages, tasks
+from discord.ext import commands, tasks
 
 from cogs.bot import Algalon
-from cogs.user_config import UserConfigFile
-from cogs.guild_config import GuildCFG
 from cogs.cdn_cache import CDNCache
 from cogs.config import CommonStrings
 from cogs.config import LiveConfig as livecfg
 from cogs.config import WatcherConfig as cfg
 from cogs.config import DebugConfig as dbg
-from cogs.config import SUPPORTED_GAMES, SUPPORTED_PRODUCTS
-from cogs.utils import get_discord_timestamp
+from cogs.config import SUPPORTED_GAMES
+from cogs.utils import get_discord_timestamp, convert_watchlist_to_name_set
 from cogs.api.social import SocialPlatforms
 from cogs.ui import WatchlistUI, WatchlistMenuType
+from cogs.db import AlgalonDB as DB
 
 START_LOOPS = livecfg.get_cfg_value("meta", "start_loops")
 
@@ -41,8 +40,6 @@ class CDNCog(commands.Cog):
     def __init__(self, bot: Algalon):
         self.bot = bot
         self.cdn_cache = CDNCache()
-        self.guild_cfg = GuildCFG()
-        self.user_cfg = UserConfigFile()
         self.live_cfg = livecfg()
         self.socials = SocialPlatforms()
         self.last_update = 0
@@ -69,33 +66,12 @@ class CDNCog(commands.Cog):
     async def integrity_check(self):
         await self.bot.wait_until_ready()
 
-        logger.info("Running guild configuration integrity check...")
+        logger.info("Running guild integrity check...")
 
         for guild in self.bot.guilds:
-            if not self.guild_cfg.does_guild_config_exist(guild.id):
-                logger.debug(
-                    f"Adding missing guild configuration for guild {guild.id}..."
-                )
-                self.guild_cfg.add_guild_config(guild.id)
-
-        self.guild_cfg.validate_guild_configs()
-
-        for guild_id in self.guild_cfg.get_all_guild_configs().keys():
-            if int(guild_id) not in [guild.id for guild in self.bot.guilds]:
-                logger.info(
-                    f"No longer a part of guild {guild_id}, removing guild configuration..."
-                )
-                self.guild_cfg.remove_guild_config(guild_id)
+            await DB.check_guild_exists(guild.id)
 
         logger.info("Guild configuration integrity check complete")
-        logger.info("Running cache configuration check...")
-
-        for product in self.cdn_cache.CONFIG.PRODUCTS:
-            if product.name not in self.cdn_cache.get_all_config_entries():
-                logger.info(f"New product detected. Adding default entry for {product}")
-                self.cdn_cache.set_default_entry(product.name)
-
-        logger.info("Cache configuration check complete")
 
     def get_command_link(
         self, command: str, cmd_group: Optional[discord.SlashCommandGroup] = None
@@ -127,17 +103,17 @@ class CDNCog(commands.Cog):
 
         await channel.send(message)
 
-    def build_embeds(self, data: dict, guild_id: int):
+    async def build_embeds(self, data: dict, guild_id: int):
         """This builds notification embeds with the given data."""
 
-        guild_watchlist = self.guild_cfg.get_guild_watchlist(guild_id)
+        guild_watchlist = await DB.get_guild_watchlist(guild_id)
 
         product_config = self.live_cfg.get_all_products()
 
         all_embeds = []
 
         for game, update_data in data.items():
-            target_channel = self.guild_cfg.get_notification_channel(guild_id, game)
+            target_channel = await DB.get_notification_channel_for_guild(guild_id, game)
 
             if not target_channel or target_channel == 0:
                 logger.warning(
@@ -226,33 +202,31 @@ class CDNCog(commands.Cog):
         return embed_data
 
     async def distribute_direct_messages(self, data: dict, owner_only: bool = False):
-        with self.user_cfg as config:
-            for game, updates in data.items():
-                for update in updates:
-                    branch = update["branch"]
-                    new_build = update["build"]
-                    subscribers = config.lookup.get_subscribers_for_branch(branch, True)
-                    if len(subscribers) == 0:
+        for game, updates in data.items():
+            for update in updates:
+                branch = update["branch"]
+                subscribers = await DB.get_all_users_watching_branch(branch)
+                if len(subscribers) == 0:
+                    continue
+
+                new_build_text = update["build_text"]
+                if new_build_text != update["old"]["build_text"]:
+                    new_build_text = f"**{new_build_text}**"
+
+                new_build_id = update["build"]
+                if new_build_id != update["old"]["build"]:
+                    new_build_id = f"**{new_build_id}**"
+
+                message = f"{SUPPORTED_GAMES._value2member_map_[game].name} build: `{branch}` -> {new_build_text}.{new_build_id}"
+
+                for subscriber in subscribers:
+                    user = await self.bot.get_or_fetch_user(subscriber)
+                    is_owner = await self.bot.is_owner(user)
+                    if owner_only and not is_owner:
                         continue
 
-                    new_build_text = update["build_text"]
-                    if new_build_text != update["old"]["build_text"]:
-                        new_build_text = f"**{new_build_text}**"
-
-                    new_build_id = update["build"]
-                    if new_build_id != update["old"]["build"]:
-                        new_build_id = f"**{new_build_id}**"
-
-                    message = f"{SUPPORTED_GAMES._value2member_map_[game].name} build: `{branch}` -> {new_build_text}.{new_build_id}"
-
-                    for subscriber in subscribers:
-                        user = await self.bot.get_or_fetch_user(subscriber)
-                        is_owner = await self.bot.is_owner(user)
-                        if owner_only and not is_owner:
-                            continue
-
-                        channel = await user.create_dm()
-                        await channel.send(message)
+                    channel = await user.create_dm()
+                    await channel.send(message)
 
     async def distribute_embeds(self, first_run: bool = False):
         """This handles distributing the generated embeds to the various servers that should receive them."""
@@ -276,7 +250,7 @@ class CDNCog(commands.Cog):
 
             for guild in self.bot.guilds:
                 try:
-                    embeds = self.build_embeds(embed_data, guild.id)
+                    embeds = await self.build_embeds(embed_data, guild.id)
                 except Exception as exc:
                     logger.error(
                         f"Error distributing embed(s) for guild {guild.id}.",
@@ -308,7 +282,7 @@ class CDNCog(commands.Cog):
                     actual_embed = embed["embed"]  # god save me
 
                     if actual_embed and channel:
-                        logger.info("Sending CDN update post and tweet...")
+                        logger.info("Sending CDN update notifications...")
                         try:
                             message = await channel.send(embed=actual_embed)  # type: ignore
                         except discord.NotFound:
@@ -356,7 +330,7 @@ class CDNCog(commands.Cog):
                         return False
 
                     embed_data = self.preprocess_update_data(new_data)
-                    embeds = self.build_embeds(embed_data, dbg.debug_guild_id)  # type: ignore
+                    embeds = await self.build_embeds(embed_data, dbg.debug_guild_id)  # type: ignore
                     await self.distribute_direct_messages(embed_data, True)
 
                     if not embeds:
@@ -374,60 +348,6 @@ class CDNCog(commands.Cog):
                             continue
             else:
                 logger.info("No CDN changes found.")
-
-    def build_paginator_for_current_build_data(self):
-        buttons = [
-            pages.PaginatorButton(
-                "first", label="<<-", style=discord.ButtonStyle.green
-            ),
-            pages.PaginatorButton("prev", label="<-", style=discord.ButtonStyle.green),
-            pages.PaginatorButton(
-                "page_indicator", style=discord.ButtonStyle.gray, disabled=True
-            ),
-            pages.PaginatorButton("next", label="->", style=discord.ButtonStyle.green),
-            pages.PaginatorButton("last", label="->>", style=discord.ButtonStyle.green),
-        ]
-
-        data_pages = []
-
-        for product in self.cdn_cache.CONFIG.PRODUCTS:
-            data = self.cdn_cache.load_build_data(product.name)
-
-            if not data:
-                logger.warning(
-                    f"No data found for product {product}, skipping paginator entry..."
-                )
-                continue
-
-            encrypted = self.live_cfg.get_product_encryption_state(product.name)
-            lock = ":lock:" if encrypted else ""
-
-            embed = discord.Embed(
-                title=f"CDN Data for: {product}{lock}",
-                color=discord.Color.blurple(),
-            )
-
-            data_text = f"**Region:** `{data['region']}`\n"
-            data_text += f"**Build Config:** `{data['build_config']}`\n"
-            data_text += f"**CDN Config:** `{data['cdn_config']}`\n"
-            data_text += f"**Build:** `{data['build']}`\n"
-            data_text += f"**Version:** `{data['build_text']}`\n"
-            data_text += f"**Product Config:** `{data['product_config'] if data['product_config'] != "" else "N/A"}`\n"
-            data_text += f"**Encrypted:** `{encrypted}`"
-
-            embed.add_field(name="Current Data", value=data_text, inline=False)
-
-            data_pages.append(embed)
-
-        paginator = pages.Paginator(
-            pages=data_pages,
-            show_indicator=True,
-            use_default_buttons=False,
-            custom_buttons=buttons,
-            timeout=300,
-        )
-
-        return paginator
 
     @tasks.loop(minutes=FETCH_INTERVAL, reconnect=True)
     async def cdn_auto_refresh(self):
@@ -491,24 +411,6 @@ class CDNCog(commands.Cog):
     # DISCORD COMMANDS
 
     @discord.slash_command(
-        name="cdndata",
-        contexts={
-            discord.InteractionContextType.private_channel,
-            discord.InteractionContextType.guild,
-            discord.InteractionContextType.bot_dm,
-        },
-        integration_types={
-            discord.IntegrationType.guild_install,
-            discord.IntegrationType.user_install,
-        },
-    )
-    async def cdn_data(self, ctx: discord.ApplicationContext):
-        """Returns a paginator with the currently cached CDN data."""
-        logger.debug("Generating paginator to display CDN data...")
-        paginator = self.build_paginator_for_current_build_data()
-        await paginator.respond(ctx.interaction, ephemeral=True)
-
-    @discord.slash_command(
         name="branches",
         contexts={
             discord.InteractionContextType.private_channel,
@@ -524,8 +426,10 @@ class CDNCog(commands.Cog):
     async def cdn_branches(self, ctx: discord.ApplicationContext):
         """Returns all observable branches."""
         message = f"## These are all the branches I can watch for you:\n```\n"
-        for product in self.cdn_cache.CONFIG.PRODUCTS:
-            message += f"{product.name} : {product}\n"
+
+        branches = await DB.get_all_available_branches()
+        for branch in branches:
+            message += f"{branch.internal_name} : {branch.public_name}\n"
 
         message += "```"
 
@@ -539,119 +443,6 @@ class CDNCog(commands.Cog):
         contexts={discord.InteractionContextType.guild},
     )
 
-    @watchlist_commands.command(
-        name="add",
-        checks=__ADMIN_CHECKS,
-        input_type=str,
-        min_length=3,
-        max_length=500,
-    )
-    @commands.cooldown(1, COOLDOWN, commands.BucketType.guild)
-    async def cdn_add_to_watchlist(self, ctx: discord.ApplicationContext, branch: str):
-        """Add a branch to the watchlist. Add multiple branches by separating them with a comma."""
-        branch = branch.lower()
-        branch = branch.replace(" ", "")
-        if DELIMITER in branch:
-            bad_branches = []
-            good_branches = []
-            branches = branch.split(DELIMITER)
-            for branch in branches:
-                if self.cdn_cache.CONFIG.is_valid_branch(branch) != True:
-                    bad_branches.append(
-                        branch + f" ({self.cdn_cache.CONFIG.errors.BRANCH_NOT_VALID})"
-                    )
-                    continue
-
-                success, error = self.guild_cfg.add_to_guild_watchlist(ctx.guild_id, branch)  # type: ignore
-                if success != True:
-                    bad_branches.append(branch + f" ({error})")
-                else:
-                    good_branches.append(branch)
-
-            if len(bad_branches) > 0:
-                message = "The following branches were invalid:\n```\n"
-                message += "\n".join(bad_branches)
-
-                help_string = self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES
-                cmdlink = self.get_command_link("branches")
-                help_string = help_string.format(cmdlink=cmdlink)
-
-                message += f"```\n\n{help_string}"
-
-                if len(good_branches) > 0:
-                    message += (
-                        "\n\nThe following branches were added succesfully:\n```\n"
-                    )
-                    message += "\n".join(good_branches)
-                    message += "```"
-
-                await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=DELETE_AFTER
-                )
-                return False
-            else:
-                message = "The following branches were successfully added to the watchlist:\n```\n"
-                message += "\n".join(good_branches)
-                message += "```"
-                await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=DELETE_AFTER
-                )
-                return True
-        else:
-            success, error = self.guild_cfg.add_to_guild_watchlist(ctx.guild_id, branch)  # type: ignore
-            if success != True:
-                message = f"{error}\n\n"
-
-                help_string = self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES
-                cmdlink = self.get_command_link("branches")
-                help_string = help_string.format(cmdlink=cmdlink)
-
-                message += help_string
-
-                await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=DELETE_AFTER
-                )
-                return False
-
-            await ctx.interaction.response.send_message(
-                f"`{branch}` successfully added to watchlist.",
-                ephemeral=True,
-                delete_after=DELETE_AFTER,
-            )
-
-    @watchlist_commands.command(
-        name="remove",
-        checks=__ADMIN_CHECKS,
-        input_type=str,
-        min_length=3,
-        max_length=500,
-    )
-    @commands.cooldown(1, COOLDOWN, commands.BucketType.guild)
-    async def cdn_remove_from_watchlist(
-        self, ctx: discord.ApplicationContext, branch: str
-    ):
-        """Remove specific branches from this guild's watchlist."""
-        success, error = self.guild_cfg.remove_from_guild_watchlist(ctx.guild_id, branch)  # type: ignore
-        if success != True:
-            message = f"{error}\n\n"
-
-            help_string = self.cdn_cache.CONFIG.errors.VIEW_VALID_BRANCHES
-            cmdlink = self.get_command_link("branches")
-            help_string = help_string.format(cmdlink=cmdlink)
-
-            message += help_string
-
-            await ctx.interaction.response.send_message(
-                message, ephemeral=True, delete_after=DELETE_AFTER
-            )
-            return False
-        else:
-            await ctx.interaction.response.send_message(
-                f"`{branch}` successfully removed from watchlist.",
-                ephemeral=True,
-                delete_after=DELETE_AFTER,
-            )
-
     @watchlist_commands.command(name="view")
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def cdn_watchlist(self, ctx: discord.ApplicationContext):
@@ -660,11 +451,10 @@ class CDNCog(commands.Cog):
             "## These are the branches I'm currently observing for this guild:\n```\n"
         )
 
-        watchlist = self.guild_cfg.get_guild_watchlist(ctx.guild_id)  # type: ignore
+        watchlist = await DB.get_guild_watchlist(ctx.guild_id)  # type: ignore
 
-        for product in watchlist:
-            product = SUPPORTED_PRODUCTS[product]
-            message += f"{product.name} : {product}\n"
+        for branch in watchlist:
+            message += f"{branch.internal_name} : {branch.public_name}\n"
 
         message += "```"
 
@@ -678,17 +468,26 @@ class CDNCog(commands.Cog):
         self, ctx: discord.ApplicationContext, game: SUPPORTED_GAMES
     ):
         """Returns a graphical editor for your guild's watchlist"""
-        watchlist = self.guild_cfg.get_guild_watchlist(ctx.guild_id)
-        menu = WatchlistUI.create_menu(watchlist, game, WatchlistMenuType.GUILD)
+        try:
+            watchlist = await DB.get_guild_watchlist(ctx.guild_id)
+            watchlist_set = convert_watchlist_to_name_set(watchlist)
+            menu = await WatchlistUI.create_menu(
+                watchlist_set, game, WatchlistMenuType.GUILD
+            )
+        except:
+            logger.error(
+                "Encountered an error when generating watchlist edit UI", exc_info=True
+            )
+            menu = None
         if menu is None:
             await ctx.respond(
-                "An error occurred while generating the watchlist editor.",
+                "An error occurred while generating the watchlist editor. The Titans have been notified.",
                 ephemeral=True,
                 delete_after=DELETE_AFTER,
             )
             return
 
-        message = f"""# {game.name} Watchlist Editor
+        message = f"""# {game.name} Watchlist Editor (Server)
 Changes are saved when you click out of the menu.
 """
 
@@ -714,10 +513,14 @@ Changes are saved when you click out of the menu.
         channel = ctx.channel_id
         guild = ctx.guild_id
 
-        self.guild_cfg.set_notification_channel(guild, channel, game)  # type: ignore
+        message = ""
+        if await DB.set_notification_channel_for_guild(guild, game, channel):  # type: ignore
+            message = f"{game.name} notification channel set!"
+        else:
+            message = f"Unable to set notification channel. Please try again later, or ask for help in the Algalon discord."
 
         await ctx.interaction.response.send_message(
-            f"{game.name} notification channel set!",
+            message,
             ephemeral=True,
             delete_after=DELETE_AFTER,
         )
@@ -731,7 +534,7 @@ Changes are saved when you click out of the menu.
     ):
         """Returns the current notification channel for the given game. Defaults to Warcraft."""
         guild = ctx.guild_id
-        channel = self.guild_cfg.get_notification_channel(guild, game)  # type: ignore
+        channel = await DB.get_notification_channel_for_guild(guild, game)  # type: ignore
 
         if channel:
             await ctx.interaction.response.send_message(
@@ -771,96 +574,16 @@ Changes are saved when you click out of the menu.
         },
     )
 
-    @dm_commands.command(
-        name="subscribe",
-        input_type=str,
-        min_length=3,
-        max_length=500,
-    )
-    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
-    async def user_subscribe(self, ctx: discord.ApplicationContext, branch: str):
-        """Subscribe to build updates via DM for the given branch."""
-
-        message = ""
-        user_id = ctx.author.id
-        branch = branch.lower()
-        with self.user_cfg as config:
-            if DELIMITER in branch:  # batch adding
-                branches = branch.split(",")
-                message = "Successfully subscribed to the following branches:\n```diff"
-                for _branch in branches:
-                    success, result = config.subscribe(user_id, _branch)
-                    if not success:
-                        message += f"\n- ERROR > {_branch}: {result}"
-                    else:
-                        message += f"\n+ {_branch} added successfully."
-
-                message += "```"
-                await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=DELETE_AFTER
-                )
-            else:  # single adding
-                success, result = config.subscribe(user_id, branch)
-                if not success:
-                    message = f"Unable to subscribe to branch `{branch}`: `{result}`"
-                else:
-                    message = f"Successfully subscribed to branch `{branch}`!"
-
-                await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=DELETE_AFTER
-                )
-
-    @dm_commands.command(
-        name="unsubscribe",
-        input_type=str,
-        min_length=3,
-        max_length=500,
-    )
-    @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
-    async def user_unsubscribe(self, ctx: discord.ApplicationContext, branch: str):
-        """Unsubscribe from build updates via DM for the given branch."""
-
-        message = ""
-        user_id = ctx.author.id
-        branch = branch.lower()
-        with self.user_cfg as config:
-            if DELIMITER in branch:  # batch removal
-                branches = branch.split(",")
-                message = "No longer watching the following branches:\n```diff"
-                for _branch in branches:
-                    success, result = config.unsubscribe(user_id, _branch)
-                    if not success:
-                        message += f"\n+ ERROR > {_branch}: {result}"
-                    else:
-                        message += f"\n- {_branch} successfully removed."
-
-                message += "```"
-                await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=DELETE_AFTER
-                )
-            else:  # single removal
-                success, result = config.unsubscribe(user_id, branch)
-                if not success:
-                    message = (
-                        f"Unable to unsubscribe from branch `{branch}`: `{result}`"
-                    )
-                else:
-                    message = f"Successfully unsubscribed from branch `{branch}`!"
-
-                await ctx.interaction.response.send_message(
-                    message, ephemeral=True, delete_after=DELETE_AFTER
-                )
-
     @dm_commands.command(name="edit")
     @commands.cooldown(1, COOLDOWN, commands.BucketType.user)
     async def user_edit_subscribed(
         self, ctx: discord.ApplicationContext, game: SUPPORTED_GAMES
     ):
         """Returns a graphical editor for your personal watchlist."""
-        with self.user_cfg as config:
-            watchlist = config.get_watchlist(ctx.author.id)
+        watchlist = await DB.get_user_watchlist(ctx.author.id)
+        watchlist = convert_watchlist_to_name_set(watchlist)
 
-        menu = WatchlistUI.create_menu(watchlist, game, WatchlistMenuType.USER)
+        menu = await WatchlistUI.create_menu(watchlist, game, WatchlistMenuType.USER)
         if menu is None:
             await ctx.respond(
                 "An error occurred while generating the watchlist editor.",
@@ -869,7 +592,7 @@ Changes are saved when you click out of the menu.
             )
             return
 
-        message = f"""# {game.name} Watchlist Editor
+        message = f"""# {game.name} Watchlist Editor (Personal)
 Changes are saved when you click out of the menu.
 """
 
@@ -880,19 +603,17 @@ Changes are saved when you click out of the menu.
     async def user_subscribed(self, ctx: discord.ApplicationContext):
         """View all branches you're receiving DM updates for."""
         user_id = ctx.author.id
-        with self.user_cfg as config:
-            watchlist = config.get_watchlist(user_id)
+        watchlist = await DB.get_user_watchlist(user_id)
 
         if watchlist is None or len(watchlist) == 0:
             cmdlink = self.get_command_link("subscribe")
             message = f"You are not currently subscribed to any branches. Subscribe to a branch using {cmdlink}."
         else:
-            products = self.live_cfg.get_all_products()
             message = (
                 "Here's a list of all branches you're receiving DM updates for:\n```"
             )
             for branch in watchlist:
-                message += f"\n{branch} : {products[branch]['public_name']}"
+                message += f"\n{branch.internal_name} : {branch.public_name}"
 
             message += "```"
 

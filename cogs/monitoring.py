@@ -4,14 +4,14 @@ import discord
 import logging
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 from discord.ext import commands
 
 from cogs.bot import Algalon
-from cogs.user_config import UserConfigFile, Monitorable
 from cogs.config import LiveConfig as livecfg
 from cogs.config import SUPPORTED_PRODUCTS
 from cogs.ui import MonitorUI
+from cogs.db import AlgalonDB as DB
 
 logger = logging.getLogger("discord.cdn.watcher")
 
@@ -22,7 +22,7 @@ COOLDOWN = livecfg.get_cfg_value("discord", "cmd_cooldown", 15)
 @dataclass
 class UpdatePackage:
     branch: SUPPORTED_PRODUCTS
-    field: Monitorable
+    field: str
     new_data: Any
 
 
@@ -31,7 +31,6 @@ class MonitorCog(commands.Cog):
 
     def __init__(self, bot: Algalon):
         self.bot = bot
-        self.user_cfg = UserConfigFile()
         self.live_cfg = livecfg()
 
         self.updates = {}
@@ -42,23 +41,7 @@ class MonitorCog(commands.Cog):
     def is_disabled(self):
         return not livecfg.get_cfg_value("features", "monitoring_enabled", False)
 
-    def get_field_enum_from_value(self, field: str):
-        for enum_val in Monitorable:
-            if enum_val.value == field:
-                return enum_val
-
-    def get_all_watchers_for_branch_field(
-        self, branch: SUPPORTED_PRODUCTS, field: Monitorable
-    ) -> list[str]:
-        users = []
-        with self.user_cfg as cfg:
-            for user_id, user_entry in cfg.users:
-                if user_entry.is_monitoring(branch.name, field):
-                    users.append(user_id)
-
-        return users
-
-    def on_field_update(self, branch: str, field: str, new_data: Any):
+    async def on_field_update(self, branch: str, field: str, new_data: Any):
         if self.is_disabled():
             return
 
@@ -67,9 +50,8 @@ class MonitorCog(commands.Cog):
         else:
             return
 
-        field = self.get_field_enum_from_value(field)
         package = UpdatePackage(branch, field, new_data)
-        watchers = self.get_all_watchers_for_branch_field(branch, field)
+        watchers = await DB.get_all_monitors_for_branch_field(branch.name, field)
         if len(watchers) == 0:
             return
 
@@ -100,7 +82,7 @@ class MonitorCog(commands.Cog):
             message = f"## Field change{'s'[:i^1]} found:\n"
             for package in packages:
                 package: UpdatePackage
-                if package.field == Monitorable.CDNConfig:
+                if package.field == "cdn_config":  # TODO: don't hardcode this
                     if num_cdn_config_updates > 0:
                         continue
                     else:
@@ -159,7 +141,7 @@ class MonitorCog(commands.Cog):
             )
             return
 
-        view = MonitorUI.create(ctx.author.id, branch)
+        view = await MonitorUI.create(ctx.author.id, branch)
         await ctx.respond(
             f"Edit the fields you're watching for `{branch.name}` below.",
             view=view,

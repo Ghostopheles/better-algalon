@@ -1,13 +1,13 @@
 # better-algalon
 ![GitHub License](https://img.shields.io/github/license/ghostopheles/better-algalon?style=for-the-badge) ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/ghostopheles/better-algalon?style=for-the-badge) ![GitHub last commit](https://img.shields.io/github/last-commit/ghostopheles/better-algalon?display_timestamp=author&style=for-the-badge)
 
-v2.1.0 - Iridium
+v2.2.0 - Caesium
 
 A bot that watches Blizzard's CDN and automatically posts new build updates to specified Discord channels.
 
-Inspired by, and vaguely based on the original [Algalon bot by Ellypse](https://github.com/Ellypse/Algalon).
+Inspired by the original [Algalon bot by Ellypse](https://github.com/Ellypse/Algalon).
 
-Includes some social integrations to post updates to different social media sites alongside Discord. This bot can be found on Twitter as [@algalon_ghost](https://algalon.ghst.tools/) and on Bluesky as [@algalon.bsky.social](https://bsky.app/profile/algalon.bsky.social/).
+Includes some social integrations to post updates to different social media sites alongside Discord. This bot can be found on Twitter as [@algalon_ghost](https://algalon.ghst.tools/) and on Bluesky as [@algalon.ghst.tools](https://bsky.app/profile/algalon.ghst.tools/).
 
 Check out the [changelog](CHANGELOG.md) to view the most recent changes.
 
@@ -73,23 +73,15 @@ A lock indicates that the given branch is encrypted and not accessible to the pu
 
 ## Commands
 
-Algalon provides a number of commands to control your guild's (server) watchlist.
-
 \*admin privileges required.
 
 ### CDN Watching
-
-`/cdndata`: Returns a paginator containing the currently cached CDN data.
 
 `/lastupdate`: Returns a timestamp displaying when Algalon last checked for CDN updates.
 
 `/branches`: Returns a formatted list of all observable branches.
 
 #### Watchlist Controls
-
-`/watchlist add`*: Adds a specific branch to your guild's watchlist. Specify multiple branches at once by separating them with a comma.
-
-`/watchlist remove`*: Removes a specific branch to your guild's watchlist.
 
 `/watchlist edit`*: Returns a graphical editor for editing your guild's watchlist.
 
@@ -102,10 +94,6 @@ Algalon provides a number of commands to control your guild's (server) watchlist
 `/channel get`: Returns the current notification channel for your guild. Optionally, specify a game to get the notification channel for that game. Defaults to Warcraft.
 
 #### User DM Updates
-
-`/dm subscribe`: Subscribes the user to DM updates for the given branches. Supports comma-delimited input.
-
-`/dm unsubscribe`: Unsubscribes the user from DM updates for the given branches. Supports comma-delimited input.
 
 `/dm edit`*: Returns a graphical editor for editing your personal watchlist.
 

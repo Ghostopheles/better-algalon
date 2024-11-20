@@ -161,3 +161,4 @@ cogs/cache/
 *.code-workspace
 pycord/
 docker-compose-dev.yml
+scripts

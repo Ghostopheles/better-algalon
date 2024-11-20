@@ -2,10 +2,12 @@ import io
 import logging
 import discord
 
+from enum import Enum
 from discord.ext import commands
 
 from cogs.bot import Algalon
 from cogs.config import LiveConfig as cfg
+from cogs.db import AlgalonDB as DB
 
 logger = logging.getLogger("discord.admin")
 
@@ -50,7 +52,7 @@ class AdminCog(commands.Cog):
         logger.debug(f"{cog_name_internal} reloaded successfully.")
 
         await ctx.interaction.response.send_message(
-            f"`{cog_name}` reloaded successfully."
+            f"`{cog_name}` reloaded successfully.", ephemeral=True, delete_after=300
         )
 
     @commands.is_owner()
@@ -68,7 +70,7 @@ Members (approx): {guild.approximate_member_count}\n
 
         message_bytes = io.BytesIO(message.encode())
         file = discord.File(message_bytes, filename="guilds.txt")
-        await ctx.respond(file=file)
+        await ctx.respond(file=file, ephemeral=True, delete_after=120)
         message_bytes.close()
 
     @commands.is_owner()
