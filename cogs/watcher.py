@@ -465,24 +465,6 @@ class CDNCog(commands.Cog):
     # DISCORD COMMANDS
 
     @discord.slash_command(
-        name="cdndata",
-        contexts={
-            discord.InteractionContextType.private_channel,
-            discord.InteractionContextType.guild,
-            discord.InteractionContextType.bot_dm,
-        },
-        integration_types={
-            discord.IntegrationType.guild_install,
-            discord.IntegrationType.user_install,
-        },
-    )
-    async def cdn_data(self, ctx: discord.ApplicationContext):
-        """Returns a paginator with the currently cached CDN data."""
-        logger.debug("Generating paginator to display CDN data...")
-        paginator = await self.build_paginator_for_current_build_data()
-        await paginator.respond(ctx.interaction, ephemeral=True)
-
-    @discord.slash_command(
         name="branches",
         contexts={
             discord.InteractionContextType.private_channel,
@@ -498,8 +480,10 @@ class CDNCog(commands.Cog):
     async def cdn_branches(self, ctx: discord.ApplicationContext):
         """Returns all observable branches."""
         message = f"## These are all the branches I can watch for you:\n```\n"
-        for product in self.cdn_cache.CONFIG.PRODUCTS:
-            message += f"{product.name} : {product}\n"
+
+        branches = await DB.get_all_available_branches()
+        for branch in branches:
+            message += f"{branch.internal_name} : {branch.public_name}\n"
 
         message += "```"
 

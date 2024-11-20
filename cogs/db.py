@@ -291,6 +291,12 @@ class AlgalonDB:
     # MISC
 
     @staticmethod
+    async def get_all_available_branches():
+        query = "SELECT * FROM branch;"
+        branches = await execute_query(query)
+        return [Branch.from_json(branch) for branch in branches]
+
+    @staticmethod
     async def fetch_branch_entry(branch: str) -> Branch:
         query = "SELECT * FROM type::thing('branch', $branch);"
         branch = await execute_query(query, branch=branch)
