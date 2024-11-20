@@ -541,7 +541,7 @@ class CDNCog(commands.Cog):
             )
             return
 
-        message = f"""# {game.name} Watchlist Editor
+        message = f"""# {game.name} Watchlist Editor (Server)
 Changes are saved when you click out of the menu.
 """
 
@@ -646,7 +646,7 @@ Changes are saved when you click out of the menu.
             )
             return
 
-        message = f"""# {game.name} Watchlist Editor
+        message = f"""# {game.name} Watchlist Editor (Personal)
 Changes are saved when you click out of the menu.
 """
 
