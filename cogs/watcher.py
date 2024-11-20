@@ -7,7 +7,7 @@ import discord
 import logging
 
 from typing import Optional, Union
-from discord.ext import commands, pages, tasks
+from discord.ext import commands, tasks
 
 from cogs.bot import Algalon
 from cogs.cdn_cache import CDNCache
@@ -348,60 +348,6 @@ class CDNCog(commands.Cog):
                             continue
             else:
                 logger.info("No CDN changes found.")
-
-    async def build_paginator_for_current_build_data(self):
-        buttons = [
-            pages.PaginatorButton(
-                "first", label="<<-", style=discord.ButtonStyle.green
-            ),
-            pages.PaginatorButton("prev", label="<-", style=discord.ButtonStyle.green),
-            pages.PaginatorButton(
-                "page_indicator", style=discord.ButtonStyle.gray, disabled=True
-            ),
-            pages.PaginatorButton("next", label="->", style=discord.ButtonStyle.green),
-            pages.PaginatorButton("last", label="->>", style=discord.ButtonStyle.green),
-        ]
-
-        data_pages = []
-
-        for product in self.cdn_cache.CONFIG.PRODUCTS:
-            data = await DB.get_current_version_for_branch(product.name, "us")
-
-            if not data:
-                logger.warning(
-                    f"No data found for product {product}, skipping paginator entry..."
-                )
-                continue
-
-            encrypted = self.live_cfg.get_product_encryption_state(product.name)
-            lock = ":lock:" if encrypted else ""
-
-            embed = discord.Embed(
-                title=f"CDN Data for: {product}{lock}",
-                color=discord.Color.blurple(),
-            )
-
-            data_text = f"**Region:** `{data.region}`\n"
-            data_text += f"**Build Config:** `{data.build_config}`\n"
-            data_text += f"**CDN Config:** `{data.cdn_config}`\n"
-            data_text += f"**Build:** `{data.build_number}`\n"
-            data_text += f"**Version:** `{data.build_text}`\n"
-            data_text += f"**Product Config:** `{data.product_config if data.product_config != "" else "N/A"}`\n"
-            data_text += f"**Encrypted:** `{encrypted}`"
-
-            embed.add_field(name="Current Data", value=data_text, inline=False)
-
-            data_pages.append(embed)
-
-        paginator = pages.Paginator(
-            pages=data_pages,
-            show_indicator=True,
-            use_default_buttons=False,
-            custom_buttons=buttons,
-            timeout=300,
-        )
-
-        return paginator
 
     @tasks.loop(minutes=FETCH_INTERVAL, reconnect=True)
     async def cdn_auto_refresh(self):
