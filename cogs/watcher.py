@@ -230,9 +230,8 @@ class CDNCog(commands.Cog):
             for game, updates in data.items():
                 for update in updates:
                     branch = update["branch"]
-                    new_build = update["build"]
                     subscribers = config.lookup.get_subscribers_for_branch(branch, True)
-                    if len(subscribers) == 0:
+                    if subscribers is None or len(subscribers) == 0:
                         continue
 
                     new_build_text = update["build_text"]
