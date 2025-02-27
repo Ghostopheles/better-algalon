@@ -93,6 +93,12 @@ class SUPPORTED_PRODUCTS(StrEnum):
     wowv2 = "Vendor 2"
     wowv3 = "Vendor 3"
     wowv4 = "Vendor 4"
+    wowv5 = "Vendor 5"
+    wowv6 = "Vendor 6"
+    wowv7 = "Vendor 7"
+    wowv8 = "Vendor 8"
+    wowv9 = "Vendor 9"
+    wowv10 = "Vendor 10"
     wowe1 = "Event"
     wowe2 = "Event 2"
     wowe3 = "Event 3"
@@ -145,6 +151,12 @@ INTERNAL_BRANCHES = (
     SUPPORTED_PRODUCTS.wowv2,
     SUPPORTED_PRODUCTS.wowv3,
     SUPPORTED_PRODUCTS.wowv4,
+    SUPPORTED_PRODUCTS.wowv5,
+    SUPPORTED_PRODUCTS.wowv6,
+    SUPPORTED_PRODUCTS.wowv7,
+    SUPPORTED_PRODUCTS.wowv8,
+    SUPPORTED_PRODUCTS.wowv9,
+    SUPPORTED_PRODUCTS.wowv10,
     SUPPORTED_PRODUCTS.fenrise,
     SUPPORTED_PRODUCTS.fenrishf,
     SUPPORTED_PRODUCTS.fenrisvendor1,
@@ -178,6 +190,11 @@ WOW_BRANCHES = [
     SUPPORTED_PRODUCTS.wowv2,
     SUPPORTED_PRODUCTS.wowv3,
     SUPPORTED_PRODUCTS.wowv4,
+    SUPPORTED_PRODUCTS.wowv5,
+    SUPPORTED_PRODUCTS.wowv6,
+    SUPPORTED_PRODUCTS.wowv7,
+    SUPPORTED_PRODUCTS.wowv8,
+    SUPPORTED_PRODUCTS.wowv9,
     SUPPORTED_PRODUCTS.wowe1,
     SUPPORTED_PRODUCTS.wowe2,
     SUPPORTED_PRODUCTS.wowe3,
