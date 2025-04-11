@@ -677,6 +677,15 @@ class CDNCog(commands.Cog):
         self, ctx: discord.ApplicationContext, game: SUPPORTED_GAMES
     ):
         """Returns a graphical editor for your guild's watchlist"""
+
+        if True:
+            await ctx.respond(
+                "The watchlist editor UI is currently disabled. Please try again later or use the `/watchlist add` and `/watchlist remove` commands to edit your watchlist.",
+                ephemeral=True,
+                delete_after=DELETE_AFTER,
+            )
+            return
+
         watchlist = self.guild_cfg.get_guild_watchlist(ctx.guild_id)
         menu = WatchlistUI.create_menu(watchlist, game, WatchlistMenuType.GUILD)
         if menu is None:
