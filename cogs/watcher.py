@@ -191,9 +191,25 @@ class CDNCog(commands.Cog):
                 )
                 build = f"**{build}**" if build != build_old else build
 
-                encrypted = ":lock:" if product_config[branch]["encrypted"] else ""
+                branch_is_encrypted = product_config[branch]["encrypted"]
+                encrypted = ":lock:" if branch_is_encrypted else ""
 
-                value_string += f"`{public_name} ({branch})`{encrypted}: {build_text_old}.{build_old} --> {build_text}.{build}\n"
+                value_string += f"`{public_name} ({branch})`{encrypted}: {build_text_old}.{build_old} --> {build_text}.{build}"
+
+                # hack to add diff links
+                if (
+                    not branch_is_encrypted
+                    and game == SUPPORTED_GAMES.Warcraft
+                    and "old" in ver
+                ):
+                    url = cfg.strings.EMBED_WAGOTOOLS_DIFF_URL
+                    old_build = f"{ver["old"][cfg.indices.BUILDTEXT]}.{ver["old"][cfg.indices.BUILD]}"
+                    new_build = f"{ver[cfg.indices.BUILDTEXT]}.{ver[cfg.indices.BUILD]}"
+                    value_string += (
+                        f" | [Diffs]({url.format(old=old_build, new=new_build)})"
+                    )
+
+                value_string += "\n"
 
             if value_string == "":
                 continue
@@ -243,6 +259,15 @@ class CDNCog(commands.Cog):
                         new_build_id = f"**{new_build_id}**"
 
                     message = f"{SUPPORTED_GAMES._value2member_map_[game].name} build: `{branch}` -> {new_build_text}.{new_build_id}"
+                    # more hacks for diff links
+                    if game == SUPPORTED_GAMES.Warcraft and "old" in update:
+                        product_config = self.live_cfg.get_all_products()
+                        encrypted = product_config[branch]["encrypted"]
+                        if not encrypted:
+                            url = cfg.strings.EMBED_WAGOTOOLS_DIFF_URL
+                            old_build = f"{update["old"]["build_text"]}.{update["old"]["build"]}"
+                            new_build = f"{update["build_text"]}.{update["build"]}"
+                            message += f" | [Diffs]({url.format(old=old_build, new=new_build)})"
 
                     for subscriber in subscribers:
                         user = await self.bot.get_or_fetch_user(subscriber)

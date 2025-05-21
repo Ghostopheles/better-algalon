@@ -31,7 +31,7 @@ DISALLOWED_GAMES = [game.name for game in cfg.PRODUCTS if "wow" not in game.name
 class SocialPlatforms:
     twitter_sent_tokens = []
     bsky_sent_tokens = []
-    encrypted_icon = "\U0001F510"
+    encrypted_icon = "\U0001f510"
 
     def __init__(self):
         self.twitter = TwitterAsyncClient(
@@ -88,7 +88,9 @@ class SocialPlatforms:
             if "wow" in field["value"]:
                 is_warcraft = True
 
-        updates = "".join([field["value"] for field in embed["fields"]])
+        updates = "".join(  # commit a crime to filter out the new diff link
+            [field["value"].split(" | ")[0] + "\n" for field in embed["fields"]]
+        )
         updates = updates.replace("`", "").replace("*", "")
         updates = updates.replace(":lock:", self.encrypted_icon)
 
