@@ -275,8 +275,14 @@ class CDNCog(commands.Cog):
                         if owner_only and not is_owner:
                             continue
 
-                        channel = await user.create_dm()
-                        await channel.send(message)
+                        try:
+                            channel = await user.create_dm()
+                            await channel.send(message)
+                        except:
+                            logger.error(
+                                f"Encountered an error when sending DM to {user.id}",
+                                exc_info=True,
+                            )
 
     async def distribute_embeds(self, first_run: bool = False):
         """This handles distributing the generated embeds to the various servers that should receive them."""
