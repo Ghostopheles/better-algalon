@@ -267,7 +267,7 @@ class CDNCog(commands.Cog):
                             url = cfg.strings.EMBED_WAGOTOOLS_DIFF_URL
                             old_build = f"{update["old"]["build_text"]}.{update["old"]["build"]}"
                             new_build = f"{update["build_text"]}.{update["build"]}"
-                            message += f" | [Diffs]({url.format(old=old_build, new=new_build)})"
+                            message += f" | [Diffs](<{url.format(old=old_build, new=new_build)}>)"
 
                     for subscriber in subscribers:
                         user = await self.bot.get_or_fetch_user(subscriber)
