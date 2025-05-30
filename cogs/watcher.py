@@ -890,6 +890,14 @@ Changes are saved when you click out of the menu.
         self, ctx: discord.ApplicationContext, game: SUPPORTED_GAMES
     ):
         """Returns a graphical editor for your personal watchlist."""
+        if not SUPPORTED_GAMES.has_key[game]:
+            await ctx.respond(
+                f"Game `{game}` is not supported.",
+                ephemeral=True,
+                delete_after=DELETE_AFTER,
+            )
+            return
+
         with self.user_cfg as config:
             watchlist = config.get_watchlist(ctx.author.id)
 
