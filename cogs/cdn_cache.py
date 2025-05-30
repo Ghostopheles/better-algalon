@@ -26,12 +26,17 @@ class CDNCache:
     def __init__(self):
         self.cache_path = os.path.join(self.SELF_PATH, self.CONFIG.CACHE_FOLDER_NAME)
         self.cdn_path = os.path.join(self.cache_path, self.CONFIG.CACHE_FILE_NAME)
+        self.seqn_cache = os.path.join(self.cache_path, "seqn_cache.json")
 
         self.fetch_interval = self.LIVE_CONFIG.get_cfg_value("meta", "fetch_interval")
 
         if not os.path.exists(self.cache_path):
             os.mkdir(self.cache_path)
             self.init_cdn()
+
+        if not os.path.exists(self.seqn_cache):
+            with open(self.seqn_cache, "w") as file:
+                json.dump({}, file, indent=4)
 
         self.patch_cdn_keys()
 
@@ -79,12 +84,43 @@ class CDNCache:
 
         self.monitor.on_field_update(branch, field, new_data)
 
+    def is_seen_seqn(self, branch, seqn):
+        """
+        Checks if the sequence number has been seen before.
+
+        Returns `True` if it has, else `False`.
+        """
+        with open(self.seqn_cache, "r") as file:
+            seqn_cache = json.load(file)
+            if branch in seqn_cache:
+                return seqn in seqn_cache[branch]
+
+    def mark_seqn_seen(self, branch, seqn):
+        """
+        Marks a sequence number as seen.
+
+        This will prevent the same sequence number from being processed again.
+        """
+        with open(self.seqn_cache, "r+") as file:
+            seqn_cache = json.load(file)
+            if branch not in seqn_cache:
+                seqn_cache[branch] = []
+            if seqn not in seqn_cache[branch]:
+                seqn_cache[branch].append(seqn)
+                file.seek(0)
+                json.dump(seqn_cache, file, indent=4)
+                file.truncate()
+
     def compare_builds(self, branch: str, newBuild: dict) -> bool:
         """
         Compares two builds.
 
         Returns `True` if the build is new, else `False`.
         """
+        if self.is_seen_seqn(branch, newBuild["seqn"]):
+            logger.info(f"Skipping {branch} with seqn {newBuild['seqn']}")
+            return False
+
         with open(self.cdn_path, "r") as file:
             file_json = json.load(file)
 
@@ -122,9 +158,11 @@ class CDNCache:
                 if branch in build_info:
                     if build_info[branch][area] != newBuild[area]:
                         logger.debug(f"Updated info found for {branch} @ {area}")
+                        self.mark_seqn_seen(branch, newBuild["seqn"])
                         return True
                 else:
                     build_info[branch][area] = newBuild[area]
+                    self.mark_seqn_seen(branch, newBuild["seqn"])
                     return True
             return False
 
