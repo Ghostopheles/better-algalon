@@ -1,3 +1,4 @@
+import httpx
 import logging
 import asyncio
 
@@ -12,6 +13,8 @@ REGION = "us"
 PORT = 1119
 URL = f"{REGION}.version.battle.net:{PORT}"
 url_raw = URL.split(":")
+
+HTTPS_URL = "https://" + url_raw[0]
 
 field_name_conversions = {
     "BuildConfig": "build_config",
@@ -109,17 +112,27 @@ class RibbitClient:
 
         return sequence, output
 
+    # async def __send(self, command: str):
+    #    logger.debug(f"Sending Ribbit command '{command}'...")
+    #    bcommand = bytes(command + self.bNEWLINE, "ascii")
+
+    #    self.writer.write(bcommand)
+    #    await self.writer.drain()
+
+    #    seq, data = await self.__receive()
+    #    await self.__close()
+
+    #    return seq, data
+
     async def __send(self, command: str):
-        logger.debug(f"Sending Ribbit command '{command}'...")
-        bcommand = bytes(command + self.bNEWLINE, "ascii")
+        client = httpx.AsyncClient(base_url=HTTPS_URL, http2=True)
+        res = await client.get(command)
+        if res.status_code != 200:
+            logger.warning(f"Non-200 response code for command '{command}'")
+            return None, None
 
-        self.writer.write(bcommand)
-        await self.writer.drain()
-
-        seq, data = await self.__receive()
-        await self.__close()
-
-        return seq, data
+        seqn, data = self.__parse(res.read())
+        return seqn, data
 
     async def __receive(self):
         chunks = []
@@ -136,19 +149,19 @@ class RibbitClient:
         await self.writer.wait_closed()
 
     async def fetch_summary(self) -> tuple[dict, int]:
-        await self.__connect()
+        # await self.__connect()
         sequence, data = await self.__send("v2/summary")
         return data, sequence
 
     async def fetch_cdn_info_for_product(self, product: str) -> tuple[dict, int]:
-        await self.__connect()
+        # await self.__connect()
         sequence, data = await self.__send(f"v2/products/{product}/cdns")
         return data, sequence
 
     async def fetch_versions_for_product(
         self, product: str = "wow"
     ) -> tuple[dict, int]:
-        await self.__connect()
+        # await self.__connect()
         command = f"v2/products/{product}/versions"
         sequence, data = await self.__send(command)
         if not data:

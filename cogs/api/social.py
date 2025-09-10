@@ -106,7 +106,7 @@ class SocialPlatforms:
 
         title = f"New{hashtag} build{'s' if len(embed['fields']) > 1 else ''} found"
 
-        text = f"{title}:\n{updates}\nFound at: {timestamp} {time_object.tm_zone}"
+        text = f"{title}:\n{updates}Found at: {timestamp} {time_object.tm_zone}"
 
         if self.can_tweet(nonce):
             try:  # round one, twitter (X?)
