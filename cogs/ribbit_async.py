@@ -14,6 +14,7 @@ PORT = 1119
 URL = f"{REGION}.version.battle.net:{PORT}"
 url_raw = URL.split(":")
 
+HTTPS_TIMEOUT = 5  # seconds
 HTTPS_URL = "https://" + url_raw[0]
 
 field_name_conversions = {
@@ -125,14 +126,30 @@ class RibbitClient:
     #    return seq, data
 
     async def __send(self, command: str):
-        client = httpx.AsyncClient(base_url=HTTPS_URL, http2=True)
-        res = await client.get(command)
-        if res.status_code != 200:
-            logger.warning(f"Non-200 response code for command '{command}'")
-            return None, None
+        client = httpx.AsyncClient(
+            base_url=HTTPS_URL, http2=True, timeout=HTTPS_TIMEOUT
+        )
 
-        seqn, data = self.__parse(res.read())
-        return seqn, data
+        try:
+            res = await client.get(command)
+            if res.status_code != 200:
+                logger.warning(f"Non-200 response code for command '{command}'")
+                return None, None
+
+            seqn, data = self.__parse(res.read())
+            return seqn, data
+        except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as exc:
+            logger.warning(
+                f"HTTP {exc.__repr__()} while executing Ribbit command '{command}'",
+                exc_info=True,
+            )
+        except Exception as exc:
+            logger.error(
+                f"Encountered an error while executing Ribbit command '{command}'",
+                exc_info=True,
+            )
+
+        return None, None
 
     async def __receive(self):
         chunks = []
