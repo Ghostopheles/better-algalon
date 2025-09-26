@@ -485,6 +485,7 @@ class UserConfigFile:
 
 class ConfigFileEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, UserConfigFile):
+        if obj.to_json:
             return obj.to_json()
-        return super().default(self, obj)
+        else:
+            return super().default(obj)
