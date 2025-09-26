@@ -23,7 +23,6 @@ if platform.machine() != "armv7l":
 DIR = os.path.dirname(os.path.realpath(__file__))
 
 LOG_DIR = os.path.join(DIR, "logs")
-LOG_FILE = os.path.join(LOG_DIR, f"bot_{get_timestamp()}.log")
 
 if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
