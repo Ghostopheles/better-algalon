@@ -93,6 +93,8 @@ class SocialPlatforms:
         )
         updates = updates.replace("`", "").replace("*", "")
         updates = updates.replace(":lock:", self.encrypted_icon)
+        if not updates.endswith("\n"):
+            updates += "\n"
 
         timestamp = (
             embed["description"].split("**|**")[0].replace("<t:", "").replace(":f>", "")
