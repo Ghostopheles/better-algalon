@@ -1,3 +1,4 @@
+import os
 import time
 import logging
 
@@ -8,7 +9,14 @@ logger = logging.getLogger("discord.cdn.utils")
 
 def log_start():
     log_separator()
-    logger.info(f"{get_date()} - Starting Algalon...")
+
+    message = f"{get_date()} - Starting Algalon"
+    if bool(os.getenv("DEBUG")):
+        message += " in DEBUG mode..."
+    else:
+        message += "..."
+
+    logger.info(message)
     log_separator()
 
 
