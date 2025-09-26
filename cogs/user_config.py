@@ -89,7 +89,7 @@ class UserEntry:
         )
 
     def __get_default_entry(self) -> dict:
-        return {"watchlist": [], "monitor": MonitorList()}
+        return {"watchlist": [], "monitor": {}}
 
     def to_json(self) -> dict:
         return {"watchlist": self.watchlist, "monitor": self.monitor.to_json()}
