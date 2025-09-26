@@ -25,7 +25,7 @@ handlers:
     level: DEBUG
     formatter: json
     filename: logs/algalon.log.jsonl
-    maxBytes: 100000
+    maxBytes: 8000000
     backupCount: 3
   queue_handler:
     class: 'logging.handlers.QueueHandler'
