@@ -120,7 +120,7 @@ class CDNCog(commands.Cog):
         """This is supposed to notify the owner of an error, but doesn't always work."""
         owner = await self.bot.fetch_user(self.bot.owner_id)  # type: ignore
         channel = await owner.create_dm()
-        message = f"I've encountered an error! Help!\n```py\n{error}\n```\n"
+        message = f"I've encountered an error! Help!\n```py\n{error.__repr__()}\n```\n"
 
         if ctx:
             message += f"CALLER: {ctx.author}\nGUILD: {ctx.guild.name} | {ctx.guild_id}"  # type: ignore
