@@ -8,6 +8,7 @@ dependencies = [
     "atproto==0.0.53",
     "httpx[http2]==0.26.0",
     "py-cord[speed]==2.6.0",
+    "python-dotenv>=1.2.1",
     "pyyaml==6.0.1",
     "tweepy[async]==4.14.0",
 ]

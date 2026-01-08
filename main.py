@@ -10,7 +10,7 @@ import logging.config
 from cogs.bot import Algalon
 from cogs.config import LiveConfig as cfg
 from cogs.config import DebugConfig as dbg
-from cogs.utils import get_timestamp, log_start
+from cogs.utils import log_start
 
 if platform.machine() != "armv7l":
     from dotenv import load_dotenv
