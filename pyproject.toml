@@ -1,0 +1,13 @@
+[project]
+name = "better-algalon"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "atproto==0.0.53",
+    "httpx[http2]==0.26.0",
+    "py-cord[speed]==2.6.0",
+    "pyyaml==6.0.1",
+    "tweepy[async]==4.14.0",
+]
