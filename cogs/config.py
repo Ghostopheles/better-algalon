@@ -89,6 +89,8 @@ class SUPPORTED_PRODUCTS(StrEnum):
     wowdev = "Internal"
     wowdev2 = "Internal 2"
     wowdev3 = "Internal 3"
+    wowdev4 = "Internal 4"
+    wowdev5 = "Internal 5"
     wowv = "Vendor"
     wowv2 = "Vendor 2"
     wowv3 = "Vendor 3"
@@ -187,6 +189,8 @@ WOW_BRANCHES = [
     SUPPORTED_PRODUCTS.wowdev,
     SUPPORTED_PRODUCTS.wowdev2,
     SUPPORTED_PRODUCTS.wowdev3,
+    SUPPORTED_PRODUCTS.wowdev4,
+    SUPPORTED_PRODUCTS.wowdev5,
     SUPPORTED_PRODUCTS.wowv,
     SUPPORTED_PRODUCTS.wowv2,
     SUPPORTED_PRODUCTS.wowv3,
