@@ -107,6 +107,7 @@ class SUPPORTED_PRODUCTS(StrEnum):
     wowdemo = "Demo"
     wow_anniversary = "Classic Anniversary"
     wow_cn_beta = "WoW CN Beta"
+    wow_classic_titan = "Classic Titan"
     # Diablo 4 products
     fenris = "Diablo IV"
     fenrisb = "Diablo IV Beta"
@@ -208,7 +209,8 @@ WOW_BRANCHES = [
     SUPPORTED_PRODUCTS.wowe3,
     SUPPORTED_PRODUCTS.wowdemo,
     SUPPORTED_PRODUCTS.wow_anniversary,
-    SUPPORTED_PRODUCTS.wow_cn_beta
+    SUPPORTED_PRODUCTS.wow_cn_beta,
+    SUPPORTED_PRODUCTS.wow_classic_titan
 ]
 
 DIABLO_BRANCHES = [
