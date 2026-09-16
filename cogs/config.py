@@ -83,6 +83,7 @@ class SUPPORTED_PRODUCTS(StrEnum):
     wow_classic_era = "Classic Era"
     wow_classic_era_beta = "Classic Era Beta"
     wow_classic_era_ptr = "Classic Era PTR"
+    wowf = "Forever"
     wowz = "Submission"
     wowlivetest = "Live Test"
     wowlivetest2 = "Live Test Internal"
@@ -210,7 +211,8 @@ WOW_BRANCHES = [
     SUPPORTED_PRODUCTS.wowdemo,
     SUPPORTED_PRODUCTS.wow_anniversary,
     SUPPORTED_PRODUCTS.wow_cn_beta,
-    SUPPORTED_PRODUCTS.wow_classic_titan
+    SUPPORTED_PRODUCTS.wow_classic_titan,
+    SUPPORTED_PRODUCTS.wowf
 ]
 
 DIABLO_BRANCHES = [
