@@ -7,11 +7,11 @@ A bot that watches Blizzard's CDN and automatically posts new build updates to s
 
 Inspired by, and vaguely based on the original [Algalon bot by Ellypse](https://github.com/Ellypse/Algalon).
 
-Includes some social integrations to post updates to different social media sites alongside Discord. This bot can be found on Twitter as [@algalon_ghost](https://algalon.ghst.tools/) and on Bluesky as [@algalon.bsky.social](https://bsky.app/profile/algalon.bsky.social/).
+Includes some social integrations to post updates to different social media sites alongside Discord. This bot can be found on Twitter as [@algalon_ghost](https://ghst.tools/boo/algalon-x) and on Bluesky as [@algalon.bsky.social](https://ghst.tools/boo/algalon-bsky).
 
 Check out the [changelog](CHANGELOG.md) to view the most recent changes.
 
-Add Algalon to your server or account [here!](https://ghst.tools/algalon/install)
+Add Algalon to your server or account [here!](https://ghst.tools/boo/algalon-install)
 
 ## Observable Branches
 A lock indicates that the given branch is encrypted and not accessible to the public.
